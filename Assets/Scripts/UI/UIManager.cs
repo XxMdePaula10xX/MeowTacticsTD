@@ -411,7 +411,7 @@ namespace MeowTactics.UI
             foreach (var s in SynergyManager.Instance.GetActiveSynergies())
             {
                 if (s.count <= 0) continue;
-                string check = s.IsActive ? " ✓" : "";
+                string check = s.IsActive ? "  (ATIVA)" : "";
                 string name = string.IsNullOrEmpty(s.data.displayName) ? s.data.synergyType.ToString() : s.data.displayName;
                 var txt = UIFactory.CreateText(synergyContainer, "SynRow",
                     $"{name}  {s.count}{check}", 22,
