@@ -85,6 +85,7 @@ namespace MeowTactics.EditorTools
             e.enemyId = id; e.enemyName = name; e.description = desc; e.isBoss = boss;
             e.maxHealth = hp; e.armor = armor; e.magicResistance = mr; e.moveSpeed = speed;
             e.baseDamage = baseDmg; e.coinReward = coins; e.placeholderColor = color; e.visualScale = scale;
+            TryAssignEnemySprite(e, id);
             AssetDatabase.CreateAsset(e, $"{EnemiesDir}/Enemy_{id}.asset");
             return e;
         }
@@ -130,29 +131,44 @@ namespace MeowTactics.EditorTools
             AssetDatabase.CreateAsset(c, $"{CatsDir}/Cat_{id}.asset");
         }
 
-        // Pasta e tamanho da arte dos gatos.
+        // Pastas e tamanho-alvo (altura no mundo) da arte.
         private const string CatArtDir = "Assets/Art/Cats";
-        private const float CatSpritePPU = 950f; // ~1.2 unidades de altura na cena
+        private const string EnemyArtDir = "Assets/Art/Enemies";
+        private const float CatTargetHeight = 1.25f;   // altura do gato em unidades de mundo
+        private const float EnemyTargetHeight = 1.0f;  // altura-base do inimigo (antes do visualScale)
 
         /// <summary>
-        /// Se existir uma arte em "Assets/Art/Cats/gato_{id}.png", garante que ela
-        /// está importada como Sprite (tamanho/recorte certos) e a liga ao gato.
-        /// Assim, basta soltar a arte nessa pasta com o nome certo que ela aparece no jogo.
+        /// Se existir uma arte em "Assets/Art/Cats/gato_{id}.png", importa como Sprite
+        /// (no tamanho certo) e liga ao gato. Basta soltar a arte com o nome certo.
         /// </summary>
         private static void TryAssignCatSprite(CatData c, string id)
         {
-            string path = $"{CatArtDir}/gato_{id}.png";
-            var sprite = EnsureSprite(path, CatSpritePPU);
+            var sprite = EnsureSpriteByHeight($"{CatArtDir}/gato_{id}.png", CatTargetHeight);
             if (sprite != null)
             {
                 c.icon = sprite;
-                Debug.Log($"[MeowTactics] Arte ligada ao gato '{id}': {path}");
+                Debug.Log($"[MeowTactics] Arte ligada ao gato '{id}'.");
+            }
+        }
+
+        /// <summary>
+        /// Se existir uma arte em "Assets/Art/Enemies/inimigo_{id}.png", importa como
+        /// Sprite e liga ao inimigo. Basta soltar a arte com o nome certo.
+        /// </summary>
+        private static void TryAssignEnemySprite(EnemyData e, string id)
+        {
+            var sprite = EnsureSpriteByHeight($"{EnemyArtDir}/inimigo_{id}.png", EnemyTargetHeight);
+            if (sprite != null)
+            {
+                e.icon = sprite;
+                Debug.Log($"[MeowTactics] Arte ligada ao inimigo '{id}'.");
             }
         }
 
         /// <summary>
         /// Garante que a imagem em 'path' está importada como Sprite (recorte único)
         /// com o 'pixelsPerUnit' informado, e devolve o Sprite. Se não existir, null.
+        /// Usado pelo mapa de fundo (tamanho exato).
         /// </summary>
         private static Sprite EnsureSprite(string path, float pixelsPerUnit)
         {
@@ -171,6 +187,43 @@ namespace MeowTactics.EditorTools
                 if (!importer.alphaIsTransparency)
                 { importer.alphaIsTransparency = true; changed = true; }
                 if (changed) importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        /// <summary>
+        /// Importa a imagem como Sprite e ajusta o pixelsPerUnit para que ela tenha
+        /// exatamente 'targetWorldHeight' unidades de altura na cena — assim a arte
+        /// fica no tamanho certo INDEPENDENTE da resolução do arquivo gerado.
+        /// </summary>
+        private static Sprite EnsureSpriteByHeight(string path, float targetWorldHeight)
+        {
+            if (!System.IO.File.Exists(path)) return null;
+
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+
+            // 1) Garante que é um Sprite (pra conseguir ler a textura).
+            bool changed = false;
+            if (importer.textureType != TextureImporterType.Sprite)
+            { importer.textureType = TextureImporterType.Sprite; changed = true; }
+            if (importer.spriteImportMode != SpriteImportMode.Single)
+            { importer.spriteImportMode = SpriteImportMode.Single; changed = true; }
+            if (!importer.alphaIsTransparency)
+            { importer.alphaIsTransparency = true; changed = true; }
+            if (changed) importer.SaveAndReimport();
+
+            // 2) Ajusta o PPU pela altura real da imagem.
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (tex != null && targetWorldHeight > 0f)
+            {
+                float ppu = Mathf.Max(1f, tex.height / targetWorldHeight);
+                if (!Mathf.Approximately(importer.spritePixelsPerUnit, ppu))
+                {
+                    importer.spritePixelsPerUnit = ppu;
+                    importer.SaveAndReimport();
+                }
             }
 
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);

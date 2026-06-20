@@ -35,23 +35,25 @@ prompt, e gere tudo na mesma sessão. Copie esta linha e cole no final de TODOS 
 ## 🐱 PROMPTS DOS GATOS (copie, cole, gere)
 
 > Lembre de colar a linha **STYLE** no final de cada um.
+>
+> ⚠️ **O NOME DO ARQUIVO TEM QUE SER EXATO** (em inglês). Salve na pasta `Assets/Art/Cats/`.
 
-1. **Gato Ninja**
+1. **Gato Ninja** → **`gato_ninja.png`** ✅ (já feito!)
    `a cute black cat ninja, wearing a red scarf and headband, holding a small shuriken, sneaky confident expression —`
 
-2. **Gato Arqueiro**
+2. **Gato Arqueiro** → **`gato_archer.png`**
    `a cute green forest cat archer, holding a small wooden bow, leaf-themed outfit, focused friendly expression —`
 
-3. **Gato Sniper**
+3. **Gato Sniper** → **`gato_sniper.png`**
    `a cute blue-gray cat sniper, wearing cool glasses, calm patient pose, tiny scope, serious but adorable —`
 
-4. **Gato Mago**
+4. **Gato Mago** → **`gato_mage.png`**
    `a cute purple cat wizard, pointy magic hat with a star, holding a glowing magic staff, sparkles around —`
 
-5. **Gato Xamã**
+5. **Gato Xamã** → **`gato_shaman.png`**
    `a cute teal cat shaman, decorated with feathers and a glowing amulet, mystical aura, gentle wise expression —`
 
-6. **Gato Samurai**
+6. **Gato Samurai** → **`gato_samurai.png`**
    `a cute red cat samurai, light shoulder armor, holding a small katana, honorable brave pose —`
 
 ---
@@ -60,20 +62,23 @@ prompt, e gere tudo na mesma sessão. Copie esta linha e cole no final de TODOS 
 
 > Os inimigos devem ser **sombrios mas fofos** (nada assustador demais). Cores roxas, azuis e cinzas.
 > Cole a mesma linha **STYLE** no final.
+>
+> ⚠️ **O NOME DO ARQUIVO TEM QUE SER EXATO** (em inglês), senão não conecta no jogo.
+> Salve cada um na pasta `Assets/Art/Enemies/` com o nome indicado.
 
-1. **Fantasminha**
+1. **Fantasminha** → salvar como **`inimigo_ghostling.png`**
    `a cute tiny round ghost, soft lavender color, big innocent eyes, wavy bottom, friendly spooky —`
 
-2. **Fantasma Blindado**
+2. **Fantasma Blindado** → salvar como **`inimigo_armored.png`**
    `a cute round ghost wearing steel armor plates and a small helmet, sturdy tanky look, gray-blue —`
 
-3. **Sombra Mística**
+3. **Sombra Mística** → salvar como **`inimigo_shadow.png`**
    `a cute purple shadow creature with glowing magic eyes, wispy smoky body, mysterious —`
 
-4. **Pesadelo Veloz**
+4. **Pesadelo Veloz** → salvar como **`inimigo_swift.png`**
    `a cute small fast nightmare creature, cyan color, motion lines, big eyes, speedy energetic —`
 
-5. **Rei dos Pesadelos (BOSS)**
+5. **Rei dos Pesadelos (BOSS)** → salvar como **`inimigo_king.png`**
    `a cute but imposing nightmare king ghost boss, dark purple, golden crown, glowing yellow eyes,
    big charismatic, larger than normal enemies —`
 
@@ -127,11 +132,20 @@ Cuidado com a **licença**: prefira CC0 / "uso comercial permitido".
 
 ---
 
-## ✅ O que fazer quando tiver as imagens
+## ✅ O que fazer quando tiver as imagens (agora é AUTOMÁTICO 🎉)
 
-1. Salve cada uma com nome claro: `gato_ninja.png`, `inimigo_fantasminha.png`, etc.
-2. Me mande aqui (ou coloque nas pastas `Assets/Art/Cats`, `Assets/Art/Enemies`...).
-3. **Eu encaixo no jogo** (removo fundo se precisar, ajusto tamanho e ligo no código).
+O jogo agora **liga a arte sozinho** — você não precisa esperar eu mexer no código.
+Basta o **nome certo** e o **lugar certo**:
 
-> Dica: comece gerando só **1 gato**. Me mande pra eu validar o estilo/tamanho antes de
-> você gerar os outros 10 — assim não retrabalha.
+1. Salve cada imagem com o **nome exato** (das listas acima), por ex.:
+   - gatos → `Assets/Art/Cats/gato_archer.png`
+   - inimigos → `Assets/Art/Enemies/inimigo_ghostling.png`
+2. No Unity, clique em **MeowTactics → Fazer Tudo**.
+3. Aperte **Play**. A arte aparece no lugar do quadradinho/bolinha. ✨
+
+   - O tamanho é ajustado **automaticamente** (não importa a resolução da imagem).
+   - Funciona melhor com **fundo transparente**. Se vier com fundo branco, me manda
+     que eu removo, ou use um removedor (ex.: remove.bg) antes de salvar.
+
+> 💡 Dica: comece gerando só **1 inimigo** (ex.: o Fantasminha). Bota no jogo e vê se
+> gostou do estilo/tamanho **antes** de gerar os 5 — assim não retrabalha.
