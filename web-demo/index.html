@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meow Tactics TD — Demo do Ninja</title>
+<style>
+  html,body{margin:0;height:100%;background:#15102a;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;font-family:'Trebuchet MS',sans-serif;color:#eee;}
+  h1{color:#ffd24a;margin:10px;font-size:22px;}
+  p{margin:4px;color:#bbb;font-size:14px;}
+  canvas{border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.5);cursor:pointer;max-width:96vw;height:auto;}
+  .btn{margin-top:12px;background:#5bbf6a;color:#0e3a18;border:none;padding:10px 22px;
+    border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;}
+</style>
+</head>
+<body>
+  <h1>🐱 Meow Tactics TD — Demo do Gato Ninja</h1>
+  <p>Clique no ninja (ou no botão) para ele atacar! Ele também respira e ataca sozinho.</p>
+  <canvas id="c" width="720" height="520"></canvas>
+  <button class="btn" onclick="attack()">Atacar! 🥷</button>
+
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height, GROUND = 430, NX = 250, GX = 560, GY = 300;
+const img = new Image(); img.src = 'gato_ninja.png';
+let imgReady = false; img.onload = () => imgReady = true;
+
+let t = 0, atkT = -1, autoTimer = 2.2;
+const smooth = (a,b,t)=>{t=Math.max(0,Math.min(1,t));t=t*t*(3-2*t);return a+(b-a)*t;};
+
+function attack(){ if(atkT < 0) atkT = 0; }
+cv.addEventListener('click', attack);
+
+function drawBg(){
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#241a44'); g.addColorStop(1,'#1b1533');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#fff3c8'; ctx.beginPath(); ctx.arc(636,76,36,0,7); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.85)';
+  [[120,60],[220,40],[340,80],[470,50],[540,150],[90,150],[660,180]].forEach(s=>{
+    ctx.beginPath(); ctx.arc(s[0],s[1],2,0,7); ctx.fill();});
+  ctx.fillStyle='#2e5440'; ctx.beginPath();
+  ctx.ellipse(W/2,GROUND+55,W/2-60,70,0,0,7); ctx.fill();
+}
+
+function drawGhost(hit, shake){
+  const x = GX+shake, y = GY;
+  ctx.fillStyle = hit ? '#ffffff' : '#cfc6ee';
+  ctx.beginPath(); ctx.arc(x,y-14,46,Math.PI,0); ctx.lineTo(x+46,y+24);
+  for(let i=46;i>-46;i-=18){ ctx.quadraticCurveTo(x+i-4,y+38,x+i-18,y+24); }
+  ctx.lineTo(x-46,y-14); ctx.fill();
+  ctx.fillStyle='#2a2140';
+  ctx.beginPath(); ctx.ellipse(x-13,y-12,6,8,0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x+13,y-12,6,8,0,0,7); ctx.fill();
+}
+
+function drawNinja(sx,sy,ang,x,bottom){
+  if(!imgReady) return;
+  const baseH=250, baseW=img.width*(baseH/img.height);
+  ctx.save();
+  ctx.translate(x, bottom);
+  ctx.rotate(ang*Math.PI/180);
+  ctx.scale(sx,sy);
+  ctx.drawImage(img, -baseW/2, -baseH, baseW, baseH);
+  ctx.restore();
+}
+
+function drawShadow(cx,w){
+  ctx.fillStyle='rgba(0,0,0,.35)';
+  ctx.beginPath(); ctx.ellipse(cx,GROUND+30,w,11,0,0,7); ctx.fill();
+}
+
+function drawShuriken(x,y,ang){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+  ctx.fillStyle='#46464f'; ctx.strokeStyle='#14141c'; ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let i=0;i<8;i++){const r=i%2?8:22,a=i*Math.PI/4;
+    const px=r*Math.cos(a),py=r*Math.sin(a); i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#14141c'; ctx.beginPath(); ctx.arc(0,0,4,0,7); ctx.fill();
+  ctx.restore();
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05,(now-last)/1000); last = now; t += dt;
+  // ataque automático
+  autoTimer -= dt; if(autoTimer<=0 && atkT<0){ atkT=0; autoTimer=2.6; }
+
+  let bob = Math.sin(t*6)*7, br = 1+Math.sin(t*6)*0.02;
+  let sx=br, sy=1/br, ang=Math.sin(t*4)*3, dx=0;
+  let ghostHit=0, shake=0, showSk=false, skx=0, sky=0, ska=0;
+
+  if(atkT>=0){
+    atkT += dt; const p = atkT/1.2;
+    if(p<0.22){const k=p/0.22; sx=smooth(br,1.18,k);sy=smooth(1/br,0.82,k);ang=smooth(ang,-10,k);dx=smooth(0,-12,k);bob=smooth(bob,14,k);}
+    else if(p<0.40){const k=(p-0.22)/0.18; sx=smooth(1.18,0.9,k);sy=smooth(0.82,1.14,k);ang=smooth(-10,8,k);dx=smooth(-12,30,k);bob=smooth(14,-6,k);}
+    else{const k=(p-0.40)/0.60; sx=smooth(0.9,br,k);sy=smooth(1.14,1/br,k);ang=smooth(8,0,k);dx=smooth(30,0,k);bob=smooth(-6,0,k);}
+    if(p>=0.36&&p<=0.72){const kk=(p-0.36)/0.36; showSk=true; skx=smooth(NX+40,GX,kk); sky=smooth(GROUND-150,GY,kk); ska=t*12;}
+    if(p>=0.70&&p<=0.82){ghostHit=1; shake=(Math.floor(t*30)%2?1:-1)*5;}
+    if(p>=1){atkT=-1;}
+  }
+
+  drawBg();
+  drawShadow(NX+dx, 70*sx);
+  drawGhost(ghostHit, shake);
+  drawNinja(sx,sy,ang,NX+dx,GROUND+bob);
+  if(showSk) drawShuriken(skx,sky,ska);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
