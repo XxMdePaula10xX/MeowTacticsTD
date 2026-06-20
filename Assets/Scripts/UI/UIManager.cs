@@ -37,15 +37,18 @@ namespace MeowTactics.UI
         public Sprite heartSprite;
 
         // ---- Referências de runtime ----
-        private Text waveText, livesText, coinsText, messageText;
+        private Text waveText, waveProgressText, livesText, coinsText, messageText;
         private Transform shopContainer, benchContainer, synergyContainer, itemsContainer;
-        private Text benchLabel;
+        private Text benchLabel, startLabel;
         private Button startWaveButton, rerollButton;
         private Button pauseBtn, speed1Btn, speed2Btn;
+        private UIPulse startPulse;
 
-        private GameObject bottomPanel;
+        private GameObject itemsPanel, bottomPanel;
         private Button collapseBtn;
         private bool collapsed;
+
+        private readonly HashSet<SynergyType> prevActiveSynergies = new HashSet<SynergyType>();
 
         private GameObject detailPanel;
         private Text detailText;
@@ -114,19 +117,27 @@ namespace MeowTactics.UI
             // Título (esquerda)
             var title = UIFactory.CreateText(bar.transform, "Title", "MEOW TACTICS", 26, ColGold, TextAnchor.MiddleLeft);
             title.fontStyle = FontStyle.Bold;
-            NoWrap(title);
+            NoWrap(title); AddOutline(title);
             var trt = title.rectTransform;
             UIFactory.SetAnchors(trt, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0, 0.5f));
             trt.sizeDelta = new Vector2(360, 60);
             trt.anchoredPosition = new Vector2(30, 0);
 
-            // Onda (centro)
-            waveText = UIFactory.CreateText(bar.transform, "Wave", "ONDA 1 / 10", 34, ColText, TextAnchor.MiddleCenter);
+            // Onda (centro) + progresso
+            waveText = UIFactory.CreateText(bar.transform, "Wave", "ONDA 1 / 10", 32, ColText, TextAnchor.MiddleCenter);
             waveText.fontStyle = FontStyle.Bold;
-            NoWrap(waveText);
+            NoWrap(waveText); AddOutline(waveText);
             var wrt = waveText.rectTransform;
             UIFactory.SetAnchors(wrt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            wrt.sizeDelta = new Vector2(420, 60);
+            wrt.sizeDelta = new Vector2(440, 46);
+            wrt.anchoredPosition = new Vector2(0, 12);
+
+            waveProgressText = UIFactory.CreateText(bar.transform, "WaveProg", "Preparação", 17, ColDim, TextAnchor.MiddleCenter);
+            NoWrap(waveProgressText);
+            var prt = waveProgressText.rectTransform;
+            UIFactory.SetAnchors(prt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            prt.sizeDelta = new Vector2(440, 26);
+            prt.anchoredPosition = new Vector2(0, -24);
 
             // Cluster direito: vidas, moedas, velocidade
             var rightGo = new GameObject("RightCluster", typeof(RectTransform));
@@ -185,9 +196,10 @@ namespace MeowTactics.UI
         private void BuildItemsPanel(Transform root)
         {
             var panel = UIFactory.CreatePanel(root, "ItemsPanel", ColPanel, panelSprite);
+            itemsPanel = panel.gameObject;
             var rt = panel.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1));
-            rt.sizeDelta = new Vector2(150, 360);
+            rt.sizeDelta = new Vector2(150, 300);
             rt.anchoredPosition = new Vector2(12, -112);
 
             Title(panel.transform, "ITENS");
@@ -231,19 +243,24 @@ namespace MeowTactics.UI
             // Botão grande INICIAR ONDA (sempre visível, canto inferior direito)
             startWaveButton = UIFactory.CreateButton(root, "StartWave", "INICIAR\nONDA  ▶", ColGreen,
                 () => GameManager.Instance?.StartWave(), 30, buttonSprite);
-            startWaveButton.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            startLabel = startWaveButton.GetComponentInChildren<Text>();
+            startLabel.fontStyle = FontStyle.Bold;
+            AddOutline(startLabel);
             var srt = UIFactory.AsRect(startWaveButton);
             UIFactory.SetAnchors(srt, new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0));
             srt.sizeDelta = new Vector2(300, 170);
             srt.anchoredPosition = new Vector2(-20, 20);
+            startPulse = startWaveButton.gameObject.AddComponent<UIPulse>();
+            startPulse.speed = 3.2f; startPulse.amount = 0.05f;
 
-            // Toggle recolher (fica acima da barra, à esquerda)
-            collapseBtn = UIFactory.CreateButton(root, "Collapse", "▼ Loja/Banco", ColCard,
-                ToggleCollapse, 18, buttonSprite);
+            // Aba de recolher loja/banco (central, na borda de cima do painel)
+            collapseBtn = UIFactory.CreateButton(root, "Collapse", "▼ Recolher loja", ColCard,
+                ToggleCollapse, 16, buttonSprite);
+            collapseBtn.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
             var crt2 = UIFactory.AsRect(collapseBtn);
-            UIFactory.SetAnchors(crt2, new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0));
-            crt2.sizeDelta = new Vector2(220, 50);
-            crt2.anchoredPosition = new Vector2(20, 300);
+            UIFactory.SetAnchors(crt2, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0));
+            crt2.sizeDelta = new Vector2(210, 40);
+            crt2.anchoredPosition = new Vector2(0, 300);
 
             // Painel recolhível (loja em cima, banco embaixo)
             var panelImg = UIFactory.CreatePanel(root, "BottomPanel", ColDark, panelSprite);
@@ -409,6 +426,13 @@ namespace MeowTactics.UI
             t.verticalOverflow = VerticalWrapMode.Overflow;
         }
 
+        private static void AddOutline(Text t)
+        {
+            var o = t.gameObject.AddComponent<Outline>();
+            o.effectColor = new Color(0f, 0f, 0f, 0.7f);
+            o.effectDistance = new Vector2(2f, -2f);
+        }
+
         // =========================================================
         //  EVENTOS
         // =========================================================
@@ -420,7 +444,11 @@ namespace MeowTactics.UI
                 GameManager.Instance.OnLivesChanged += _ => UpdateLives();
                 GameManager.Instance.OnStateChanged += OnStateChanged;
             }
-            if (WaveManager.Instance != null) WaveManager.Instance.OnWaveChanged += (_, __) => UpdateWave();
+            if (WaveManager.Instance != null)
+            {
+                WaveManager.Instance.OnWaveChanged += (_, __) => UpdateWave();
+                WaveManager.Instance.OnWaveProgress += UpdateWaveProgress;
+            }
             if (ShopManager.Instance != null) ShopManager.Instance.OnShopChanged += UpdateShop;
             if (BenchManager.Instance != null) BenchManager.Instance.OnBenchChanged += UpdateBench;
             if (SynergyManager.Instance != null) SynergyManager.Instance.OnSynergiesChanged += _ => UpdateSynergies();
@@ -443,6 +471,9 @@ namespace MeowTactics.UI
             bool prep = state == GameState.Preparation;
             if (startWaveButton != null) startWaveButton.interactable = prep;
             if (rerollButton != null) rerollButton.interactable = prep;
+            if (startLabel != null) startLabel.text = prep ? "INICIAR\nONDA  ▶" : "ONDA EM\nANDAMENTO";
+            if (startPulse != null) startPulse.active = prep;
+            if (waveProgressText != null && prep) waveProgressText.text = "Preparação — posicione seus gatos";
 
             // Mantém a velocidade escolhida ao entrar em combate.
             if (state == GameState.WaveInProgress) Time.timeScale = gameSpeed;
@@ -488,7 +519,7 @@ namespace MeowTactics.UI
             collapsed = !collapsed;
             if (bottomPanel != null) bottomPanel.SetActive(!collapsed);
             var lbl = collapseBtn != null ? collapseBtn.GetComponentInChildren<Text>() : null;
-            if (lbl != null) lbl.text = collapsed ? "▲ Loja/Banco" : "▼ Loja/Banco";
+            if (lbl != null) lbl.text = collapsed ? "▲ Abrir loja" : "▼ Recolher loja";
         }
 
         // =========================================================
@@ -512,6 +543,15 @@ namespace MeowTactics.UI
                 waveText.text = "ONDA " + (WaveManager.Instance.CurrentWaveIndex + 1) + " / " + WaveManager.Instance.waves.Count;
         }
 
+        public void UpdateWaveProgress()
+        {
+            if (waveProgressText == null || WaveManager.Instance == null) return;
+            var wm = WaveManager.Instance;
+            waveProgressText.text = wm.IsWaveRunning
+                ? $"Inimigos restantes: {wm.EnemiesRemaining} / {wm.EnemiesTotal}"
+                : "Preparação — posicione seus gatos";
+        }
+
         // =========================================================
         //  LOJA (cartões com ícone do gato)
         // =========================================================
@@ -533,10 +573,13 @@ namespace MeowTactics.UI
         {
             var card = new GameObject("ShopCard", typeof(RectTransform), typeof(Image), typeof(Button));
             card.transform.SetParent(parent, false);
+            bool afford = cat != null && ShopManager.Instance != null && ShopManager.Instance.CanBuy(cat);
             var img = card.GetComponent<Image>();
-            img.color = cat == null ? new Color(0.15f, 0.15f, 0.18f, 0.9f) : ColCard;
+            img.color = cat == null
+                ? new Color(0.15f, 0.15f, 0.18f, 0.9f)
+                : (afford ? ColCard : new Color(0.13f, 0.11f, 0.17f, 0.95f));
             var btn = card.GetComponent<Button>();
-            btn.interactable = cat != null;
+            btn.interactable = cat != null; // mesmo sem moeda, deixa clicar p/ mostrar aviso
             if (cat != null && onClick != null) btn.onClick.AddListener(onClick);
 
             var vlg = card.AddComponent<VerticalLayoutGroup>();
@@ -551,10 +594,11 @@ namespace MeowTactics.UI
                 return;
             }
 
-            // Ícone do gato
+            // Ícone do gato (esmaecido se não puder comprar)
             if (cat.icon != null)
             {
                 var icon = UIFactory.CreateIcon(card.transform, "Icon", cat.icon, 80);
+                icon.color = afford ? Color.white : new Color(0.55f, 0.55f, 0.6f, 0.85f);
                 AddMinHeight(icon, 80);
             }
             // Nome
@@ -621,21 +665,32 @@ namespace MeowTactics.UI
             ClearDynamic(synergyContainer, "SynRow");
 
             bool any = false;
+            var nowActive = new HashSet<SynergyType>();
             foreach (var s in SynergyManager.Instance.GetActiveSynergies())
             {
                 if (s.count <= 0) continue;
                 any = true;
+
+                if (s.IsActive)
+                {
+                    nowActive.Add(s.data.synergyType);
+                    if (!prevActiveSynergies.Contains(s.data.synergyType))
+                        ShowMessage($"SINERGIA ATIVADA: {DisplayName(s)}!   {s.activeTier.description}");
+                }
+
                 int next = NextThreshold(s.data, s.count);
-                string name = string.IsNullOrEmpty(s.data.displayName) ? s.data.synergyType.ToString() : s.data.displayName;
                 Color col = s.IsActive ? s.data.uiColor : ColDim;
-                string mark = s.IsActive ? "  (ATIVA)" : "";
+                string mark = s.IsActive ? "  ★" : "";
                 var txt = UIFactory.CreateText(synergyContainer, "SynRow",
-                    $"•  {name}   {s.count}/{next}{mark}", 21, col, TextAnchor.MiddleLeft);
-                if (s.IsActive) txt.fontStyle = FontStyle.Bold;
+                    $"•  {DisplayName(s)}   {s.count}/{next}{mark}", 21, col, TextAnchor.MiddleLeft);
+                if (s.IsActive) { txt.fontStyle = FontStyle.Bold; AddOutline(txt); }
                 NoWrap(txt);
                 var le = txt.gameObject.AddComponent<LayoutElement>();
                 le.minHeight = 30;
             }
+
+            prevActiveSynergies.Clear();
+            foreach (var t in nowActive) prevActiveSynergies.Add(t);
 
             if (!any)
             {
@@ -643,6 +698,11 @@ namespace MeowTactics.UI
                     "Posicione gatos para\nativar sinergias!", 16, ColDim, TextAnchor.UpperLeft);
                 var le = hint.gameObject.AddComponent<LayoutElement>(); le.minHeight = 50;
             }
+        }
+
+        private static string DisplayName(SynergyManager.SynergyStatus s)
+        {
+            return string.IsNullOrEmpty(s.data.displayName) ? s.data.synergyType.ToString() : s.data.displayName;
         }
 
         private static int NextThreshold(SynergyData d, int count)
@@ -663,6 +723,11 @@ namespace MeowTactics.UI
         {
             if (itemsContainer == null || ItemManager.Instance == null) return;
             ClearDynamic(itemsContainer, "ItemBtn");
+
+            // Não deixa um painel grande e vazio: só aparece quando há itens.
+            bool hasItems = ItemManager.Instance.inventory.Count > 0;
+            if (itemsPanel != null) itemsPanel.SetActive(hasItems);
+            if (!hasItems) return;
 
             foreach (var item in ItemManager.Instance.inventory)
             {

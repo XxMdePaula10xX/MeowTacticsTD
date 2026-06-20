@@ -26,8 +26,14 @@ namespace MeowTactics.Managers
 
         /// <summary>Número da onda atual (1-based) e total de ondas.</summary>
         public event Action<int, int> OnWaveChanged;
+        /// <summary>Disparado quando o progresso da onda muda (inimigos restantes/total).</summary>
+        public event Action OnWaveProgress;
+
+        public int EnemiesTotal { get; private set; }
+        public int EnemiesRemaining => Mathf.Max(0, EnemiesTotal - removedThisWave);
 
         private int aliveCount;
+        private int removedThisWave;
         private bool finishedSpawning;
         private Coroutine spawnRoutine;
 
@@ -53,6 +59,10 @@ namespace MeowTactics.Managers
             IsWaveRunning = true;
             finishedSpawning = false;
             aliveCount = 0;
+            removedThisWave = 0;
+            EnemiesTotal = 0;
+            foreach (var info in wave.enemies) EnemiesTotal += info.count;
+            OnWaveProgress?.Invoke();
             spawnRoutine = StartCoroutine(SpawnRoutine(wave));
         }
 
@@ -81,6 +91,8 @@ namespace MeowTactics.Managers
         public void OnEnemyRemoved(EnemyUnit enemy)
         {
             aliveCount = Mathf.Max(0, aliveCount - 1);
+            removedThisWave++;
+            OnWaveProgress?.Invoke();
             CheckWaveCompletion();
         }
 
