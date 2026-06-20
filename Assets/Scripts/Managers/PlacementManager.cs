@@ -93,16 +93,19 @@ namespace MeowTactics.Managers
             if (!CanEditBoard)
             {
                 UIManager.Instance?.ShowMessage("Não dá para posicionar durante a onda!");
+                SFXManager.Play(SfxType.Error);
                 return;
             }
             string reason;
             if (!IsValidPlacement(pos, out reason))
             {
                 UIManager.Instance?.ShowMessage(reason);
+                SFXManager.Play(SfxType.Error);
                 return;
             }
 
             PlaceCatAt(SelectedBenchCat, pos);
+            SFXManager.Play(SfxType.Place);
             ClearSelection();
         }
 

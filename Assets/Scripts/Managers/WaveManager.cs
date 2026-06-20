@@ -124,7 +124,7 @@ namespace MeowTactics.Managers
                 NotifyWaveChanged();
             }
 
-            GameManager.Instance?.EndWave(completedWaveNumber, wasLastWave);
+            GameManager.Instance?.EndWave(completedWaveNumber, wasLastWave, reward);
         }
 
         public void StopWave()

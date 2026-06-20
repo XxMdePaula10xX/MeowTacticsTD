@@ -62,11 +62,13 @@ namespace MeowTactics.Managers
             if (BenchManager.Instance == null || !BenchManager.Instance.HasSpace())
             {
                 UIManager.Instance?.ShowMessage("Banco cheio!");
+                SFXManager.Play(SfxType.Error);
                 return;
             }
             if (EconomyManager.Instance == null || !EconomyManager.Instance.SpendCoins(cat.cost))
             {
                 UIManager.Instance?.ShowMessage("Moedas insuficientes!");
+                SFXManager.Play(SfxType.Error);
                 return;
             }
 
@@ -75,6 +77,7 @@ namespace MeowTactics.Managers
 
             currentShopOptions[shopIndex] = null; // slot fica vazio até o próximo reroll
             OnShopChanged?.Invoke();
+            SFXManager.Play(SfxType.Buy);
         }
 
         public void RerollShop()
@@ -83,9 +86,11 @@ namespace MeowTactics.Managers
             if (!EconomyManager.Instance.SpendCoins(GameBalance.RerollCost))
             {
                 UIManager.Instance?.ShowMessage("Moedas insuficientes para atualizar!");
+                SFXManager.Play(SfxType.Error);
                 return;
             }
             GenerateShop();
+            SFXManager.Play(SfxType.Click);
         }
     }
 }

@@ -16,6 +16,20 @@ namespace MeowTactics.Utilities
         private const int SortHealthBar = 25;
         private const int SortRange = 5;
 
+        /// <summary>Cria uma sombrinha (objeto separado) que segue a unidade por baixo.</summary>
+        private static void CreateShadow(Transform target, int sortingOrder, float width, float offsetY)
+        {
+            var s = new GameObject("Shadow");
+            var sr = s.AddComponent<SpriteRenderer>();
+            sr.sprite = SpriteFactory.Circle;
+            sr.color = new Color(0f, 0f, 0f, 0.28f);
+            sr.sortingOrder = sortingOrder;
+            s.transform.localScale = new Vector3(width, width * 0.4f, 1f);
+            var p = target.position;
+            s.transform.position = new Vector3(p.x, p.y + offsetY, p.z + 0.01f);
+            s.AddComponent<ShadowFollow>().Setup(target, offsetY);
+        }
+
         public static CatUnit CreateCat(CatData data, Vector3 position)
         {
             CatUnit cat;
@@ -52,6 +66,8 @@ namespace MeowTactics.Utilities
             rsr.sortingOrder = SortRange;
             ring.SetActive(false);
 
+            CreateShadow(go.transform, SortCat - 1, 0.9f, -0.5f);
+
             go.AddComponent<JuiceVisual>();
             go.AddComponent<CatUnit>();
             return go.GetComponent<CatUnit>();
@@ -84,18 +100,22 @@ namespace MeowTactics.Utilities
             sr.color = data.icon != null ? Color.white : data.placeholderColor;
             sr.sortingOrder = SortEnemy;
 
-            // Barra de vida
+            // Barra de vida (boss tem barra maior e mais alta = destacada)
+            float barW = data.isBoss ? 1.5f : 1.0f;
+            float barH = data.isBoss ? 0.22f : 0.16f;
+            float barY = data.isBoss ? 0.78f : 0.6f;
+
             var bar = new GameObject("HealthBar");
             bar.transform.SetParent(go.transform, false);
-            bar.transform.localPosition = new Vector3(0f, 0.6f, 0f);
+            bar.transform.localPosition = new Vector3(0f, barY, 0f);
 
             var bg = new GameObject("BG");
             bg.transform.SetParent(bar.transform, false);
             var bgsr = bg.AddComponent<SpriteRenderer>();
             bgsr.sprite = SpriteFactory.Square;
-            bgsr.color = Color.black;
+            bgsr.color = data.isBoss ? new Color(0.25f, 0.18f, 0.02f) : Color.black; // moldura dourada no boss
             bgsr.sortingOrder = SortHealthBar;
-            bg.transform.localScale = new Vector3(1.0f, 0.16f, 1f);
+            bg.transform.localScale = new Vector3(barW, barH, 1f);
 
             var fill = new GameObject("Fill");
             fill.transform.SetParent(bar.transform, false);
@@ -103,10 +123,12 @@ namespace MeowTactics.Utilities
             fsr.sprite = SpriteFactory.Square;
             fsr.color = Color.green;
             fsr.sortingOrder = SortHealthBar + 1;
-            fill.transform.localScale = new Vector3(0.92f, 0.10f, 1f);
+            fill.transform.localScale = new Vector3(barW * 0.92f, barH * 0.62f, 1f);
 
             var hb = bar.AddComponent<HealthBar>();
             hb.SetFillTransform(fill.transform);
+
+            CreateShadow(go.transform, SortEnemy - 1, 0.85f * data.visualScale, -0.5f * data.visualScale);
 
             go.AddComponent<JuiceVisual>();
             go.AddComponent<EnemyUnit>();

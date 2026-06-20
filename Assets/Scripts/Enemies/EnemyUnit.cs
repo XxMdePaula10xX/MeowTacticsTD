@@ -154,7 +154,10 @@ namespace MeowTactics.Enemies
             Active.Remove(this);
 
             EconomyManager.Instance?.AddCoins(Data.coinReward);
+            GameManager.Instance?.RegisterEnemyDefeated();
             WaveManager.Instance?.OnEnemyRemoved(this);
+            SFXManager.Play(SfxType.EnemyDeath);
+            SFXManager.Play(SfxType.Coin);
 
             // Moedinha pulando + "poof" de morte.
             if (healthBar != null) healthBar.gameObject.SetActive(false);

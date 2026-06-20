@@ -13,6 +13,8 @@ namespace MeowTactics.Managers
         public static EconomyManager Instance { get; private set; }
 
         public int Coins { get; private set; }
+        /// <summary>Total de moedas ganhas na partida (para a tela de fim).</summary>
+        public int TotalEarned { get; private set; }
 
         /// <summary>Disparado sempre que o total de moedas muda (para a UI ouvir).</summary>
         public event Action<int> OnCoinsChanged;
@@ -25,6 +27,7 @@ namespace MeowTactics.Managers
         public void ResetEconomy()
         {
             Coins = GameBalance.StartingCoins;
+            TotalEarned = 0;
             OnCoinsChanged?.Invoke(Coins);
         }
 
@@ -34,6 +37,7 @@ namespace MeowTactics.Managers
         {
             if (amount == 0) return;
             Coins += amount;
+            if (amount > 0) TotalEarned += amount;
             OnCoinsChanged?.Invoke(Coins);
         }
 

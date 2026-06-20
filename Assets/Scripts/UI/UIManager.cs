@@ -49,6 +49,11 @@ namespace MeowTactics.UI
         private bool collapsed;
 
         private readonly HashSet<SynergyType> prevActiveSynergies = new HashSet<SynergyType>();
+        private readonly HashSet<SynergyType> everActivated = new HashSet<SynergyType>();
+
+        private GameObject waveBanner, tooltipPanel;
+        private Text waveBannerText, tooltipText;
+        private Coroutine waveBannerRoutine;
 
         private GameObject detailPanel;
         private Text detailText;
@@ -97,6 +102,40 @@ namespace MeowTactics.UI
             BuildDraftPanel(root);
             BuildEndPanel(root);
             BuildMessage(root);
+            BuildWaveBanner(root);
+            BuildTooltip(root);
+        }
+
+        // Banner de fim de onda (centro-superior, some sozinho)
+        private void BuildWaveBanner(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "WaveBanner", new Color(0.10f, 0.08f, 0.18f, 0.95f), panelSprite);
+            waveBanner = panel.gameObject;
+            var rt = panel.rectTransform;
+            UIFactory.SetAnchors(rt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            rt.sizeDelta = new Vector2(560, 150);
+            rt.anchoredPosition = new Vector2(0, -230);
+
+            waveBannerText = UIFactory.CreateText(panel.transform, "Text", "", 26, ColGold, TextAnchor.MiddleCenter);
+            waveBannerText.fontStyle = FontStyle.Bold;
+            AddOutline(waveBannerText);
+            UIFactory.StretchFull(waveBannerText.rectTransform, 16);
+            waveBanner.SetActive(false);
+        }
+
+        // Tooltip de sinergia (segue o cursor)
+        private void BuildTooltip(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "Tooltip", new Color(0.05f, 0.04f, 0.10f, 0.97f), panelSprite);
+            panel.raycastTarget = false; // não rouba o cursor (evita flicker)
+            tooltipPanel = panel.gameObject;
+            var rt = panel.rectTransform;
+            rt.pivot = new Vector2(1f, 0f); // aparece acima/à esquerda do cursor
+            rt.sizeDelta = new Vector2(330, 150);
+
+            tooltipText = UIFactory.CreateText(panel.transform, "Text", "", 18, ColText, TextAnchor.UpperLeft);
+            UIFactory.StretchFull(tooltipText.rectTransform, 14);
+            tooltipPanel.SetActive(false);
         }
 
         private void EnsureEventSystem()
@@ -375,7 +414,7 @@ namespace MeowTactics.UI
             endPanel = UIFactory.CreatePanel(root, "EndPanel", new Color(0, 0, 0, 0.9f)).gameObject;
             UIFactory.StretchFull((RectTransform)endPanel.transform);
 
-            endText = UIFactory.CreateText(endPanel.transform, "EndText", "", 60, ColGold, TextAnchor.MiddleCenter);
+            endText = UIFactory.CreateText(endPanel.transform, "EndText", "", 40, ColGold, TextAnchor.MiddleCenter);
             endText.fontStyle = FontStyle.Bold;
             var ert = endText.rectTransform;
             UIFactory.SetAnchors(ert, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
@@ -491,12 +530,14 @@ namespace MeowTactics.UI
             gameSpeed = s;
             if (Time.timeScale > 0f) Time.timeScale = s; // não tira do pause
             UpdateSpeedButtons();
+            SFXManager.Play(SfxType.Click);
         }
 
         private void TogglePause()
         {
             Time.timeScale = Time.timeScale > 0f ? 0f : gameSpeed;
             UpdateSpeedButtons();
+            SFXManager.Play(SfxType.Click);
         }
 
         private void UpdateSpeedButtons()
@@ -520,6 +561,7 @@ namespace MeowTactics.UI
             if (bottomPanel != null) bottomPanel.SetActive(!collapsed);
             var lbl = collapseBtn != null ? collapseBtn.GetComponentInChildren<Text>() : null;
             if (lbl != null) lbl.text = collapsed ? "▲ Abrir loja" : "▼ Recolher loja";
+            SFXManager.Play(SfxType.Click);
         }
 
         // =========================================================
@@ -583,7 +625,7 @@ namespace MeowTactics.UI
             if (cat != null && onClick != null) btn.onClick.AddListener(onClick);
 
             var vlg = card.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(6, 6, 6, 6); vlg.spacing = 1;
+            vlg.padding = new RectOffset(5, 5, 4, 4); vlg.spacing = 0;
             vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
             vlg.childAlignment = TextAnchor.UpperCenter;
 
@@ -594,23 +636,29 @@ namespace MeowTactics.UI
                 return;
             }
 
+            // Faixa de raridade (topo do card)
+            Color rar = RarityColor(cat.cost);
+            var strip = UIFactory.CreatePanel(card.transform, "Rarity", rar);
+            var sle = strip.gameObject.AddComponent<LayoutElement>();
+            sle.minHeight = 5; sle.preferredHeight = 5;
+
             // Ícone do gato (esmaecido se não puder comprar)
             if (cat.icon != null)
             {
-                var icon = UIFactory.CreateIcon(card.transform, "Icon", cat.icon, 80);
+                var icon = UIFactory.CreateIcon(card.transform, "Icon", cat.icon, 64);
                 icon.color = afford ? Color.white : new Color(0.55f, 0.55f, 0.6f, 0.85f);
-                AddMinHeight(icon, 80);
+                AddMinHeight(icon, 64);
             }
-            // Nome
-            var name = UIFactory.CreateText(card.transform, "Name", cat.catName, 17, ColText, TextAnchor.MiddleCenter);
-            name.fontStyle = FontStyle.Bold; NoWrap(name); AddMinHeight(name, 22);
+            // Nome (cor por raridade)
+            var name = UIFactory.CreateText(card.transform, "Name", cat.catName, 16, rar, TextAnchor.MiddleCenter);
+            name.fontStyle = FontStyle.Bold; NoWrap(name); AddMinHeight(name, 20);
             // Custo + tipo
             var cost = UIFactory.CreateText(card.transform, "Cost",
                 $"Custo {cat.cost}  •  {DamageName(cat.damageType)}", 13, ColGold, TextAnchor.MiddleCenter);
-            NoWrap(cost); AddMinHeight(cost, 18);
+            NoWrap(cost); AddMinHeight(cost, 16);
             // Sinergias
             var syn = UIFactory.CreateText(card.transform, "Syn", SynergyNames(cat.synergies), 12, DamageColor(cat.damageType), TextAnchor.MiddleCenter);
-            NoWrap(syn); AddMinHeight(syn, 18);
+            NoWrap(syn); AddMinHeight(syn, 16);
         }
 
         private static void AddMinHeight(Component c, float h)
@@ -675,7 +723,11 @@ namespace MeowTactics.UI
                 {
                     nowActive.Add(s.data.synergyType);
                     if (!prevActiveSynergies.Contains(s.data.synergyType))
+                    {
+                        everActivated.Add(s.data.synergyType);
                         ShowMessage($"SINERGIA ATIVADA: {DisplayName(s)}!   {s.activeTier.description}");
+                        SFXManager.Play(SfxType.Synergy);
+                    }
                 }
 
                 int next = NextThreshold(s.data, s.count);
@@ -687,6 +739,14 @@ namespace MeowTactics.UI
                 NoWrap(txt);
                 var le = txt.gameObject.AddComponent<LayoutElement>();
                 le.minHeight = 30;
+
+                // Tooltip ao passar/tocar (mostra os bônus dos níveis).
+                txt.raycastTarget = true;
+                SynergyData data = s.data;
+                var trigger = txt.gameObject.AddComponent<EventTrigger>();
+                AddTrigger(trigger, EventTriggerType.PointerEnter, _ => ShowSynergyTooltip(data));
+                AddTrigger(trigger, EventTriggerType.PointerClick, _ => ShowSynergyTooltip(data));
+                AddTrigger(trigger, EventTriggerType.PointerExit, _ => HideTooltip());
             }
 
             prevActiveSynergies.Clear();
@@ -816,7 +876,15 @@ namespace MeowTactics.UI
         public void ShowVictoryScreen()
         {
             if (endPanel == null) return;
-            endText.text = "VITÓRIA!\n\nVocê defendeu os gatos\ncontra os pesadelos!";
+            int waves = WaveManager.Instance != null ? WaveManager.Instance.waves.Count : 10;
+            int defeated = GameManager.Instance != null ? GameManager.Instance.EnemiesDefeated : 0;
+            int coins = EconomyManager.Instance != null ? EconomyManager.Instance.TotalEarned : 0;
+            endText.text =
+                $"<size=78><b>VITÓRIA!</b></size>\n\n" +
+                $"Ondas: {waves}/{waves}\n" +
+                $"Inimigos derrotados: {defeated}\n" +
+                $"Moedas ganhas: {coins}\n" +
+                $"Sinergias ativadas: {everActivated.Count}";
             endText.color = ColGold;
             endPanel.SetActive(true);
         }
@@ -824,7 +892,14 @@ namespace MeowTactics.UI
         public void ShowDefeatScreen()
         {
             if (endPanel == null) return;
-            endText.text = "DERROTA\n\nOs pesadelos invadiram a base...\nTente outra composição!";
+            int wave = WaveManager.Instance != null ? WaveManager.Instance.CurrentWaveIndex + 1 : 1;
+            int total = WaveManager.Instance != null ? WaveManager.Instance.waves.Count : 10;
+            int defeated = GameManager.Instance != null ? GameManager.Instance.EnemiesDefeated : 0;
+            endText.text =
+                $"<size=78><b>DERROTA</b></size>\n\n" +
+                $"Você chegou até a onda {wave}/{total}\n" +
+                $"Inimigos derrotados: {defeated}\n\n" +
+                $"Tente combinar mais sinergias!";
             endText.color = ColRed;
             endPanel.SetActive(true);
         }
@@ -845,6 +920,64 @@ namespace MeowTactics.UI
         {
             yield return new WaitForSecondsRealtime(seconds);
             if (messageText != null) messageText.transform.parent.gameObject.SetActive(false);
+        }
+
+        // =========================================================
+        //  BANNER DE FIM DE ONDA
+        // =========================================================
+        public void ShowWaveSummary(int wave, int reward, int lives)
+        {
+            if (waveBanner == null) return;
+            waveBannerText.text =
+                $"<size=30><b>Onda {wave} concluída!</b></size>\n+{reward} moedas    •    Vidas: {lives}";
+            waveBanner.SetActive(true);
+            if (waveBannerRoutine != null) StopCoroutine(waveBannerRoutine);
+            waveBannerRoutine = StartCoroutine(HideWaveBannerAfter(2.6f));
+        }
+
+        private IEnumerator HideWaveBannerAfter(float seconds)
+        {
+            yield return new WaitForSecondsRealtime(seconds);
+            if (waveBanner != null) waveBanner.SetActive(false);
+        }
+
+        // =========================================================
+        //  TOOLTIP DE SINERGIA
+        // =========================================================
+        private void ShowSynergyTooltip(SynergyData data)
+        {
+            if (tooltipPanel == null || data == null) return;
+            var sb = new StringBuilder();
+            sb.AppendLine($"<b>{DisplayName(data)}</b>");
+            foreach (var tier in data.tiers)
+                sb.AppendLine($"{tier.requiredCount}: {tier.description}");
+            tooltipText.text = sb.ToString().TrimEnd();
+            tooltipPanel.transform.position = Input.mousePosition;
+            tooltipPanel.SetActive(true);
+        }
+
+        private void HideTooltip()
+        {
+            if (tooltipPanel != null) tooltipPanel.SetActive(false);
+        }
+
+        private static void AddTrigger(EventTrigger trigger, EventTriggerType type, UnityAction<BaseEventData> cb)
+        {
+            var entry = new EventTrigger.Entry { eventID = type };
+            entry.callback.AddListener(cb);
+            trigger.triggers.Add(entry);
+        }
+
+        private static string DisplayName(SynergyData d)
+        {
+            return string.IsNullOrEmpty(d.displayName) ? d.synergyType.ToString() : d.displayName;
+        }
+
+        private static Color RarityColor(int cost)
+        {
+            if (cost >= 4) return new Color(0.75f, 0.45f, 1f);   // épico (roxo)
+            if (cost == 3) return new Color(0.40f, 0.70f, 1f);   // raro (azul)
+            return new Color(0.70f, 0.80f, 0.75f);               // comum (cinza-esverdeado)
         }
 
         // =========================================================

@@ -5,6 +5,7 @@ using MeowTactics.Data;
 using MeowTactics.Combat;
 using MeowTactics.Enemies;
 using MeowTactics.Utilities;
+using MeowTactics.Managers;
 
 namespace MeowTactics.Cats
 {
@@ -214,6 +215,7 @@ namespace MeowTactics.Cats
         public void Attack(EnemyUnit target)
         {
             juice?.Punch(0.4f); // "tranco" ao atacar
+            SFXManager.Play(Data.attackType == AttackType.Magic ? SfxType.AttackMagic : SfxType.AttackPhysical);
             DealDamage(target);
 
             if (EffectiveArea)

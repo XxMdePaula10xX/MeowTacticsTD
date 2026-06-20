@@ -15,6 +15,10 @@ namespace MeowTactics.Managers
 
         public GameState State { get; private set; } = GameState.Preparation;
         public int Lives { get; private set; }
+        /// <summary>Inimigos derrotados na partida (para a tela de fim).</summary>
+        public int EnemiesDefeated { get; private set; }
+
+        public void RegisterEnemyDefeated() => EnemiesDefeated++;
 
         public event Action<GameState> OnStateChanged;
         public event Action<int> OnLivesChanged;
@@ -32,6 +36,8 @@ namespace MeowTactics.Managers
         public void StartGame()
         {
             Lives = GameBalance.StartingLives;
+            EnemiesDefeated = 0;
+            Time.timeScale = 1f;
             SetState(GameState.Preparation);
 
             EconomyManager.Instance?.ResetEconomy();
@@ -48,10 +54,11 @@ namespace MeowTactics.Managers
 
             SetState(GameState.WaveInProgress);
             WaveManager.Instance.StartCurrentWave();
+            SFXManager.Play(SfxType.StartWave);
         }
 
         /// <summary>Chamado pelo WaveManager quando a onda atual termina (sem derrota).</summary>
-        public void EndWave(int completedWaveNumber, bool wasLastWave)
+        public void EndWave(int completedWaveNumber, bool wasLastWave, int reward)
         {
             if (State == GameState.Defeat) return;
 
@@ -63,6 +70,7 @@ namespace MeowTactics.Managers
 
             SetState(GameState.Preparation);
             ShopManager.Instance?.GenerateShop();
+            UIManager.Instance?.ShowWaveSummary(completedWaveNumber, reward, Lives);
 
             // A cada N ondas, oferece a roleta de itens (ex: ondas 3, 6, 9).
             if (GameBalance.ItemDropEveryNWaves > 0 &&
@@ -90,12 +98,14 @@ namespace MeowTactics.Managers
         public void WinGame()
         {
             SetState(GameState.Victory);
+            SFXManager.Play(SfxType.Victory);
         }
 
         public void LoseGame()
         {
             SetState(GameState.Defeat);
             WaveManager.Instance?.StopWave();
+            SFXManager.Play(SfxType.Defeat);
         }
 
         public void PauseGame()
