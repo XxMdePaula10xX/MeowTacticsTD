@@ -233,8 +233,12 @@ function update(dt){
 function addFloat(x,y,txt,color){ floats.push({x,y,txt,color,life:1.0}); }
 
 function draw(){
-  if(loaded<1){ ctx.fillStyle='#100c22'; ctx.fillRect(0,0,CW,CH); return; }
-  ctx.drawImage(mapImg,0,0,CW,CH);
+  if(loaded>=1) ctx.drawImage(mapImg,0,0,CW,CH);
+  else { ctx.fillStyle='#1a1530'; ctx.fillRect(0,0,CW,CH); }
+  // estrada traçada (ajuda a visualizar o caminho)
+  ctx.save(); ctx.strokeStyle='rgba(255,240,200,0.18)'; ctx.lineWidth=28;
+  ctx.lineJoin='round'; ctx.lineCap='round'; ctx.beginPath();
+  PATH.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore();
   // alcance no modo de posicionamento
   if(placing){
     ctx.beginPath(); ctx.arc(mouse.x,mouse.y,150,0,7);
@@ -252,8 +256,17 @@ function draw(){
     ctx.drawImage(ninjaImg,mouse.x-baseW/2,mouse.y-baseH,baseW,baseH); ctx.globalAlpha=1;
   }
   drawHUD();
+  drawDebug();
   if(wave===0 && !waveActive && !placing && !gameOver) drawIntro();
   if(gameOver) drawEnd();
+}
+function drawDebug(){
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,CH-30,CW,30);
+  ctx.fillStyle='#9effa8'; ctx.font='16px monospace'; ctx.textBaseline='middle';
+  ctx.fillText(`DIAG · imagens ${loaded}/2 · gatos ${towers.length} · inimigos ${enemies.length}`
+    +` · fila ${spawnQueue.length} · onda ${waveActive?'ATIVA':'parada'}`, 12, CH-15);
+  ctx.restore();
 }
 function drawIntro(){
   ctx.save(); ctx.textAlign='center';
