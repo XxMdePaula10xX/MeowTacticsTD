@@ -8,8 +8,9 @@
   html,body{margin:0;background:#100c22;font-family:'Trebuchet MS',Verdana,sans-serif;color:#eee;
     display:flex;flex-direction:column;align-items:center;}
   h1{color:#ffd24a;font-size:20px;margin:8px;}
-  #wrap{position:relative;max-width:98vw;}
-  canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.6);}
+  #wrap{position:relative;}
+  canvas{display:block;max-width:98vw;max-height:72vh;width:auto;height:auto;
+    border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.6);}
   #bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px;}
   button{background:#5bbf6a;color:#0e3a18;border:none;padding:12px 18px;border-radius:12px;
     font-weight:bold;font-size:16px;cursor:pointer;transition:transform .05s;}
@@ -21,12 +22,12 @@
 </head>
 <body>
   <h1>🐱 Meow Tactics TD — Demo Jogável</h1>
-  <div id="wrap"><canvas id="c" width="1280" height="720"></canvas></div>
-  <div id="hint"></div>
   <div id="bar">
     <button id="buyBtn">🥷 Comprar Ninja (100)</button>
     <button id="waveBtn" class="blue">▶ Iniciar Onda</button>
   </div>
+  <div id="hint"></div>
+  <div id="wrap"><canvas id="c" width="1280" height="720"></canvas></div>
 
 <script>
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
@@ -172,8 +173,8 @@ function drawHUD(){
 let last=performance.now();
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
-  if(!gameOver) update(dt);
-  draw();
+  try{ if(!gameOver) update(dt); draw(); }
+  catch(err){ setHint('Erro: '+err.message); console.error(err); }
   requestAnimationFrame(frame);
 }
 function update(dt){
@@ -251,7 +252,19 @@ function draw(){
     ctx.drawImage(ninjaImg,mouse.x-baseW/2,mouse.y-baseH,baseW,baseH); ctx.globalAlpha=1;
   }
   drawHUD();
+  if(wave===0 && !waveActive && !placing && !gameOver) drawIntro();
   if(gameOver) drawEnd();
+}
+function drawIntro(){
+  ctx.save(); ctx.textAlign='center';
+  const w=820,h=170,x=CW/2-w/2,y=CH/2-h/2;
+  ctx.fillStyle='rgba(20,16,40,0.82)'; roundRect(x,y,w,h,16); ctx.fill();
+  ctx.fillStyle='#ffd24a'; ctx.font='bold 30px Trebuchet MS';
+  ctx.fillText('Como jogar', CW/2, y+42);
+  ctx.fillStyle='#fff'; ctx.font='22px Trebuchet MS';
+  ctx.fillText('1) Clique em "🥷 Comprar Ninja"  →  2) Clique numa área roxa fora da estrada', CW/2, y+86);
+  ctx.fillText('3) Clique em "▶ Iniciar Onda" e veja o ninja atacar!', CW/2, y+124);
+  ctx.textAlign='left'; ctx.restore();
 }
 function drawEnd(){
   ctx.fillStyle='rgba(0,0,0,0.78)'; ctx.fillRect(0,0,CW,CH);
@@ -279,9 +292,10 @@ function validSpot(x,y){
 }
 cv.addEventListener('mousemove',ev=>{const p=canvasPos(ev);mouse.x=p.x;mouse.y=p.y;mouse.valid=validSpot(p.x,p.y);});
 cv.addEventListener('click',ev=>{
-  if(!placing||gameOver) return;
+  if(gameOver) return;
+  if(!placing){ setHint('👆 Primeiro clique no botão "Comprar Ninja", depois clique no mapa.'); return; }
   const p=canvasPos(ev);
-  if(validSpot(p.x,p.y) && coins>=100){ placeTower(p.x,p.y); coins-=100; placing=false; setHint(''); updateButtons(); }
+  if(validSpot(p.x,p.y) && coins>=100){ placeTower(p.x,p.y); coins-=100; placing=false; setHint('Ninja posicionado! Compre mais ou inicie a onda.'); updateButtons(); }
   else if(coins<100){ setHint('Moedas insuficientes!'); }
   else { setHint('Lugar inválido — não pode em cima da estrada nem de outro gato.'); }
 });
