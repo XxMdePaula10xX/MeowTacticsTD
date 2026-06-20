@@ -763,7 +763,7 @@ namespace MeowTactics.UI
             }
         }
 
-        private static string DisplayName(SynergyManager.SynergyStatus s)
+        private static string DisplayName(SynergyStatus s)
         {
             return string.IsNullOrEmpty(s.data.displayName) ? s.data.synergyType.ToString() : s.data.displayName;
         }
