@@ -268,9 +268,9 @@ namespace MeowTactics.Cats
         }
 
         // Rotação de mira (para arte TOP-DOWN).
-        // SpriteForwardOffset = -90 assume que a arte está virada para CIMA na imagem.
-        // (Se a arte vier virada pra outro lado, é só mudar esse número.)
-        private const float SpriteForwardOffset = -90f;
+        // A arte gerada aponta a "frente" para BAIXO na imagem; offset +90 faz ela
+        // mirar corretamente. (Se trocar a orientação da arte, ajustar este número.)
+        private const float SpriteForwardOffset = 90f;
         private const float TurnSpeed = 540f; // graus por segundo
 
         /// <summary>Gira o gato para encarar o alvo (use com arte vista de cima).</summary>
