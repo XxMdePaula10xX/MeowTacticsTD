@@ -177,16 +177,16 @@ namespace MeowTactics.Cats
             if (Managers.GameManager.Instance == null) return;
             if (Managers.GameManager.Instance.State != GameState.WaveInProgress) return;
 
+            // Mira: gira continuamente para encarar o inimigo (arte top-down).
+            EnemyUnit target = FindTarget();
+            if (target != null) RotateToward(target.transform.position);
+
             attackTimer += Time.deltaTime;
             float interval = CurrentAttackSpeed > 0f ? 1f / CurrentAttackSpeed : 999f;
-            if (attackTimer >= interval)
+            if (attackTimer >= interval && target != null)
             {
-                EnemyUnit target = FindTarget();
-                if (target != null)
-                {
-                    Attack(target);
-                    attackTimer = 0f;
-                }
+                Attack(target);
+                attackTimer = 0f;
             }
         }
 
@@ -214,7 +214,6 @@ namespace MeowTactics.Cats
         public void Attack(EnemyUnit target)
         {
             juice?.Punch(0.4f); // "tranco" ao atacar
-            FaceTarget(target.transform.position);
             DealDamage(target);
 
             if (EffectiveArea)
@@ -268,13 +267,20 @@ namespace MeowTactics.Cats
             CombatFx.Projectile(transform.position, worldPos, DamageColor(Data.damageType));
         }
 
-        /// <summary>Espelha o gato para o lado do inimigo (funciona com arte de frente).</summary>
-        private void FaceTarget(Vector3 targetPos)
+        // Rotação de mira (para arte TOP-DOWN).
+        // SpriteForwardOffset = -90 assume que a arte está virada para CIMA na imagem.
+        // (Se a arte vier virada pra outro lado, é só mudar esse número.)
+        private const float SpriteForwardOffset = -90f;
+        private const float TurnSpeed = 540f; // graus por segundo
+
+        /// <summary>Gira o gato para encarar o alvo (use com arte vista de cima).</summary>
+        private void RotateToward(Vector3 targetPos)
         {
-            if (sprite == null) return;
-            float dx = targetPos.x - transform.position.x;
-            if (Mathf.Abs(dx) > 0.15f)
-                sprite.flipX = dx < 0f;
+            Vector3 dir = targetPos - transform.position;
+            if (dir.sqrMagnitude < 0.0001f) return;
+            float ang = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + SpriteForwardOffset;
+            Quaternion want = Quaternion.Euler(0f, 0f, ang);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, want, TurnSpeed * Time.deltaTime);
         }
 
         private void ShowDamageNumber(EnemyUnit enemy, DamageResult result)
