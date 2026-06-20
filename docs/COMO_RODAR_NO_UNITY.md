@@ -65,6 +65,12 @@ Quando o projeto abre, a janela do Unity tem várias áreas:
    Clique em **Eba!**.
 
    - Isso criou os gatos/inimigos/ondas/itens e montou a cena do jogo sozinho.
+   - 🐱 O **Gato Ninja** já entra com a **arte de verdade** (o PNG em
+     `Assets/Art/Cats/gato_ninja.png`). Quando você posicionar ele no mapa, vai ver
+     o ninja, não mais um quadradinho. Os outros gatos seguem como quadradinhos
+     coloridos até você criar a arte deles — basta salvar em
+     `Assets/Art/Cats/gato_<id>.png` (ex.: `gato_archer.png`) e clicar em "Fazer Tudo"
+     de novo que eles aparecem sozinhos.
 
 ---
 

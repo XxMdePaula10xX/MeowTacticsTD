@@ -66,8 +66,16 @@ namespace MeowTactics.Cats
         private void ApplyVisual()
         {
             if (sprite == null || Data == null) return;
-            if (Data.icon != null) sprite.sprite = Data.icon;
-            sprite.color = Data.placeholderColor;
+            if (Data.icon != null)
+            {
+                // Arte real: mostra as cores verdadeiras do sprite (sem tingir).
+                sprite.sprite = Data.icon;
+                sprite.color = Color.white;
+            }
+            else
+            {
+                sprite.color = Data.placeholderColor;
+            }
         }
 
         // ---------- Itens ----------

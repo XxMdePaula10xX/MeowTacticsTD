@@ -126,7 +126,45 @@ namespace MeowTactics.EditorTools
             c.placeholderColor = color; c.description = desc;
             c.appliesSlow = slow; c.slowAmount = slowAmount; c.slowDuration = slowDuration;
             c.areaDamage = area; c.areaRadius = areaRadius;
+            TryAssignCatSprite(c, id);
             AssetDatabase.CreateAsset(c, $"{CatsDir}/Cat_{id}.asset");
+        }
+
+        // Pasta e tamanho da arte dos gatos.
+        private const string CatArtDir = "Assets/Art/Cats";
+        private const float CatSpritePPU = 950f; // ~1.2 unidades de altura na cena
+
+        /// <summary>
+        /// Se existir uma arte em "Assets/Art/Cats/gato_{id}.png", garante que ela
+        /// está importada como Sprite (tamanho/recorte certos) e a liga ao gato.
+        /// Assim, basta soltar a arte nessa pasta com o nome certo que ela aparece no jogo.
+        /// </summary>
+        private static void TryAssignCatSprite(CatData c, string id)
+        {
+            string path = $"{CatArtDir}/gato_{id}.png";
+            if (!System.IO.File.Exists(path)) return;
+
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                bool changed = false;
+                if (importer.textureType != TextureImporterType.Sprite)
+                { importer.textureType = TextureImporterType.Sprite; changed = true; }
+                if (importer.spriteImportMode != SpriteImportMode.Single)
+                { importer.spriteImportMode = SpriteImportMode.Single; changed = true; }
+                if (!Mathf.Approximately(importer.spritePixelsPerUnit, CatSpritePPU))
+                { importer.spritePixelsPerUnit = CatSpritePPU; changed = true; }
+                if (!importer.alphaIsTransparency)
+                { importer.alphaIsTransparency = true; changed = true; }
+                if (changed) importer.SaveAndReimport();
+            }
+
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite != null)
+            {
+                c.icon = sprite;
+                Debug.Log($"[MeowTactics] Arte ligada ao gato '{id}': {path}");
+            }
         }
 
         private static void GenerateSynergies()

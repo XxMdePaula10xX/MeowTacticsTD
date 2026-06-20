@@ -68,8 +68,15 @@ namespace MeowTactics.Enemies
 
             if (sprite != null)
             {
-                if (data.icon != null) sprite.sprite = data.icon;
-                sprite.color = data.placeholderColor;
+                if (data.icon != null)
+                {
+                    sprite.sprite = data.icon;
+                    sprite.color = Color.white;
+                }
+                else
+                {
+                    sprite.color = data.placeholderColor;
+                }
             }
             transform.localScale = Vector3.one * data.visualScale;
 

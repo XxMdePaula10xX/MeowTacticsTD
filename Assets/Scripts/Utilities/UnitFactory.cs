@@ -40,7 +40,7 @@ namespace MeowTactics.Utilities
 
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = data.icon != null ? data.icon : SpriteFactory.Circle;
-            sr.color = data.placeholderColor;
+            sr.color = data.icon != null ? Color.white : data.placeholderColor;
             sr.sortingOrder = SortCat;
 
             // Indicador de alcance (anel), desligado por padrão
@@ -80,7 +80,7 @@ namespace MeowTactics.Utilities
 
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = data.icon != null ? data.icon : SpriteFactory.Circle;
-            sr.color = data.placeholderColor;
+            sr.color = data.icon != null ? Color.white : data.placeholderColor;
             sr.sortingOrder = SortEnemy;
 
             // Barra de vida
