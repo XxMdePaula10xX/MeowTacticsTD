@@ -500,6 +500,8 @@ namespace MeowTactics.UI
 
         private void RefreshAll()
         {
+            everActivated.Clear();
+            prevActiveSynergies.Clear();
             UpdateCoins(); UpdateLives(); UpdateWave();
             UpdateShop(); UpdateBench(); UpdateSynergies(); UpdateItems();
             UpdateSpeedButtons();
@@ -710,6 +712,7 @@ namespace MeowTactics.UI
         public void UpdateSynergies()
         {
             if (synergyContainer == null || SynergyManager.Instance == null) return;
+            HideTooltip(); // evita tooltip preso ao reconstruir as linhas
             ClearDynamic(synergyContainer, "SynRow");
 
             bool any = false;
