@@ -138,6 +138,7 @@ namespace MeowTactics.EditorTools
         // Pastas e tamanho-alvo (altura no mundo) da arte.
         private const string CatArtDir = "Assets/Art/Cats";
         private const string EnemyArtDir = "Assets/Art/Enemies";
+        private const string ItemArtDir = "Assets/Art/Items";
         private const float CatTargetHeight = 1.25f;   // altura do gato em unidades de mundo
         private const float EnemyTargetHeight = 1.0f;  // altura-base do inimigo (antes do visualScale)
 
@@ -167,6 +168,12 @@ namespace MeowTactics.EditorTools
                 e.icon = sprite;
                 Debug.Log($"[MeowTactics] Arte ligada ao inimigo '{id}'.");
             }
+        }
+
+        private static void TryAssignItemSprite(ItemData it, string id)
+        {
+            var sprite = EnsureSpriteByHeight($"{ItemArtDir}/item_{id}.png", 1f);
+            if (sprite != null) it.icon = sprite;
         }
 
         /// <summary>
@@ -345,6 +352,7 @@ namespace MeowTactics.EditorTools
             it.grantsArea = area; it.areaRadius = 1.5f;
             it.grantedSynergies = new List<SynergyType>();
             if (emblem.HasValue) it.grantedSynergies.Add(emblem.Value);
+            TryAssignItemSprite(it, id);
             AssetDatabase.CreateAsset(it, $"{ItemsDir}/Item_{id}.asset");
         }
 
@@ -419,11 +427,30 @@ namespace MeowTactics.EditorTools
                 {0.5054f,0.2891f},{0.5472f,0.2604f},{0.5831f,0.2508f},{0.6519f,0.2338f},
                 {0.7087f,0.2657f},{0.7386f,0.3804f},{0.7805f,0.4697f},{0.8134f,0.4995f},{1.0f,0.4995f}
             };
-            // Dois caminhos: A = rota de cima (acima); B = rota de baixo (Y espelhado).
-            // Os inimigos se dividem entre eles. Ajuste fino: arraste os Point_ no editor.
-            Vector3 spawnPos, basePos;
-            var pathA = BuildPathParent("Path_A", pathNorm, worldWidth, worldHeight, false, out spawnPos, out basePos);
-            var pathB = BuildPathParent("Path_B", pathNorm, worldWidth, worldHeight, true, out _, out _);
+            // Caminhos: se houver MapPaths.json salvo (você arrastou e salvou os pontos),
+            // usa ele. Senão, cria o padrão (rota de cima + rota de baixo espelhada) e SALVA
+            // o json para você poder ajustar arrastando os pontos depois.
+            var pathParents = new List<Transform>();
+            Vector3 spawnPos = Vector3.zero, basePos = Vector3.zero;
+            var saved = LoadMapPaths();
+            if (saved != null && saved.paths.Count > 0)
+            {
+                for (int i = 0; i < saved.paths.Count; i++)
+                {
+                    Vector3 f, l;
+                    var go = BuildPathParentFromPoints("Path_" + (char)('A' + i), saved.paths[i].points, out f, out l);
+                    pathParents.Add(go.transform);
+                    if (i == 0) { spawnPos = f; basePos = l; }
+                }
+            }
+            else
+            {
+                var a = BuildPathParent("Path_A", pathNorm, worldWidth, worldHeight, false, out spawnPos, out basePos);
+                var b = BuildPathParent("Path_B", pathNorm, worldWidth, worldHeight, true, out _, out _);
+                pathParents.Add(a.transform);
+                pathParents.Add(b.transform);
+                SavePathsFromParents(pathParents); // grava o json inicial
+            }
 
             // ---- Marcadores de INÍCIO (portal) e FIM (cristal) ----
             CreateMarker(spawnPos, Marker.Kind.Spawn, "SpawnPortal");
@@ -432,7 +459,7 @@ namespace MeowTactics.EditorTools
             // ---- MapManager + limites da área jogável (posicionamento livre) ----
             var mapGo = new GameObject("MapManager");
             var map = mapGo.AddComponent<MapManager>();
-            map.pathParents = new List<Transform> { pathA.transform, pathB.transform };
+            map.pathParents = pathParents;
             map.placementSlots = new List<MapSlot>();
             map.boardLeft = -worldWidth / 2f + 0.6f;
             map.boardRight = worldWidth / 2f - 0.6f;
@@ -548,6 +575,75 @@ namespace MeowTactics.EditorTools
                 if (i == n - 1) last = pos;
             }
             return parent;
+        }
+
+        // ============ Caminhos salvos em JSON (ajustáveis no editor) ============
+        private const string MapPathsFile = "Assets/MapPaths.json";
+
+        [System.Serializable] private class PtData { public float x; public float y; }
+        [System.Serializable] private class PathData { public List<PtData> points = new List<PtData>(); }
+        [System.Serializable] private class MapPathsData { public List<PathData> paths = new List<PathData>(); }
+
+        private static GameObject BuildPathParentFromPoints(string name, List<PtData> pts, out Vector3 first, out Vector3 last)
+        {
+            var parent = new GameObject(name);
+            first = Vector3.zero; last = Vector3.zero;
+            for (int i = 0; i < pts.Count; i++)
+            {
+                var pos = new Vector3(pts[i].x, pts[i].y, 0f);
+                var p = new GameObject("Point_" + i);
+                p.transform.SetParent(parent.transform, false);
+                p.transform.position = pos;
+                if (i == 0) first = pos;
+                if (i == pts.Count - 1) last = pos;
+            }
+            return parent;
+        }
+
+        private static MapPathsData LoadMapPaths()
+        {
+            if (!System.IO.File.Exists(MapPathsFile)) return null;
+            try
+            {
+                var data = JsonUtility.FromJson<MapPathsData>(System.IO.File.ReadAllText(MapPathsFile));
+                if (data != null && data.paths != null && data.paths.Count > 0) return data;
+            }
+            catch { /* json inválido: usa o padrão */ }
+            return null;
+        }
+
+        private static void SavePathsFromParents(IEnumerable<Transform> parents)
+        {
+            var data = new MapPathsData();
+            foreach (var parent in parents)
+            {
+                if (parent == null) continue;
+                var pd = new PathData();
+                foreach (Transform c in parent)
+                    pd.points.Add(new PtData { x = c.position.x, y = c.position.y });
+                data.paths.Add(pd);
+            }
+            System.IO.File.WriteAllText(MapPathsFile, JsonUtility.ToJson(data, true));
+            AssetDatabase.Refresh();
+        }
+
+        [MenuItem("MeowTactics/3. Salvar Caminhos (após arrastar os pontos)", false, 22)]
+        public static void SaveCurrentPaths()
+        {
+            var parents = new List<Transform>();
+            foreach (var go in Object.FindObjectsOfType<GameObject>())
+                if (go.transform.parent == null && go.name.StartsWith("Path_"))
+                    parents.Add(go.transform);
+            parents.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.Ordinal));
+
+            if (parents.Count == 0)
+            {
+                EditorUtility.DisplayDialog("Meow Tactics", "Não achei caminhos (Path_A, Path_B...) na cena aberta.", "Ok");
+                return;
+            }
+            SavePathsFromParents(parents);
+            EditorUtility.DisplayDialog("Meow Tactics",
+                $"Caminhos salvos ({parents.Count})! 🎉\nAgora 'Fazer Tudo' vai usar esses pontos ajustados.", "Eba!");
         }
 
         private static void AddSceneToBuild(string scenePath)

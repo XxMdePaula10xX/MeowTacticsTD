@@ -1,0 +1,20 @@
+Salve AQUI os icones dos ITENS (arquivos .png, de preferencia quadrados, fundo transparente).
+
+Nomes EXATOS (tudo minusculo):
+
+  item_claw.png          -> Garra Afiada (+20% dano)
+  item_paw.png           -> Pata Veloz (+25% vel. ataque)
+  item_scope.png         -> Luneta (+20% alcance)
+  item_tiger.png         -> Olho do Tigre (+15% critico)
+  item_piercer.png       -> Furador (+20 pen. armadura)
+  item_rune.png          -> Runa Mistica (+20 pen. magica)
+  item_phantom.png       -> Garra Fantasma (+15 dano verdadeiro)
+  item_frost.png         -> Amuleto Gelido (ataques deixam lentos)
+  item_herb.png          -> Bomba de Erva (dano em area)
+  item_emblem_ninja.png  -> Distintivo Ninja
+  item_emblem_sniper.png -> Distintivo Sniper
+  item_emblem_mystic.png -> Distintivo Mistico
+
+Depois: Unity -> MeowTactics -> Fazer Tudo. Os icones aparecem na roleta de itens e na lista.
+
+(Pode apagar este arquivo quando quiser.)

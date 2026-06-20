@@ -58,7 +58,8 @@ namespace MeowTactics.UI
         private Coroutine waveBannerRoutine;
 
         private GameObject detailPanel;
-        private Text detailText;
+        private Image detailIcon;
+        private Text detailNameText, detailText;
         private Button detailSellBtn, detailReturnBtn;
         private CatUnit detailCat;
 
@@ -381,22 +382,38 @@ namespace MeowTactics.UI
             detailPanel = UIFactory.CreatePanel(root, "DetailPanel", ColPanel, panelSprite).gameObject;
             var rt = (RectTransform)detailPanel.transform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            rt.sizeDelta = new Vector2(560, 440);
+            rt.sizeDelta = new Vector2(580, 540);
 
-            detailText = UIFactory.CreateText(detailPanel.transform, "Info", "", 22, ColText, TextAnchor.UpperLeft);
+            // Retrato do gato (topo)
+            detailIcon = UIFactory.CreateIcon(detailPanel.transform, "Portrait", null, 110);
+            detailIcon.enabled = false;
+            var irt = detailIcon.rectTransform;
+            UIFactory.SetAnchors(irt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            irt.anchoredPosition = new Vector2(0, -54);
+
+            // Nome
+            detailNameText = UIFactory.CreateText(detailPanel.transform, "Name", "", 28, ColGold, TextAnchor.MiddleCenter);
+            detailNameText.fontStyle = FontStyle.Bold; NoWrap(detailNameText); AddOutline(detailNameText);
+            var nrt = detailNameText.rectTransform;
+            UIFactory.SetAnchors(nrt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            nrt.sizeDelta = new Vector2(480, 40);
+            nrt.anchoredPosition = new Vector2(0, -176);
+
+            // Estatísticas
+            detailText = UIFactory.CreateText(detailPanel.transform, "Info", "", 20, ColText, TextAnchor.UpperLeft);
             var drt = detailText.rectTransform;
             UIFactory.SetAnchors(drt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
-            drt.sizeDelta = new Vector2(-50, 300);
-            drt.anchoredPosition = new Vector2(0, -24);
+            drt.sizeDelta = new Vector2(-110, 190);
+            drt.anchoredPosition = new Vector2(0, -210);
 
             var btnRow = new GameObject("Buttons", typeof(RectTransform));
             btnRow.transform.SetParent(detailPanel.transform, false);
             var brt = btnRow.GetComponent<RectTransform>();
             UIFactory.SetAnchors(brt, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0));
-            brt.sizeDelta = new Vector2(-40, 110);
-            brt.anchoredPosition = new Vector2(0, 24);
+            brt.sizeDelta = new Vector2(-90, 84);
+            brt.anchoredPosition = new Vector2(0, 38);
             var hlg = btnRow.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 12; hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
+            hlg.spacing = 10; hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
 
             detailSellBtn = UIFactory.CreateButton(btnRow.transform, "Sell", "Vender", ColRed,
                 () => { if (detailCat != null) PlacementManager.Instance?.SellCat(detailCat); }, 20, buttonSprite);
@@ -413,17 +430,21 @@ namespace MeowTactics.UI
             draftPanel = UIFactory.CreatePanel(root, "DraftPanel", new Color(0, 0, 0, 0.85f)).gameObject;
             UIFactory.StretchFull((RectTransform)draftPanel.transform);
 
-            var t = UIFactory.CreateText(draftPanel.transform, "Title", "ESCOLHA UM ITEM!", 42, ColGold, TextAnchor.UpperCenter);
-            t.fontStyle = FontStyle.Bold;
-            t.rectTransform.anchoredPosition = new Vector2(0, -120);
+            var t = UIFactory.CreateText(draftPanel.transform, "Title", "ESCOLHA UM ITEM!", 44, ColGold, TextAnchor.MiddleCenter);
+            t.fontStyle = FontStyle.Bold; NoWrap(t); AddOutline(t);
+            var trt = t.rectTransform;
+            UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            trt.sizeDelta = new Vector2(900, 70);
+            trt.anchoredPosition = new Vector2(0, -120);
 
             var row = new GameObject("Choices", typeof(RectTransform));
             row.transform.SetParent(draftPanel.transform, false);
             var rrt = row.GetComponent<RectTransform>();
             UIFactory.SetAnchors(rrt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            rrt.sizeDelta = new Vector2(1100, 320);
+            rrt.sizeDelta = new Vector2(1020, 340);
             var hlg = row.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 30; hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
+            hlg.spacing = 26; hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
+            hlg.childAlignment = TextAnchor.MiddleCenter;
             draftContainer = row.transform;
 
             draftPanel.SetActive(false);
@@ -853,10 +874,26 @@ namespace MeowTactics.UI
             {
                 ItemData it = item;
                 bool selected = ItemManager.Instance.SelectedForEquip == it;
-                Color color = it.uiColor * (selected ? 1.2f : 0.7f); color.a = 1f;
-                var btn = UIFactory.CreateButton(itemsContainer, "ItemBtn",
-                    (selected ? "▶ " : "") + it.itemName, color, () => ToggleItemSelection(it), 14);
-                var le = btn.gameObject.AddComponent<LayoutElement>(); le.minHeight = 54;
+
+                var chip = new GameObject("ItemBtn", typeof(RectTransform), typeof(Image), typeof(Button));
+                chip.transform.SetParent(itemsContainer, false);
+                chip.GetComponent<Image>().color = selected ? new Color(0.95f, 0.85f, 0.35f, 0.92f) : ColCard;
+                chip.GetComponent<Button>().onClick.AddListener(() => ToggleItemSelection(it));
+                var le = chip.AddComponent<LayoutElement>(); le.minHeight = 48; le.preferredHeight = 48;
+
+                var hlg = chip.AddComponent<HorizontalLayoutGroup>();
+                hlg.padding = new RectOffset(6, 6, 4, 4); hlg.spacing = 6;
+                hlg.childAlignment = TextAnchor.MiddleLeft;
+                hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
+
+                if (it.icon != null)
+                {
+                    var ic = UIFactory.CreateIcon(chip.transform, "Icon", it.icon, 38);
+                    var ile = ic.gameObject.AddComponent<LayoutElement>();
+                    ile.minWidth = 38; ile.preferredWidth = 38; ile.minHeight = 38; ile.preferredHeight = 38;
+                }
+                UIFactory.CreateText(chip.transform, "Name", it.itemName, 12,
+                    selected ? Color.black : ColText, TextAnchor.MiddleLeft);
             }
         }
 
@@ -882,17 +919,23 @@ namespace MeowTactics.UI
             if (cat == null) return;
             detailCat = cat;
 
+            if (detailIcon != null)
+            {
+                detailIcon.sprite = cat.Data.icon;
+                detailIcon.enabled = cat.Data.icon != null;
+            }
+            if (detailNameText != null) detailNameText.text = cat.Data.catName;
+
             var sb = new StringBuilder();
-            sb.AppendLine($"<b>{cat.Data.catName}</b>");
-            sb.AppendLine(cat.Data.description);
+            sb.AppendLine($"<i>{cat.Data.description}</i>");
             sb.AppendLine();
-            sb.AppendLine($"Dano: {cat.CurrentDamage:0.#} ({DamageName(cat.Data.damageType)})");
-            sb.AppendLine($"Vel. ataque: {cat.CurrentAttackSpeed:0.##}/s");
-            sb.AppendLine($"Alcance: {cat.CurrentRange:0.#}");
-            sb.AppendLine($"Crítico: {cat.CurrentCritChance:0}%");
-            sb.AppendLine($"Sinergias: {SynergyNames(new List<SynergyType>(cat.GetEffectiveSynergies()))}");
-            sb.Append("Itens: ");
-            sb.AppendLine(cat.Items.Count == 0 ? "nenhum" : ItemNames(cat.Items));
+            sb.AppendLine($"<b>Dano:</b> {cat.CurrentDamage:0.#}  ({DamageName(cat.Data.damageType)})");
+            sb.AppendLine($"<b>Vel. ataque:</b> {cat.CurrentAttackSpeed:0.##}/s");
+            sb.AppendLine($"<b>Alcance:</b> {cat.CurrentRange:0.#}");
+            sb.AppendLine($"<b>Crítico:</b> {cat.CurrentCritChance:0}%");
+            sb.AppendLine($"<b>Sinergias:</b> {SynergyNames(new List<SynergyType>(cat.GetEffectiveSynergies()))}");
+            sb.Append($"<b>Itens:</b> ");
+            sb.Append(cat.Items.Count == 0 ? "nenhum" : ItemNames(cat.Items));
 
             detailText.text = sb.ToString();
             detailReturnBtn.interactable = cat.IsPlaced;
@@ -916,11 +959,42 @@ namespace MeowTactics.UI
             foreach (var item in choices)
             {
                 ItemData it = item;
-                string label = $"<b>{it.itemName}</b>\n\n{it.description}";
-                var color = it.uiColor * 0.85f; color.a = 1f;
-                UIFactory.CreateButton(draftContainer, "DraftBtn", label, color, () => PickDraftItem(it), 18);
+                BuildItemDraftCard(draftContainer, it, () => PickDraftItem(it));
             }
             draftPanel.SetActive(true);
+        }
+
+        private void BuildItemDraftCard(Transform parent, ItemData it, UnityAction onClick)
+        {
+            var card = new GameObject("DraftBtn", typeof(RectTransform), typeof(Image), typeof(Button));
+            card.transform.SetParent(parent, false);
+            card.GetComponent<Image>().color = new Color(0.16f, 0.13f, 0.27f, 0.98f);
+            card.GetComponent<Button>().onClick.AddListener(onClick);
+
+            var vlg = card.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(14, 14, 16, 16); vlg.spacing = 8;
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.childAlignment = TextAnchor.UpperCenter;
+
+            // Ícone (ou amostra de cor se ainda não houver arte)
+            if (it.icon != null)
+            {
+                var ic = UIFactory.CreateIcon(card.transform, "Icon", it.icon, 100);
+                AddMinHeight(ic, 100);
+            }
+            else
+            {
+                var sw = UIFactory.CreatePanel(card.transform, "Swatch", it.uiColor);
+                var sle = sw.gameObject.AddComponent<LayoutElement>();
+                sle.minHeight = 100; sle.preferredHeight = 100;
+            }
+
+            var nm = UIFactory.CreateText(card.transform, "Name", it.itemName, 24, ColGold, TextAnchor.MiddleCenter);
+            nm.fontStyle = FontStyle.Bold; NoWrap(nm); AddMinHeight(nm, 32);
+
+            var ds = UIFactory.CreateText(card.transform, "Desc", it.description, 17, ColText, TextAnchor.UpperCenter);
+            var dle = ds.gameObject.AddComponent<LayoutElement>();
+            dle.minHeight = 70; dle.flexibleHeight = 1;
         }
 
         private void PickDraftItem(ItemData item)
