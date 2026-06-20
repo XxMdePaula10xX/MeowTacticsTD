@@ -214,6 +214,7 @@ namespace MeowTactics.Cats
         public void Attack(EnemyUnit target)
         {
             juice?.Punch(0.4f); // "tranco" ao atacar
+            FaceTarget(target.transform.position);
             DealDamage(target);
 
             if (EffectiveArea)
@@ -265,6 +266,15 @@ namespace MeowTactics.Cats
         {
             // Projétil cosmético do gato até o alvo (estoura numa faísca ao chegar).
             CombatFx.Projectile(transform.position, worldPos, DamageColor(Data.damageType));
+        }
+
+        /// <summary>Espelha o gato para o lado do inimigo (funciona com arte de frente).</summary>
+        private void FaceTarget(Vector3 targetPos)
+        {
+            if (sprite == null) return;
+            float dx = targetPos.x - transform.position.x;
+            if (Mathf.Abs(dx) > 0.15f)
+                sprite.flipX = dx < 0f;
         }
 
         private void ShowDamageNumber(EnemyUnit enemy, DamageResult result)

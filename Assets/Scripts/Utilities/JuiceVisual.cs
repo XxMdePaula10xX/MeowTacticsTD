@@ -5,7 +5,6 @@ namespace MeowTactics.Utilities
 {
     /// <summary>
     /// "Game juice" para unidades (gatos e inimigos):
-    ///  - respiração suave parado (idle),
     ///  - tranco (estica/encolhe) ao agir/levar dano,
     ///  - flash de cor ao tomar dano,
     ///  - "poof" de morte (encolhe + gira + some).
@@ -15,16 +14,11 @@ namespace MeowTactics.Utilities
     /// </summary>
     public class JuiceVisual : MonoBehaviour
     {
-        [Header("Respiração (idle)")]
-        public float breatheAmount = 0.045f;
-        public float breatheSpeed = 3.2f;
-
         private SpriteRenderer sr;
         private Vector3 baseScale = Vector3.one;
         private Color baseColor = Color.white;
         private bool ready;
 
-        private float breatheT;
         private float punch;   // 0..1, decai
         private float flash;   // 0..1, decai
         private bool dying;
@@ -40,7 +34,6 @@ namespace MeowTactics.Utilities
             baseScale = transform.localScale;
             if (baseScale == Vector3.zero) baseScale = Vector3.one;
             if (sr != null) baseColor = sr.color;
-            breatheT = Random.value * 6.28f; // fases diferentes entre unidades
             ready = true;
         }
 
@@ -62,13 +55,9 @@ namespace MeowTactics.Utilities
         {
             if (!ready || dying) return;
 
-            breatheT += Time.deltaTime * breatheSpeed;
-            float breathe = 1f + Mathf.Sin(breatheT) * breatheAmount;
-
             punch = Mathf.MoveTowards(punch, 0f, Time.deltaTime * 3.5f);
             float pop = 1f + punch * 0.5f;
-
-            transform.localScale = baseScale * (breathe * pop);
+            transform.localScale = baseScale * pop;
 
             if (sr != null)
             {
