@@ -22,6 +22,7 @@ namespace MeowTactics.Data
 
         [Header("Combate")]
         public DamageType damageType = DamageType.Physical;
+        public AttackType attackType = AttackType.Projectile;
         public float baseDamage = 10f;
         [Tooltip("Ataques por segundo")] public float attackSpeed = 1f;
         [Tooltip("Alcance em unidades de mundo")] public float range = 3f;

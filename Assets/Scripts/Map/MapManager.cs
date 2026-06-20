@@ -16,10 +16,47 @@ namespace MeowTactics.Map
         [Tooltip("Preenchido automaticamente a partir dos filhos de pathParent, se vazio")]
         public List<Transform> pathPoints = new List<Transform>();
 
-        [Header("Slots de posicionamento")]
+        [Header("Slots de posicionamento (legado, não usado no modo livre)")]
         public List<MapSlot> placementSlots = new List<MapSlot>();
 
+        [Header("Área jogável (posicionamento livre)")]
+        public float boardLeft = -10f;
+        public float boardRight = 10f;
+        public float boardBottom = -3f;
+        public float boardTop = 4.5f;
+        [Tooltip("Quão perto da estrada um gato pode ser posto (raio de bloqueio)")]
+        public float pathRadius = 0.9f;
+
         private List<Vector3> cachedPath;
+
+        /// <summary>True se a posição está dentro da área onde se pode construir.</summary>
+        public bool InsideBoard(Vector3 p) =>
+            p.x >= boardLeft && p.x <= boardRight && p.y >= boardBottom && p.y <= boardTop;
+
+        /// <summary>True se a posição está em cima (ou colada) na estrada dos inimigos.</summary>
+        public bool IsOnPath(Vector3 p) => DistanceToPath(p) < pathRadius;
+
+        /// <summary>Menor distância da posição até a linha do caminho.</summary>
+        public float DistanceToPath(Vector3 p)
+        {
+            var path = GetPath();
+            if (path == null || path.Count == 0) return 999f;
+            if (path.Count == 1) return Vector3.Distance(p, path[0]);
+            float best = float.MaxValue;
+            for (int i = 0; i < path.Count - 1; i++)
+                best = Mathf.Min(best, DistancePointSegment(p, path[i], path[i + 1]));
+            return best;
+        }
+
+        private static float DistancePointSegment(Vector3 p, Vector3 a, Vector3 b)
+        {
+            Vector2 ap = new Vector2(p.x - a.x, p.y - a.y);
+            Vector2 ab = new Vector2(b.x - a.x, b.y - a.y);
+            float len2 = ab.sqrMagnitude;
+            float t = len2 > 0f ? Mathf.Clamp01(Vector2.Dot(ap, ab) / len2) : 0f;
+            Vector2 proj = new Vector2(a.x + ab.x * t, a.y + ab.y * t);
+            return Vector2.Distance(new Vector2(p.x, p.y), proj);
+        }
 
         private void Awake()
         {

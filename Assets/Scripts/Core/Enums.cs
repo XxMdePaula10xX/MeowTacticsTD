@@ -13,6 +13,17 @@ namespace MeowTactics.Core
     }
 
     /// <summary>
+    /// Como o gato entrega o ataque (afeta só o visual/feedback, não o cálculo).
+    /// Melee = corte perto do alvo; Projectile = dispara projétil; Magic = estouro mágico.
+    /// </summary>
+    public enum AttackType
+    {
+        Melee,
+        Projectile,
+        Magic
+    }
+
+    /// <summary>
     /// Todas as tags de sinergia possíveis.
     /// No MVP só Ninja, Sniper e Mystic estão totalmente balanceadas,
     /// as outras já ficam preparadas para expansão futura.

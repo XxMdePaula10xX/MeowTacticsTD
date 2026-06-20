@@ -95,7 +95,8 @@ namespace MeowTactics.EditorTools
             // id, nome, custo, dano, [sinergias], dmgBase, atkSpeed, range, crit, cor, desc
             MakeCat("ninja", "Gato Ninja", 2, DamageType.Physical,
                 new[] { SynergyType.Ninja, SynergyType.Shadow }, 12, 1.4f, 2.5f, 5,
-                new Color(0.18f, 0.18f, 0.22f), "Um gato silencioso que ataca muito rápido.");
+                new Color(0.18f, 0.18f, 0.22f), "Um gato silencioso que ataca muito rápido.",
+                atk: AttackType.Melee);
             MakeCat("archer", "Gato Arqueiro", 2, DamageType.Physical,
                 new[] { SynergyType.Hunter, SynergyType.Forest }, 18, 0.9f, 3.5f, 10,
                 new Color(0.30f, 0.65f, 0.35f), "Um gato preciso que dispara flechas.");
@@ -104,23 +105,26 @@ namespace MeowTactics.EditorTools
                 new Color(0.30f, 0.55f, 0.80f), "Um gato paciente que acerta de muito longe.");
             MakeCat("mage", "Gato Mago", 3, DamageType.Magical,
                 new[] { SynergyType.Mystic, SynergyType.Star }, 25, 0.7f, 3.5f, 0,
-                new Color(0.60f, 0.40f, 0.90f), "Um gato encantado que lança magia.", area: true, areaRadius: 1.5f);
+                new Color(0.60f, 0.40f, 0.90f), "Um gato encantado que lança magia.",
+                area: true, areaRadius: 1.5f, atk: AttackType.Magic);
             MakeCat("shaman", "Gato Xamã", 3, DamageType.Magical,
                 new[] { SynergyType.Mystic, SynergyType.Support }, 10, 0.8f, 3.0f, 0,
                 new Color(0.30f, 0.70f, 0.60f), "Um gato espiritual que enfraquece inimigos.",
-                slow: true, slowAmount: 0.2f, slowDuration: 2f);
+                slow: true, slowAmount: 0.2f, slowDuration: 2f, atk: AttackType.Magic);
             MakeCat("samurai", "Gato Samurai", 4, DamageType.True,
                 new[] { SynergyType.Guardian, SynergyType.Shadow }, 20, 0.6f, 2.0f, 5,
-                new Color(0.80f, 0.30f, 0.30f), "Um gato honrado que corta qualquer defesa.");
+                new Color(0.80f, 0.30f, 0.30f), "Um gato honrado que corta qualquer defesa.",
+                atk: AttackType.Melee);
         }
 
         private static void MakeCat(string id, string name, int cost, DamageType dmgType,
             SynergyType[] synergies, float dmg, float atkSpeed, float range, float crit,
             Color color, string desc, bool slow = false, float slowAmount = 0f, float slowDuration = 0f,
-            bool area = false, float areaRadius = 0f)
+            bool area = false, float areaRadius = 0f, AttackType atk = AttackType.Projectile)
         {
             var c = ScriptableObject.CreateInstance<CatData>();
             c.catId = id; c.catName = name; c.cost = cost; c.damageType = dmgType;
+            c.attackType = atk;
             c.synergies = new List<SynergyType>(synergies);
             c.baseDamage = dmg; c.attackSpeed = atkSpeed; c.range = range;
             c.critChance = crit; c.critMultiplier = GameBalance.CritMultiplierDefault;
@@ -432,33 +436,29 @@ namespace MeowTactics.EditorTools
             }
             // Sem LineRenderer: a estrada já está desenhada no mapa de fundo.
 
-            // ---- Slots de posicionamento (12, na GRAMA abaixo da estrada) ----
-            var slotParent = new GameObject("Slots");
-            var slots = new List<MapSlot>();
-            float[] cols = { -7.5f, -4.5f, -1.5f, 1.5f, 4.5f, 7.5f };
-            float[] rows = { -1.0f, -2.6f };
-            int idx = 0;
-            foreach (float y in rows)
-            {
-                foreach (float x in cols)
-                {
-                    var go = new GameObject("Slot_" + idx);
-                    go.transform.SetParent(slotParent.transform, false);
-                    go.transform.position = new Vector3(x, y, 0);
-                    go.transform.localScale = Vector3.one * 1.2f;
-                    var box = go.AddComponent<BoxCollider2D>();
-                    box.size = Vector2.one;
-                    var slot = go.AddComponent<MapSlot>();
-                    slots.Add(slot);
-                    idx++;
-                }
-            }
+            // ---- Marcadores de INÍCIO (portal) e FIM (cristal) ----
+            CreateMarker(path[0], Marker.Kind.Spawn, "SpawnPortal");
+            CreateMarker(path[path.Length - 1], Marker.Kind.Base, "BaseCrystal");
 
-            // ---- MapManager ----
+            // ---- MapManager + limites da área jogável (posicionamento livre) ----
             var mapGo = new GameObject("MapManager");
             var map = mapGo.AddComponent<MapManager>();
             map.pathParent = pathParent.transform;
-            map.placementSlots = slots;
+            map.placementSlots = new List<MapSlot>();
+            map.boardLeft = -worldWidth / 2f + 0.6f;
+            map.boardRight = worldWidth / 2f - 0.6f;
+            map.boardTop = orthoSize - 1.3f;      // logo abaixo da barra do topo
+            map.boardBottom = -orthoSize + 2.9f;  // logo acima da loja
+            map.pathRadius = 0.95f;
+
+            // ---- Colisor do tabuleiro (captura cliques para posicionar) ----
+            var boardGo = new GameObject("BoardClicker");
+            boardGo.transform.position = new Vector3(
+                (map.boardLeft + map.boardRight) / 2f,
+                (map.boardBottom + map.boardTop) / 2f, 0f);
+            var boardBox = boardGo.AddComponent<BoxCollider2D>();
+            boardBox.size = new Vector2(map.boardRight - map.boardLeft, map.boardTop - map.boardBottom);
+            boardGo.AddComponent<BoardClicker>();
 
             // ---- Sistemas (managers) ----
             var sys = new GameObject("GameSystems");
@@ -527,6 +527,13 @@ namespace MeowTactics.EditorTools
             var waves = LoadAll<WaveData>(WavesDir);
             waves.Sort((a, b) => a.waveNumber.CompareTo(b.waveNumber));
             return waves;
+        }
+
+        private static void CreateMarker(Vector3 pos, Marker.Kind kind, string name)
+        {
+            var go = new GameObject(name);
+            go.transform.position = new Vector3(pos.x, pos.y, 0f);
+            go.AddComponent<Marker>().kind = kind;
         }
 
         private static void AddSceneToBuild(string scenePath)

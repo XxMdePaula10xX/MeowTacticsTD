@@ -226,7 +226,7 @@ namespace MeowTactics.Cats
                 }
             }
 
-            SpawnHitFx(target.transform.position);
+            SpawnHitFx(target);
         }
 
         private void DealDamage(EnemyUnit enemy)
@@ -261,10 +261,23 @@ namespace MeowTactics.Cats
             };
         }
 
-        private void SpawnHitFx(Vector3 worldPos)
+        private void SpawnHitFx(EnemyUnit target)
         {
-            // Projétil cosmético do gato até o alvo (estoura numa faísca ao chegar).
-            CombatFx.Projectile(transform.position, worldPos, DamageColor(Data.damageType));
+            if (target == null) return;
+            Color c = DamageColor(Data.damageType);
+            Vector3 pos = target.transform.position;
+            switch (Data.attackType)
+            {
+                case AttackType.Melee:
+                    CombatFx.Melee(pos, c);
+                    break;
+                case AttackType.Magic:
+                    CombatFx.Magic(pos, c, EffectiveArea ? EffectiveAreaRadius : 0.7f);
+                    break;
+                default: // Projectile
+                    CombatFx.Projectile(transform.position, target, pos, c);
+                    break;
+            }
         }
 
         // Rotação de mira (para arte TOP-DOWN).
