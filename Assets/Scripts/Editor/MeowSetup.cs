@@ -229,6 +229,34 @@ namespace MeowTactics.EditorTools
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
+        /// <summary>
+        /// Importa uma arte de UI como Sprite e define a borda do 9-slice (em pixels),
+        /// para a moldura não distorcer quando o painel/botão estica. Borda zero = ícone.
+        /// </summary>
+        private static Sprite EnsureUiSprite(string path, Vector4 border)
+        {
+            if (!System.IO.File.Exists(path)) return null;
+
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                var s = new TextureImporterSettings();
+                importer.ReadTextureSettings(s);
+                bool changed = false;
+                if (s.textureType != TextureImporterType.Sprite)
+                { s.textureType = TextureImporterType.Sprite; changed = true; }
+                if (s.spriteMode != (int)SpriteImportMode.Single)
+                { s.spriteMode = (int)SpriteImportMode.Single; changed = true; }
+                if (!s.alphaIsTransparency)
+                { s.alphaIsTransparency = true; changed = true; }
+                if (s.spriteBorder != border)
+                { s.spriteBorder = border; changed = true; }
+                if (changed) { importer.SetTextureSettings(s); importer.SaveAndReimport(); }
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
         private static void GenerateSynergies()
         {
             // Ninja: velocidade de ataque
@@ -442,13 +470,19 @@ namespace MeowTactics.EditorTools
             sys.AddComponent<PlacementManager>();
             var waveMgr = sys.AddComponent<WaveManager>();
             sys.AddComponent<GameManager>();
-            sys.AddComponent<UIManager>();
+            var uiMgr = sys.AddComponent<UIManager>();
 
             // Liga os dados gerados aos managers.
             shop.availableCats = LoadAll<CatData>(CatsDir);
             syn.allSynergies = LoadAll<SynergyData>(SynergiesDir);
             items.allItems = LoadAll<ItemData>(ItemsDir);
             waveMgr.waves = LoadWavesSorted();
+
+            // Liga as artes de interface (se existirem). Borda em pixels = moldura do 9-slice.
+            uiMgr.panelSprite  = EnsureUiSprite("Assets/Art/UI/ui_painel.png", new Vector4(70, 70, 70, 70));
+            uiMgr.buttonSprite = EnsureUiSprite("Assets/Art/UI/ui_botao.png",  new Vector4(50, 45, 50, 45));
+            uiMgr.coinSprite   = EnsureUiSprite("Assets/Art/UI/ui_moeda.png",  Vector4.zero);
+            uiMgr.heartSprite  = EnsureUiSprite("Assets/Art/UI/ui_vida.png",   Vector4.zero);
 
             // ---- Salvar ----
             if (!AssetDatabase.IsValidFolder("Assets/Scenes"))

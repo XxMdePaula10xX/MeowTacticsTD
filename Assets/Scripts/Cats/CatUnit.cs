@@ -4,6 +4,7 @@ using MeowTactics.Core;
 using MeowTactics.Data;
 using MeowTactics.Combat;
 using MeowTactics.Enemies;
+using MeowTactics.Utilities;
 
 namespace MeowTactics.Cats
 {
@@ -46,10 +47,12 @@ namespace MeowTactics.Cats
         private float attackTimer;
         private SpriteRenderer sprite;
         private Transform rangeIndicator;
+        private JuiceVisual juice;
 
         private void Awake()
         {
             sprite = GetComponent<SpriteRenderer>();
+            juice = GetComponent<JuiceVisual>();
             Transform ri = transform.Find("RangeIndicator");
             if (ri != null) rangeIndicator = ri;
             HideRange();
@@ -210,6 +213,7 @@ namespace MeowTactics.Cats
 
         public void Attack(EnemyUnit target)
         {
+            juice?.Punch(0.4f); // "tranco" ao atacar
             DealDamage(target);
 
             if (EffectiveArea)
@@ -230,6 +234,7 @@ namespace MeowTactics.Cats
             DamageContext ctx = BuildDamageContext();
             DamageResult result = DamageCalculator.CalculateDamage(CurrentDamage, enemy, ctx);
             enemy.TakeDamage(result.amount, ctx.damageType, ctx);
+            ShowDamageNumber(enemy, result);
 
             // Dano verdadeiro extra concedido por itens (ignora defesas).
             if (itemTrueDamageFlat > 0f)
@@ -258,7 +263,29 @@ namespace MeowTactics.Cats
 
         private void SpawnHitFx(Vector3 worldPos)
         {
-            // Placeholder: gancho para efeito visual de impacto.
+            // Projétil cosmético do gato até o alvo (estoura numa faísca ao chegar).
+            CombatFx.Projectile(transform.position, worldPos, DamageColor(Data.damageType));
+        }
+
+        private void ShowDamageNumber(EnemyUnit enemy, DamageResult result)
+        {
+            if (enemy == null) return;
+            int shown = Mathf.Max(1, Mathf.RoundToInt(result.amount));
+            if (result.wasCritical)
+                FloatingText.Spawn(enemy.transform.position, shown + "!", new Color(1f, 0.9f, 0.2f), 1.5f);
+            else
+                FloatingText.Spawn(enemy.transform.position, shown.ToString(), DamageColor(Data.damageType), 1f);
+        }
+
+        private static Color DamageColor(DamageType type)
+        {
+            switch (type)
+            {
+                case DamageType.Physical: return new Color(1f, 0.78f, 0.35f);  // laranja
+                case DamageType.Magical:  return new Color(0.72f, 0.55f, 1f);  // roxo claro
+                case DamageType.True:     return new Color(1f, 0.95f, 0.75f);  // dourado claro
+                default: return Color.white;
+            }
         }
 
         // ---------- Range indicator ----------

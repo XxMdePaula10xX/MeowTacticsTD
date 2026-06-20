@@ -52,6 +52,7 @@ namespace MeowTactics.Utilities
             rsr.sortingOrder = SortRange;
             ring.SetActive(false);
 
+            go.AddComponent<JuiceVisual>();
             go.AddComponent<CatUnit>();
             return go.GetComponent<CatUnit>();
         }
@@ -107,6 +108,7 @@ namespace MeowTactics.Utilities
             var hb = bar.AddComponent<HealthBar>();
             hb.SetFillTransform(fill.transform);
 
+            go.AddComponent<JuiceVisual>();
             go.AddComponent<EnemyUnit>();
             return go.GetComponent<EnemyUnit>();
         }

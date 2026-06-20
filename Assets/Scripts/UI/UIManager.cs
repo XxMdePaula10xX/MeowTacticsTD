@@ -28,6 +28,12 @@ namespace MeowTactics.UI
         private static readonly Color ColRed    = new Color(0.80f, 0.30f, 0.30f);
         private static readonly Color ColBlue   = new Color(0.30f, 0.55f, 0.85f);
 
+        // ---- Sprites de UI (ligados pelo MeowSetup; podem ficar nulos) ----
+        public Sprite panelSprite;
+        public Sprite buttonSprite;
+        public Sprite coinSprite;
+        public Sprite heartSprite;
+
         // ---- Referências de runtime ----
         private Text waveText, livesText, coinsText, phaseText, messageText;
         private Transform shopContainer, benchContainer, synergyContainer, itemsContainer;
@@ -106,13 +112,38 @@ namespace MeowTactics.UI
 
             phaseText = UIFactory.CreateText(bar.transform, "Phase", "Meow Tactics TD", 30, ColGold, TextAnchor.MiddleLeft);
             waveText  = UIFactory.CreateText(bar.transform, "Wave", "Onda 1/10", 30, Color.white);
-            livesText = UIFactory.CreateText(bar.transform, "Lives", "Vidas: 20", 30, ColRed);
-            coinsText = UIFactory.CreateText(bar.transform, "Coins", "Moedas: 10", 30, ColGold, TextAnchor.MiddleRight);
+            livesText = BuildStatGroup(bar.transform, "LivesGroup", heartSprite, "Vidas: 20", ColRed);
+            coinsText = BuildStatGroup(bar.transform, "CoinsGroup", coinSprite, "Moedas: 10", ColGold);
+        }
+
+        /// <summary>Cria um grupinho [ícone][texto] para a barra do topo (vidas/moedas).</summary>
+        private Text BuildStatGroup(Transform bar, string name, Sprite icon, string initial, Color color)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(bar, false);
+            var h = go.AddComponent<HorizontalLayoutGroup>();
+            h.childAlignment = TextAnchor.MiddleCenter;
+            h.spacing = 8;
+            h.childForceExpandWidth = false;
+            h.childForceExpandHeight = false;
+
+            if (icon != null)
+            {
+                var img = UIFactory.CreateIcon(go.transform, "Icon", icon, 52);
+                var le = img.gameObject.AddComponent<LayoutElement>();
+                le.minWidth = 52; le.preferredWidth = 52;
+                le.minHeight = 52; le.preferredHeight = 52;
+            }
+
+            var txt = UIFactory.CreateText(go.transform, "Text", initial, 30, color);
+            var tle = txt.gameObject.AddComponent<LayoutElement>();
+            tle.minWidth = 110;
+            return txt;
         }
 
         private void BuildSynergyPanel(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "SynergyPanel", ColPanel);
+            var panel = UIFactory.CreatePanel(root, "SynergyPanel", ColPanel, panelSprite);
             var rt = panel.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(1, 0), new Vector2(1, 1), new Vector2(1, 0.5f));
             rt.sizeDelta = new Vector2(330, -(90 + 270)); // entre top bar e bottom bar
@@ -136,10 +167,10 @@ namespace MeowTactics.UI
 
         private void BuildItemsBar(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "ItemsPanel", ColPanel);
+            var panel = UIFactory.CreatePanel(root, "ItemsPanel", ColPanel, panelSprite);
             var rt = panel.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 0.5f));
-            rt.sizeDelta = new Vector2(150, -(90 + 270));
+            rt.sizeDelta = new Vector2(210, -(90 + 270));
             rt.anchoredPosition = new Vector2(0, (270 - 90) / 2f);
 
             UIFactory.CreateText(panel.transform, "Title", "ITENS", 22, ColGold, TextAnchor.UpperCenter)
@@ -160,7 +191,7 @@ namespace MeowTactics.UI
 
         private void BuildBottomBar(Transform root)
         {
-            var bar = UIFactory.CreatePanel(root, "BottomBar", ColDark);
+            var bar = UIFactory.CreatePanel(root, "BottomBar", ColDark, panelSprite);
             var rt = bar.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0));
             rt.sizeDelta = new Vector2(0, 270);
@@ -178,8 +209,8 @@ namespace MeowTactics.UI
             shlg.padding = new RectOffset(15, 15, 0, 0);
 
             rerollButton = UIFactory.CreateButton(shopRow.transform, "Reroll",
-                "Atualizar\n(2 moedas)", ColBlue, () => ShopManager.Instance?.RerollShop(), 18);
-            AddFixedWidth(rerollButton, 130);
+                "Atualizar\n(2 moedas)", ColBlue, () => ShopManager.Instance?.RerollShop(), 18, buttonSprite);
+            AddFixedWidth(rerollButton, 150);
 
             shopContainer = shopRow.transform;
 
@@ -199,7 +230,7 @@ namespace MeowTactics.UI
             benchContainer = benchRow.transform;
 
             startWaveButton = UIFactory.CreateButton(benchRow.transform, "StartWave",
-                "INICIAR\nONDA >", ColGreen, () => GameManager.Instance?.StartWave(), 20);
+                "INICIAR\nONDA >", ColGreen, () => GameManager.Instance?.StartWave(), 20, buttonSprite);
             AddFixedWidth(startWaveButton, 160);
         }
 
@@ -211,7 +242,7 @@ namespace MeowTactics.UI
 
         private void BuildDetailPanel(Transform root)
         {
-            detailPanel = UIFactory.CreatePanel(root, "DetailPanel", ColPanel).gameObject;
+            detailPanel = UIFactory.CreatePanel(root, "DetailPanel", ColPanel, panelSprite).gameObject;
             var rt = (RectTransform)detailPanel.transform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             rt.sizeDelta = new Vector2(560, 420);
@@ -273,10 +304,10 @@ namespace MeowTactics.UI
             ert.anchoredPosition = new Vector2(0, 80);
 
             var btn = UIFactory.CreateButton(endPanel.transform, "Restart", "Jogar Novamente", ColGreen,
-                () => GameManager.Instance?.Restart(), 28);
+                () => GameManager.Instance?.Restart(), 28, buttonSprite);
             var rt = UIFactory.AsRect(btn);
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            rt.sizeDelta = new Vector2(360, 90);
+            rt.sizeDelta = new Vector2(360, 120);
             rt.anchoredPosition = new Vector2(0, -160);
 
             endPanel.SetActive(false);

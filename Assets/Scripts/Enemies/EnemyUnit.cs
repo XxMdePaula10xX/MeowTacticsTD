@@ -4,6 +4,7 @@ using MeowTactics.Core;
 using MeowTactics.Data;
 using MeowTactics.Combat;
 using MeowTactics.Managers;
+using MeowTactics.Utilities;
 
 namespace MeowTactics.Enemies
 {
@@ -35,6 +36,7 @@ namespace MeowTactics.Enemies
         private int pathIndex;
         private SpriteRenderer sprite;
         private HealthBar healthBar;
+        private JuiceVisual juice;
 
         // Lentidão temporária
         private float slowFactor = 1f; // 1 = sem lentidão
@@ -44,6 +46,7 @@ namespace MeowTactics.Enemies
         {
             sprite = GetComponent<SpriteRenderer>();
             healthBar = GetComponentInChildren<HealthBar>();
+            juice = GetComponent<JuiceVisual>();
         }
 
         /// <summary>
@@ -128,6 +131,8 @@ namespace MeowTactics.Enemies
             if (!IsAlive) return;
 
             CurrentHealth -= amount;
+            juice?.Flash();
+            juice?.Punch(0.22f);
             UpdateHealthBar();
 
             if (CurrentHealth <= 0f)
@@ -151,8 +156,11 @@ namespace MeowTactics.Enemies
             EconomyManager.Instance?.AddCoins(Data.coinReward);
             WaveManager.Instance?.OnEnemyRemoved(this);
 
-            // TODO (arte): tocar animação/efeito de morte aqui.
-            Destroy(gameObject);
+            // Moedinha pulando + "poof" de morte.
+            if (healthBar != null) healthBar.gameObject.SetActive(false);
+            FloatingText.Spawn(transform.position, "+" + Data.coinReward, new Color(1f, 0.85f, 0.3f), 1f);
+            if (juice != null) juice.PlayDeath();
+            else Destroy(gameObject);
         }
 
         private void ReachBase()

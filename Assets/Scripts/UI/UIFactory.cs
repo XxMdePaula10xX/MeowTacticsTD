@@ -31,12 +31,33 @@ namespace MeowTactics.UI
             return rt;
         }
 
-        public static Image CreatePanel(Transform parent, string name, Color color)
+        public static Image CreatePanel(Transform parent, string name, Color color, Sprite sprite = null)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
             go.transform.SetParent(parent, false);
             var img = go.GetComponent<Image>();
-            img.color = color;
+            if (sprite != null)
+            {
+                img.sprite = sprite;
+                img.type = Image.Type.Sliced;  // estica o miolo, mantém a moldura
+                img.color = Color.white;
+            }
+            else
+            {
+                img.color = color;
+            }
+            return img;
+        }
+
+        public static Image CreateIcon(Transform parent, string name, Sprite sprite, float size)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var img = go.GetComponent<Image>();
+            img.sprite = sprite;
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            img.rectTransform.sizeDelta = new Vector2(size, size);
             return img;
         }
 
@@ -58,12 +79,21 @@ namespace MeowTactics.UI
         }
 
         public static Button CreateButton(Transform parent, string name, string label,
-            Color bgColor, UnityAction onClick, int fontSize = 22)
+            Color bgColor, UnityAction onClick, int fontSize = 22, Sprite sprite = null)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
             var img = go.GetComponent<Image>();
-            img.color = bgColor;
+            if (sprite != null)
+            {
+                img.sprite = sprite;
+                img.type = Image.Type.Sliced;
+                img.color = Color.white;
+            }
+            else
+            {
+                img.color = bgColor;
+            }
             var btn = go.GetComponent<Button>();
             if (onClick != null) btn.onClick.AddListener(onClick);
 
