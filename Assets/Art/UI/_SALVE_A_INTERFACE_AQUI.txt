@@ -1,0 +1,13 @@
+Salve AQUI as artes da INTERFACE (arquivos .png).
+
+Nomes sugeridos:
+
+  ui_moeda.png    ->  icone de moeda
+  ui_vida.png     ->  coracao de vida
+  ui_painel.png   ->  painel de fundo (quadros ITENS / SINERGIAS / loja)
+  ui_botao.png    ->  botao (INICIAR ONDA, comprar, etc.)
+
+OBS: diferente dos gatos/inimigos, a interface eu preciso LIGAR no codigo.
+Entao quando voce salvar essas imagens aqui, me avise no chat que eu encaixo.
+
+(Pode apagar este arquivo quando quiser.)

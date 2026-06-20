@@ -1,0 +1,16 @@
+Salve AQUI as artes dos INIMIGOS (arquivos .png).
+
+Nomes EXATOS (tudo minusculo, sem espaco, sem acento):
+
+  inimigo_ghostling.png   ->  Fantasminha
+  inimigo_armored.png     ->  Fantasma Blindado
+  inimigo_shadow.png      ->  Sombra Mistica
+  inimigo_swift.png       ->  Pesadelo Veloz
+  inimigo_king.png        ->  Rei dos Pesadelos (boss)
+
+De preferencia com FUNDO TRANSPARENTE (use remove.bg se vier com fundo branco).
+
+Depois de salvar:  Unity  ->  menu MeowTactics  ->  Fazer Tudo  ->  Play.
+A arte aparece sozinha no lugar das bolinhas.
+
+(Pode apagar este arquivo quando quiser.)
