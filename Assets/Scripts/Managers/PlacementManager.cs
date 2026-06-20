@@ -225,8 +225,8 @@ namespace MeowTactics.Managers
 
             float range = SelectedBenchCat != null ? SelectedBenchCat.CurrentRange : 2.5f;
             previewRing.transform.localScale = Vector3.one * (range * 2f);
-            previewRing.color = new Color(tint.r, tint.g, tint.b, 0.5f);
-            previewDot.color = new Color(tint.r, tint.g, tint.b, 0.35f);
+            previewRing.color = new Color(tint.r, tint.g, tint.b, 0.18f); // alcance: dica discreta
+            previewDot.color = new Color(tint.r, tint.g, tint.b, 0.55f);  // pad: indicador claro do lugar
         }
 
         private void HidePreview()
@@ -250,7 +250,7 @@ namespace MeowTactics.Managers
             previewDot = dot.AddComponent<SpriteRenderer>();
             previewDot.sprite = SpriteFactory.Circle;
             previewDot.sortingOrder = 6;
-            dot.transform.localScale = Vector3.one * 0.9f;
+            dot.transform.localScale = Vector3.one * 1.15f;
         }
 
         private Vector3 MouseWorld()

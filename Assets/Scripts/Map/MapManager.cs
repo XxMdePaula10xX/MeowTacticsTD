@@ -4,17 +4,18 @@ using UnityEngine;
 namespace MeowTactics.Map
 {
     /// <summary>
-    /// Guarda o caminho dos inimigos e os slots de posicionamento do mapa.
-    /// Os pontos do caminho são objetos filhos de "PathParent", em ordem.
+    /// Guarda os CAMINHOS dos inimigos (um ou mais) e os limites da área jogável.
+    /// Cada caminho é um objeto-pai cujos filhos são os pontos, em ordem.
+    /// Com vários caminhos, os inimigos se dividem entre eles.
     /// </summary>
     public class MapManager : MonoBehaviour
     {
         public static MapManager Instance { get; private set; }
 
-        [Header("Caminho (na ordem do início até a base)")]
+        [Header("Caminhos (cada pai = um caminho; filhos = pontos em ordem)")]
+        public List<Transform> pathParents = new List<Transform>();
+        [Tooltip("Compatibilidade: caminho único (usado se a lista acima estiver vazia)")]
         public Transform pathParent;
-        [Tooltip("Preenchido automaticamente a partir dos filhos de pathParent, se vazio")]
-        public List<Transform> pathPoints = new List<Transform>();
 
         [Header("Slots de posicionamento (legado, não usado no modo livre)")]
         public List<MapSlot> placementSlots = new List<MapSlot>();
@@ -27,24 +28,78 @@ namespace MeowTactics.Map
         [Tooltip("Quão perto da estrada um gato pode ser posto (raio de bloqueio)")]
         public float pathRadius = 0.9f;
 
-        private List<Vector3> cachedPath;
+        private List<List<Vector3>> cachedPaths;
+
+        private void Awake()
+        {
+            Instance = this;
+            CachePaths();
+        }
+
+        private void CachePaths()
+        {
+            cachedPaths = new List<List<Vector3>>();
+
+            var parents = new List<Transform>();
+            if (pathParents != null)
+                foreach (var p in pathParents) if (p != null) parents.Add(p);
+            if (parents.Count == 0 && pathParent != null) parents.Add(pathParent);
+
+            foreach (var parent in parents)
+            {
+                var pts = new List<Vector3>();
+                foreach (Transform child in parent) pts.Add(child.position);
+                if (pts.Count > 0) cachedPaths.Add(pts);
+            }
+        }
+
+        /// <summary>Quantos caminhos existem (>=1).</summary>
+        public int PathCount
+        {
+            get { if (cachedPaths == null) CachePaths(); return Mathf.Max(1, cachedPaths.Count); }
+        }
+
+        /// <summary>Pontos do caminho de índice 'index' (início -> base).</summary>
+        public IReadOnlyList<Vector3> GetPath(int index)
+        {
+            if (cachedPaths == null || cachedPaths.Count == 0) CachePaths();
+            if (cachedPaths.Count == 0) return new List<Vector3>();
+            index = Mathf.Clamp(index, 0, cachedPaths.Count - 1);
+            return cachedPaths[index];
+        }
+
+        /// <summary>Caminho principal (índice 0) — compatibilidade.</summary>
+        public IReadOnlyList<Vector3> GetPath() => GetPath(0);
+
+        public Vector3 SpawnPoint
+        {
+            get { var p = GetPath(0); return p.Count > 0 ? p[0] : Vector3.zero; }
+        }
+
+        public Vector3 BasePoint
+        {
+            get { var p = GetPath(0); return p.Count > 0 ? p[p.Count - 1] : Vector3.zero; }
+        }
 
         /// <summary>True se a posição está dentro da área onde se pode construir.</summary>
         public bool InsideBoard(Vector3 p) =>
             p.x >= boardLeft && p.x <= boardRight && p.y >= boardBottom && p.y <= boardTop;
 
-        /// <summary>True se a posição está em cima (ou colada) na estrada dos inimigos.</summary>
+        /// <summary>True se a posição está em cima (ou colada) em QUALQUER caminho.</summary>
         public bool IsOnPath(Vector3 p) => DistanceToPath(p) < pathRadius;
 
-        /// <summary>Menor distância da posição até a linha do caminho.</summary>
+        /// <summary>Menor distância da posição até a linha de qualquer caminho.</summary>
         public float DistanceToPath(Vector3 p)
         {
-            var path = GetPath();
-            if (path == null || path.Count == 0) return 999f;
-            if (path.Count == 1) return Vector3.Distance(p, path[0]);
-            float best = float.MaxValue;
-            for (int i = 0; i < path.Count - 1; i++)
-                best = Mathf.Min(best, DistancePointSegment(p, path[i], path[i + 1]));
+            if (cachedPaths == null || cachedPaths.Count == 0) CachePaths();
+            float best = 999f;
+            foreach (var path in cachedPaths)
+            {
+                if (path.Count == 0) continue;
+                if (path.Count == 1) { best = Mathf.Min(best, Vector3.Distance(p, path[0])); continue; }
+                for (int i = 0; i < path.Count - 1; i++)
+                    best = Mathf.Min(best, DistancePointSegment(p, path[i], path[i + 1]));
+            }
             return best;
         }
 
@@ -58,45 +113,6 @@ namespace MeowTactics.Map
             return Vector2.Distance(new Vector2(p.x, p.y), proj);
         }
 
-        private void Awake()
-        {
-            Instance = this;
-            BuildPathPointsFromParent();
-            CachePath();
-        }
-
-        private void BuildPathPointsFromParent()
-        {
-            if ((pathPoints == null || pathPoints.Count == 0) && pathParent != null)
-            {
-                pathPoints = new List<Transform>();
-                foreach (Transform child in pathParent)
-                    pathPoints.Add(child);
-            }
-        }
-
-        private void CachePath()
-        {
-            cachedPath = new List<Vector3>();
-            foreach (var p in pathPoints)
-                if (p != null) cachedPath.Add(p.position);
-        }
-
-        /// <summary>Posições do caminho (início -> base).</summary>
-        public IReadOnlyList<Vector3> GetPath()
-        {
-            if (cachedPath == null || cachedPath.Count == 0) CachePath();
-            return cachedPath;
-        }
-
-        public Vector3 SpawnPoint =>
-            (pathPoints != null && pathPoints.Count > 0 && pathPoints[0] != null)
-                ? pathPoints[0].position : Vector3.zero;
-
-        public Vector3 BasePoint =>
-            (pathPoints != null && pathPoints.Count > 0 && pathPoints[pathPoints.Count - 1] != null)
-                ? pathPoints[pathPoints.Count - 1].position : Vector3.zero;
-
         public List<MapSlot> GetAvailableSlots()
         {
             var free = new List<MapSlot>();
@@ -105,26 +121,27 @@ namespace MeowTactics.Map
             return free;
         }
 
-        // Desenha o caminho no editor para facilitar o ajuste manual.
+        // Desenha os caminhos no editor para facilitar o ajuste manual dos pontos.
         private void OnDrawGizmos()
         {
-            var pts = (pathPoints != null && pathPoints.Count > 0)
-                ? pathPoints
-                : null;
-            if (pts == null && pathParent != null)
-            {
-                pts = new List<Transform>();
-                foreach (Transform c in pathParent) pts.Add(c);
-            }
-            if (pts == null) return;
+            var parents = new List<Transform>();
+            if (pathParents != null)
+                foreach (var p in pathParents) if (p != null) parents.Add(p);
+            if (parents.Count == 0 && pathParent != null) parents.Add(pathParent);
 
-            Gizmos.color = Color.yellow;
-            for (int i = 0; i < pts.Count - 1; i++)
+            Color[] cols = { Color.yellow, Color.cyan };
+            for (int pi = 0; pi < parents.Count; pi++)
             {
-                if (pts[i] != null && pts[i + 1] != null)
+                Gizmos.color = cols[pi % cols.Length];
+                var pts = new List<Transform>();
+                foreach (Transform c in parents[pi]) pts.Add(c);
+                for (int i = 0; i < pts.Count - 1; i++)
                 {
-                    Gizmos.DrawLine(pts[i].position, pts[i + 1].position);
-                    Gizmos.DrawSphere(pts[i].position, 0.15f);
+                    if (pts[i] != null && pts[i + 1] != null)
+                    {
+                        Gizmos.DrawLine(pts[i].position, pts[i + 1].position);
+                        Gizmos.DrawSphere(pts[i].position, 0.15f);
+                    }
                 }
             }
         }

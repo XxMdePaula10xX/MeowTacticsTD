@@ -419,31 +419,20 @@ namespace MeowTactics.EditorTools
                 {0.5054f,0.2891f},{0.5472f,0.2604f},{0.5831f,0.2508f},{0.6519f,0.2338f},
                 {0.7087f,0.2657f},{0.7386f,0.3804f},{0.7805f,0.4697f},{0.8134f,0.4995f},{1.0f,0.4995f}
             };
-            int pn = pathNorm.GetLength(0);
-            var path = new Vector3[pn];
-            for (int i = 0; i < pn; i++)
-            {
-                float nx = pathNorm[i, 0], ny = pathNorm[i, 1];
-                path[i] = new Vector3((nx - 0.5f) * worldWidth, (0.5f - ny) * worldHeight, 0f);
-            }
-
-            var pathParent = new GameObject("PathPoints");
-            for (int i = 0; i < path.Length; i++)
-            {
-                var p = new GameObject("Point_" + i);
-                p.transform.SetParent(pathParent.transform, false);
-                p.transform.position = path[i];
-            }
-            // Sem LineRenderer: a estrada já está desenhada no mapa de fundo.
+            // Dois caminhos: A = rota de cima (acima); B = rota de baixo (Y espelhado).
+            // Os inimigos se dividem entre eles. Ajuste fino: arraste os Point_ no editor.
+            Vector3 spawnPos, basePos;
+            var pathA = BuildPathParent("Path_A", pathNorm, worldWidth, worldHeight, false, out spawnPos, out basePos);
+            var pathB = BuildPathParent("Path_B", pathNorm, worldWidth, worldHeight, true, out _, out _);
 
             // ---- Marcadores de INÍCIO (portal) e FIM (cristal) ----
-            CreateMarker(path[0], Marker.Kind.Spawn, "SpawnPortal");
-            CreateMarker(path[path.Length - 1], Marker.Kind.Base, "BaseCrystal");
+            CreateMarker(spawnPos, Marker.Kind.Spawn, "SpawnPortal");
+            CreateMarker(basePos, Marker.Kind.Base, "BaseCrystal");
 
             // ---- MapManager + limites da área jogável (posicionamento livre) ----
             var mapGo = new GameObject("MapManager");
             var map = mapGo.AddComponent<MapManager>();
-            map.pathParent = pathParent.transform;
+            map.pathParents = new List<Transform> { pathA.transform, pathB.transform };
             map.placementSlots = new List<MapSlot>();
             map.boardLeft = -worldWidth / 2f + 0.6f;
             map.boardRight = worldWidth / 2f - 0.6f;
@@ -480,8 +469,8 @@ namespace MeowTactics.EditorTools
             waveMgr.waves = LoadWavesSorted();
 
             // Liga as artes de interface (se existirem). Borda em pixels = moldura do 9-slice.
-            uiMgr.panelSprite  = EnsureUiSprite("Assets/Art/UI/ui_painel.png", new Vector4(70, 70, 70, 70));
-            uiMgr.buttonSprite = EnsureUiSprite("Assets/Art/UI/ui_botao.png",  new Vector4(50, 45, 50, 45));
+            uiMgr.panelSprite  = EnsureUiSprite("Assets/Art/UI/ui_painel.png", new Vector4(50, 50, 50, 50));
+            uiMgr.buttonSprite = EnsureUiSprite("Assets/Art/UI/ui_botao.png",  new Vector4(28, 28, 28, 28));
             uiMgr.coinSprite   = EnsureUiSprite("Assets/Art/UI/ui_moeda.png",  Vector4.zero);
             uiMgr.heartSprite  = EnsureUiSprite("Assets/Art/UI/ui_vida.png",   Vector4.zero);
 
@@ -535,6 +524,30 @@ namespace MeowTactics.EditorTools
             var go = new GameObject(name);
             go.transform.position = new Vector3(pos.x, pos.y, 0f);
             go.AddComponent<Marker>().kind = kind;
+        }
+
+        /// <summary>
+        /// Cria um objeto-pai com os pontos do caminho (a partir de coordenadas
+        /// normalizadas). Se mirrorY, espelha verticalmente (rota de baixo).
+        /// </summary>
+        private static GameObject BuildPathParent(string name, float[,] norm,
+            float worldWidth, float worldHeight, bool mirrorY, out Vector3 first, out Vector3 last)
+        {
+            int n = norm.GetLength(0);
+            var parent = new GameObject(name);
+            first = Vector3.zero; last = Vector3.zero;
+            for (int i = 0; i < n; i++)
+            {
+                float nx = norm[i, 0];
+                float ny = mirrorY ? (1f - norm[i, 1]) : norm[i, 1];
+                var pos = new Vector3((nx - 0.5f) * worldWidth, (0.5f - ny) * worldHeight, 0f);
+                var p = new GameObject("Point_" + i);
+                p.transform.SetParent(parent.transform, false);
+                p.transform.position = pos;
+                if (i == 0) first = pos;
+                if (i == n - 1) last = pos;
+            }
+            return parent;
         }
 
         private static void AddSceneToBuild(string scenePath)

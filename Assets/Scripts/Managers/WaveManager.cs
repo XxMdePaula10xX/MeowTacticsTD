@@ -74,12 +74,20 @@ namespace MeowTactics.Managers
                 for (int i = 0; i < info.count; i++)
                     queue.Add(info);
 
-            Vector3 spawnPos = MapManager.Instance.SpawnPoint;
+            int pathCount = MapManager.Instance != null ? MapManager.Instance.PathCount : 1;
+            int spawnIndex = 0;
 
             foreach (var info in queue)
             {
-                UnitFactory.CreateEnemy(info.enemy, info.scalingMultiplier, spawnPos);
+                int pi = pathCount > 0 ? spawnIndex % pathCount : 0;
+                var path = MapManager.Instance != null ? MapManager.Instance.GetPath(pi) : null;
+                Vector3 spawnPos = (path != null && path.Count > 0)
+                    ? path[0]
+                    : (MapManager.Instance != null ? MapManager.Instance.SpawnPoint : Vector3.zero);
+
+                UnitFactory.CreateEnemy(info.enemy, info.scalingMultiplier, spawnPos, path);
                 aliveCount++;
+                spawnIndex++;
                 yield return new WaitForSeconds(wave.spawnInterval);
             }
 

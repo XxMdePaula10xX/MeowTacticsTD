@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using MeowTactics.Core;
 using MeowTactics.Cats;
 using MeowTactics.Data;
 using MeowTactics.Enemies;
@@ -28,6 +30,31 @@ namespace MeowTactics.Utilities
             var p = target.position;
             s.transform.position = new Vector3(p.x, p.y + offsetY, p.z + 0.01f);
             s.AddComponent<ShadowFollow>().Setup(target, offsetY);
+        }
+
+        /// <summary>Anel colorido (por tipo de dano) sob o gato, para destacá-lo do cenário.</summary>
+        private static void CreateCatPad(Transform target, int sortingOrder, float width, float offsetY, Color color)
+        {
+            var s = new GameObject("BasePad");
+            var sr = s.AddComponent<SpriteRenderer>();
+            sr.sprite = SpriteFactory.Ring;
+            sr.color = new Color(color.r, color.g, color.b, 0.6f);
+            sr.sortingOrder = sortingOrder;
+            s.transform.localScale = new Vector3(width, width * 0.42f, 1f);
+            var p = target.position;
+            s.transform.position = new Vector3(p.x, p.y + offsetY, p.z + 0.005f);
+            s.AddComponent<ShadowFollow>().Setup(target, offsetY);
+        }
+
+        private static Color DamageGlow(DamageType t)
+        {
+            switch (t)
+            {
+                case DamageType.Physical: return new Color(1f, 0.6f, 0.3f);
+                case DamageType.Magical:  return new Color(0.72f, 0.5f, 1f);
+                case DamageType.True:     return new Color(1f, 0.9f, 0.55f);
+                default: return Color.white;
+            }
         }
 
         public static CatUnit CreateCat(CatData data, Vector3 position)
@@ -66,14 +93,16 @@ namespace MeowTactics.Utilities
             rsr.sortingOrder = SortRange;
             ring.SetActive(false);
 
-            CreateShadow(go.transform, SortCat - 1, 0.9f, -0.5f);
+            CreateShadow(go.transform, SortCat - 2, 0.9f, -0.5f);
+            CreateCatPad(go.transform, SortCat - 1, 1.0f, -0.42f, DamageGlow(data.damageType));
 
             go.AddComponent<JuiceVisual>();
             go.AddComponent<CatUnit>();
             return go.GetComponent<CatUnit>();
         }
 
-        public static EnemyUnit CreateEnemy(EnemyData data, float scaling, Vector3 position)
+        public static EnemyUnit CreateEnemy(EnemyData data, float scaling, Vector3 position,
+            IReadOnlyList<Vector3> path = null)
         {
             EnemyUnit enemy;
             if (data.enemyPrefab != null)
@@ -86,7 +115,7 @@ namespace MeowTactics.Utilities
             {
                 enemy = BuildPlaceholderEnemy(data, position);
             }
-            enemy.Initialize(data, scaling, MeowTactics.Map.MapManager.Instance.GetPath());
+            enemy.Initialize(data, scaling, path ?? MeowTactics.Map.MapManager.Instance.GetPath());
             return enemy;
         }
 
