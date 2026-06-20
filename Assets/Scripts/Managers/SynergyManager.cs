@@ -97,11 +97,10 @@ namespace MeowTactics.Managers
         private List<CatUnit> GatherPlacedCats()
         {
             var placed = new List<CatUnit>();
-            if (MapManager.Instance != null)
+            if (PlacementManager.Instance != null)
             {
-                foreach (var slot in MapManager.Instance.placementSlots)
-                    if (slot != null && !slot.IsEmpty && slot.Occupant.IsPlaced)
-                        placed.Add(slot.Occupant);
+                foreach (var cat in PlacementManager.Instance.PlacedCats)
+                    if (cat != null && cat.IsPlaced) placed.Add(cat);
             }
             return placed;
         }

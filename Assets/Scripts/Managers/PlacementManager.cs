@@ -31,6 +31,9 @@ namespace MeowTactics.Managers
 
         private readonly List<CatUnit> placed = new List<CatUnit>();
 
+        /// <summary>Gatos atualmente posicionados no mapa (para sinergias, etc.).</summary>
+        public IReadOnlyList<CatUnit> PlacedCats => placed;
+
         // Prévia de posicionamento (segue o cursor).
         private GameObject previewGo;
         private SpriteRenderer previewRing, previewDot;
