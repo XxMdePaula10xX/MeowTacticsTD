@@ -449,7 +449,7 @@ namespace MeowTactics.EditorTools
                 var b = BuildPathParent("Path_B", pathNorm, worldWidth, worldHeight, true, out _, out _);
                 pathParents.Add(a.transform);
                 pathParents.Add(b.transform);
-                SavePathsFromParents(pathParents); // grava o json inicial
+                // (não salva json automaticamente: só quando você usar "Salvar Caminhos")
             }
 
             // ---- Marcadores de INÍCIO (portal) e FIM (cristal) ----
