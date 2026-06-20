@@ -64,15 +64,15 @@ namespace MeowTactics.EditorTools
         {
             var dict = new Dictionary<string, EnemyData>();
 
-            dict["ghostling"] = MakeEnemy("ghostling", "Fantasminha", 30, 0, 0, 1.0f, 1, 1,
+            dict["ghostling"] = MakeEnemy("ghostling", "Fantasminha", 36, 0, 0, 1.0f, 1, 1,
                 new Color(0.80f, 0.78f, 0.95f), "Inimigo básico.", false, 1f);
-            dict["armored"] = MakeEnemy("armored", "Fantasma Blindado", 60, 30, 5, 0.75f, 1, 2,
-                new Color(0.55f, 0.58f, 0.65f), "Resistente contra dano físico.", false, 1.1f);
-            dict["shadow"] = MakeEnemy("shadow", "Sombra Mística", 50, 5, 30, 0.9f, 1, 2,
-                new Color(0.45f, 0.30f, 0.65f), "Resistente contra dano mágico.", false, 1.05f);
-            dict["swift"] = MakeEnemy("swift", "Pesadelo Veloz", 25, 0, 0, 1.8f, 1, 1,
+            dict["armored"] = MakeEnemy("armored", "Fantasma Blindado", 68, 45, 10, 0.75f, 1, 2,
+                new Color(0.55f, 0.58f, 0.65f), "Muito resistente a dano físico (precisa de penetração).", false, 1.1f);
+            dict["shadow"] = MakeEnemy("shadow", "Sombra Mística", 56, 10, 45, 0.9f, 1, 2,
+                new Color(0.45f, 0.30f, 0.65f), "Muito resistente a dano mágico (precisa de penetração mágica).", false, 1.05f);
+            dict["swift"] = MakeEnemy("swift", "Pesadelo Veloz", 26, 0, 0, 1.8f, 1, 1,
                 new Color(0.30f, 0.70f, 0.85f), "Fraco, mas muito rápido.", false, 0.85f);
-            dict["king"] = MakeEnemy("king", "Rei dos Pesadelos", 700, 20, 20, 0.55f, 5, 25,
+            dict["king"] = MakeEnemy("king", "Rei dos Pesadelos", 850, 32, 32, 0.55f, 5, 25,
                 new Color(0.35f, 0.10f, 0.45f), "Boss final do MVP.", true, 2.2f);
 
             return dict;
@@ -93,26 +93,26 @@ namespace MeowTactics.EditorTools
         private static void GenerateCats()
         {
             // id, nome, custo, dano, [sinergias], dmgBase, atkSpeed, range, crit, cor, desc
-            MakeCat("ninja", "Gato Ninja", 2, DamageType.Physical,
-                new[] { SynergyType.Ninja, SynergyType.Shadow }, 12, 1.4f, 2.5f, 5,
+            MakeCat("ninja", "Gato Ninja", 3, DamageType.Physical,
+                new[] { SynergyType.Ninja, SynergyType.Shadow }, 10, 1.4f, 2.5f, 5,
                 new Color(0.18f, 0.18f, 0.22f), "Um gato silencioso que ataca muito rápido.",
                 atk: AttackType.Melee);
-            MakeCat("archer", "Gato Arqueiro", 2, DamageType.Physical,
-                new[] { SynergyType.Hunter, SynergyType.Forest }, 18, 0.9f, 3.5f, 10,
+            MakeCat("archer", "Gato Arqueiro", 3, DamageType.Physical,
+                new[] { SynergyType.Hunter, SynergyType.Forest }, 15, 0.9f, 3.5f, 10,
                 new Color(0.30f, 0.65f, 0.35f), "Um gato preciso que dispara flechas.");
-            MakeCat("sniper", "Gato Sniper", 3, DamageType.Physical,
-                new[] { SynergyType.Sniper, SynergyType.Technology }, 40, 0.35f, 6.0f, 20,
+            MakeCat("sniper", "Gato Sniper", 4, DamageType.Physical,
+                new[] { SynergyType.Sniper, SynergyType.Technology }, 34, 0.35f, 6.0f, 20,
                 new Color(0.30f, 0.55f, 0.80f), "Um gato paciente que acerta de muito longe.");
-            MakeCat("mage", "Gato Mago", 3, DamageType.Magical,
-                new[] { SynergyType.Mystic, SynergyType.Star }, 25, 0.7f, 3.5f, 0,
+            MakeCat("mage", "Gato Mago", 4, DamageType.Magical,
+                new[] { SynergyType.Mystic, SynergyType.Star }, 20, 0.7f, 3.5f, 0,
                 new Color(0.60f, 0.40f, 0.90f), "Um gato encantado que lança magia.",
                 area: true, areaRadius: 1.5f, atk: AttackType.Magic);
             MakeCat("shaman", "Gato Xamã", 3, DamageType.Magical,
-                new[] { SynergyType.Mystic, SynergyType.Support }, 10, 0.8f, 3.0f, 0,
+                new[] { SynergyType.Mystic, SynergyType.Support }, 8, 0.8f, 3.0f, 0,
                 new Color(0.30f, 0.70f, 0.60f), "Um gato espiritual que enfraquece inimigos.",
                 slow: true, slowAmount: 0.2f, slowDuration: 2f, atk: AttackType.Magic);
-            MakeCat("samurai", "Gato Samurai", 4, DamageType.True,
-                new[] { SynergyType.Guardian, SynergyType.Shadow }, 20, 0.6f, 2.0f, 5,
+            MakeCat("samurai", "Gato Samurai", 5, DamageType.True,
+                new[] { SynergyType.Guardian, SynergyType.Shadow }, 17, 0.6f, 2.0f, 5,
                 new Color(0.80f, 0.30f, 0.30f), "Um gato honrado que corta qualquer defesa.",
                 atk: AttackType.Melee);
         }
@@ -270,23 +270,27 @@ namespace MeowTactics.EditorTools
 
         private static void GenerateSynergies()
         {
-            // Ninja: velocidade de ataque
+            // Ninja: velocidade de ataque (e dano no nível alto)
             MakeSynergy(SynergyType.Ninja, "Ninja", new Color(0.7f, 0.3f, 0.3f),
                 "Gatos rápidos e focados em ataque contínuo.",
-                (2, "+10% vel. ataque", new[] { (BonusStat.AttackSpeedPercent, 10f) }),
-                (3, "+25% vel. ataque", new[] { (BonusStat.AttackSpeedPercent, 25f) }));
+                (2, "+20% vel. ataque", new[] { (BonusStat.AttackSpeedPercent, 20f) }),
+                (3, "+45% vel. ataque e +10% dano",
+                    new[] { (BonusStat.AttackSpeedPercent, 45f), (BonusStat.DamagePercent, 10f) }));
 
-            // Sniper: alcance e penetração de armadura
+            // Sniper: alcance + penetração de armadura (essencial contra blindados)
             MakeSynergy(SynergyType.Sniper, "Sniper", new Color(0.3f, 0.55f, 0.85f),
-                "Gatos de longo alcance e alto dano físico.",
-                (2, "+15% alcance", new[] { (BonusStat.RangePercent, 15f) }),
-                (4, "+30 pen. armadura", new[] { (BonusStat.ArmorPenetrationFlat, 30f) }));
+                "Gatos de longo alcance que furam armadura.",
+                (2, "+20% alcance e +30 pen. armadura",
+                    new[] { (BonusStat.RangePercent, 20f), (BonusStat.ArmorPenetrationFlat, 30f) }),
+                (3, "+25% dano e +60 pen. armadura",
+                    new[] { (BonusStat.DamagePercent, 25f), (BonusStat.ArmorPenetrationFlat, 60f) }));
 
-            // Místico: dano (mágico)
+            // Místico: dano mágico + penetração mágica (essencial contra sombras)
             MakeSynergy(SynergyType.Mystic, "Místico", new Color(0.6f, 0.4f, 0.9f),
                 "Gatos mágicos com dano elevado.",
-                (2, "+15% dano", new[] { (BonusStat.DamagePercent, 15f) }),
-                (3, "+25% dano", new[] { (BonusStat.DamagePercent, 25f) }));
+                (2, "+20% dano", new[] { (BonusStat.DamagePercent, 20f) }),
+                (3, "+45% dano e +25 pen. mágica",
+                    new[] { (BonusStat.DamagePercent, 45f), (BonusStat.MagicPenetrationFlat, 25f) }));
         }
 
         private static void MakeSynergy(SynergyType type, string name, Color color, string desc,
@@ -307,23 +311,23 @@ namespace MeowTactics.EditorTools
 
         private static void GenerateItems()
         {
-            // --- Status ---
-            MakeItem("claw", "Garra Afiada", "+20% de dano", new Color(0.95f, 0.6f, 0.2f),
-                stat: (BonusStat.DamagePercent, 20f));
-            MakeItem("paw", "Pata Veloz", "+25% velocidade de ataque", new Color(0.95f, 0.8f, 0.2f),
-                stat: (BonusStat.AttackSpeedPercent, 25f));
-            MakeItem("scope", "Luneta", "+20% de alcance", new Color(0.4f, 0.8f, 0.9f),
-                stat: (BonusStat.RangePercent, 20f));
-            MakeItem("tiger", "Olho do Tigre", "+15% de chance de crítico", new Color(0.9f, 0.5f, 0.3f),
-                stat: (BonusStat.CritChancePercent, 15f));
-            MakeItem("piercer", "Furador", "+20 de penetração de armadura", new Color(0.8f, 0.5f, 0.2f),
-                stat: (BonusStat.ArmorPenetrationFlat, 20f));
-            MakeItem("rune", "Runa Mística", "+20 de penetração mágica", new Color(0.6f, 0.4f, 0.9f),
-                stat: (BonusStat.MagicPenetrationFlat, 20f));
+            // --- Status (mais fortes: recompensam investir no gato certo) ---
+            MakeItem("claw", "Garra Afiada", "+35% de dano", new Color(0.95f, 0.6f, 0.2f),
+                stat: (BonusStat.DamagePercent, 35f));
+            MakeItem("paw", "Pata Veloz", "+40% velocidade de ataque", new Color(0.95f, 0.8f, 0.2f),
+                stat: (BonusStat.AttackSpeedPercent, 40f));
+            MakeItem("scope", "Luneta", "+30% de alcance", new Color(0.4f, 0.8f, 0.9f),
+                stat: (BonusStat.RangePercent, 30f));
+            MakeItem("tiger", "Olho do Tigre", "+25% de chance de crítico", new Color(0.9f, 0.5f, 0.3f),
+                stat: (BonusStat.CritChancePercent, 25f));
+            MakeItem("piercer", "Furador", "+45 de penetração de armadura", new Color(0.8f, 0.5f, 0.2f),
+                stat: (BonusStat.ArmorPenetrationFlat, 45f));
+            MakeItem("rune", "Runa Mística", "+45 de penetração mágica", new Color(0.6f, 0.4f, 0.9f),
+                stat: (BonusStat.MagicPenetrationFlat, 45f));
 
             // --- Especiais ---
-            MakeItem("phantom", "Garra Fantasma", "+15 de dano verdadeiro por ataque", new Color(0.95f, 0.9f, 0.7f),
-                trueDmg: 15f);
+            MakeItem("phantom", "Garra Fantasma", "+22 de dano verdadeiro por ataque", new Color(0.95f, 0.9f, 0.7f),
+                trueDmg: 22f);
             MakeItem("frost", "Amuleto Gélido", "Ataques deixam inimigos lentos", new Color(0.5f, 0.8f, 1f),
                 slow: true);
             MakeItem("herb", "Bomba de Erva", "Ataques causam dano em área", new Color(0.5f, 0.85f, 0.4f),
@@ -348,8 +352,8 @@ namespace MeowTactics.EditorTools
             if (stat.HasValue)
                 it.statEffects.Add(new SynergyEffect { stat = stat.Value.stat, value = stat.Value.val });
             it.bonusTrueDamagePerHit = trueDmg;
-            it.grantsSlow = slow; it.slowAmount = 0.2f; it.slowDuration = 1.5f;
-            it.grantsArea = area; it.areaRadius = 1.5f;
+            it.grantsSlow = slow; it.slowAmount = 0.3f; it.slowDuration = 2f;
+            it.grantsArea = area; it.areaRadius = 2f;
             it.grantedSynergies = new List<SynergyType>();
             if (emblem.HasValue) it.grantedSynergies.Add(emblem.Value);
             TryAssignItemSprite(it, id);
