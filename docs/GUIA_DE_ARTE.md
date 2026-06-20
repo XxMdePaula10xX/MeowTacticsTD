@@ -90,6 +90,31 @@ prompt, e gere tudo na mesma sessão. Copie esta linha e cole no final de TODOS 
 
 ---
 
+## 🗺️ MAPAS (estilo Bloons TD 6)
+
+Regras de ouro: **16:9 (widescreen)**, **um caminho claro** de uma borda à outra,
+**áreas abertas** para torres, e **sem personagens/UI/grade/texto**.
+
+**Estilo claro (BTD6):**
+`top-down 2D tower defense game map, Bloons TD 6 style, bright cartoon, lush green grass,
+a single clear winding dirt path from the left edge to the right edge, soft cel shading,
+thick clean outlines, colorful cozy, decorative trees rocks bushes around the edges but
+plenty of open flat grass for placing towers, no characters, no units, no UI, no text,
+top-down view, vibrant, landscape 16:9`
+
+**Estilo noturno (nosso tema):**
+`top-down 2D tower defense map, cute cartoon, cozy spooky night theme, dark purple grass
+under a starry sky and big moon, a single clear glowing stone path winding from left edge
+to right edge, soft shading, thick outlines, twisty dead trees, glowing lanterns, purple
+bushes, open flat areas for towers, no characters, no UI, no text, landscape 16:9`
+
+Ferramentas: **Leonardo.ai** (escolha 16:9) ou **Midjourney** (`--ar 16:9`).
+Bing só gera quadrado — evite para mapas.
+
+Quando tiver o mapa, me mande: eu traço o caminho por cima e posiciono os slots dos gatos.
+
+---
+
 ## OPÇÃO B — Packs de arte prontos (sem gerar nada)
 
 Procure por "tower defense", "cat", "cute monster", "ghost":
