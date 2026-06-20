@@ -142,7 +142,21 @@ namespace MeowTactics.EditorTools
         private static void TryAssignCatSprite(CatData c, string id)
         {
             string path = $"{CatArtDir}/gato_{id}.png";
-            if (!System.IO.File.Exists(path)) return;
+            var sprite = EnsureSprite(path, CatSpritePPU);
+            if (sprite != null)
+            {
+                c.icon = sprite;
+                Debug.Log($"[MeowTactics] Arte ligada ao gato '{id}': {path}");
+            }
+        }
+
+        /// <summary>
+        /// Garante que a imagem em 'path' está importada como Sprite (recorte único)
+        /// com o 'pixelsPerUnit' informado, e devolve o Sprite. Se não existir, null.
+        /// </summary>
+        private static Sprite EnsureSprite(string path, float pixelsPerUnit)
+        {
+            if (!System.IO.File.Exists(path)) return null;
 
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer != null)
@@ -152,19 +166,14 @@ namespace MeowTactics.EditorTools
                 { importer.textureType = TextureImporterType.Sprite; changed = true; }
                 if (importer.spriteImportMode != SpriteImportMode.Single)
                 { importer.spriteImportMode = SpriteImportMode.Single; changed = true; }
-                if (!Mathf.Approximately(importer.spritePixelsPerUnit, CatSpritePPU))
-                { importer.spritePixelsPerUnit = CatSpritePPU; changed = true; }
+                if (!Mathf.Approximately(importer.spritePixelsPerUnit, pixelsPerUnit))
+                { importer.spritePixelsPerUnit = pixelsPerUnit; changed = true; }
                 if (!importer.alphaIsTransparency)
                 { importer.alphaIsTransparency = true; changed = true; }
                 if (changed) importer.SaveAndReimport();
             }
 
-            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-            if (sprite != null)
-            {
-                c.icon = sprite;
-                Debug.Log($"[MeowTactics] Arte ligada ao gato '{id}': {path}");
-            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
         private static void GenerateSynergies()
@@ -287,23 +296,52 @@ namespace MeowTactics.EditorTools
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
+            // ---- Dimensões do mundo (alinhadas ao mapa de fundo 16:9) ----
+            const float orthoSize = 6f;
+            const float worldHeight = orthoSize * 2f;      // 12 unidades de altura
+            const float mapW = 1672f, mapH = 941f;          // resolução do mapa_noturno.png
+            float worldWidth = worldHeight * (mapW / mapH); // ~21.3 unidades de largura
+
             // ---- Câmera ----
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
             cam.orthographic = true;
-            cam.orthographicSize = 6f;
+            cam.orthographicSize = orthoSize;
             cam.transform.position = new Vector3(0, 0, -10);
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.10f, 0.08f, 0.18f);
             camGo.AddComponent<AudioListener>();
 
-            // ---- Caminho ----
-            Vector3[] path =
+            // ---- Fundo: mapa noturno ----
+            var bgSprite = EnsureSprite("Assets/Art/Maps/mapa_noturno.png", mapH / worldHeight);
+            if (bgSprite != null)
             {
-                new Vector3(-11f, 4f, 0), new Vector3(6f, 4f, 0), new Vector3(6f, 1.5f, 0),
-                new Vector3(-6f, 1.5f, 0), new Vector3(-6f, -1f, 0), new Vector3(11f, -1f, 0)
+                var bgGo = new GameObject("Background");
+                bgGo.transform.position = new Vector3(0, 0, 0);
+                var bgSr = bgGo.AddComponent<SpriteRenderer>();
+                bgSr.sprite = bgSprite;
+                bgSr.sortingOrder = -100; // atrás de tudo
+            }
+
+            // ---- Caminho (segue a estrada PINTADA no mapa) ----
+            // Coordenadas normalizadas (x: 0..1 esq->dir, y: 0..1 topo->baixo)
+            // extraídas de docs/mapa_caminho.json para casar com a estrada do mapa.
+            float[,] pathNorm =
+            {
+                {0.009f,0.4995f},{0.2153f,0.4995f},{0.2691f,0.4835f},{0.2703f,0.2529f},
+                {0.326f,0.2232f},{0.366f,0.2338f},{0.3977f,0.2657f},{0.4456f,0.2891f},
+                {0.5054f,0.2891f},{0.5472f,0.2604f},{0.5831f,0.2508f},{0.6519f,0.2338f},
+                {0.7087f,0.2657f},{0.7386f,0.3804f},{0.7805f,0.4697f},{0.8134f,0.4995f},{1.0f,0.4995f}
             };
+            int pn = pathNorm.GetLength(0);
+            var path = new Vector3[pn];
+            for (int i = 0; i < pn; i++)
+            {
+                float nx = pathNorm[i, 0], ny = pathNorm[i, 1];
+                path[i] = new Vector3((nx - 0.5f) * worldWidth, (0.5f - ny) * worldHeight, 0f);
+            }
+
             var pathParent = new GameObject("PathPoints");
             for (int i = 0; i < path.Length; i++)
             {
@@ -311,25 +349,13 @@ namespace MeowTactics.EditorTools
                 p.transform.SetParent(pathParent.transform, false);
                 p.transform.position = path[i];
             }
+            // Sem LineRenderer: a estrada já está desenhada no mapa de fundo.
 
-            // Linha visível do caminho
-            var lineGo = new GameObject("PathLine");
-            var lr = lineGo.AddComponent<LineRenderer>();
-            lr.material = new Material(Shader.Find("Sprites/Default"));
-            lr.widthMultiplier = 0.5f;
-            lr.numCornerVertices = 4;
-            lr.numCapVertices = 4;
-            lr.positionCount = path.Length;
-            lr.SetPositions(path);
-            lr.startColor = lr.endColor = new Color(0.30f, 0.25f, 0.40f);
-            lr.sortingOrder = 0;
-            lr.useWorldSpace = true;
-
-            // ---- Slots de posicionamento (12) ----
+            // ---- Slots de posicionamento (12, na GRAMA abaixo da estrada) ----
             var slotParent = new GameObject("Slots");
             var slots = new List<MapSlot>();
-            float[] cols = { -8f, -4.8f, -1.6f, 1.6f, 4.8f, 8f };
-            float[] rows = { 2.75f, 0.2f };
+            float[] cols = { -7.5f, -4.5f, -1.5f, 1.5f, 4.5f, 7.5f };
+            float[] rows = { -1.0f, -2.6f };
             int idx = 0;
             foreach (float y in rows)
             {
