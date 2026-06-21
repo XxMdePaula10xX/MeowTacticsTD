@@ -144,7 +144,7 @@ namespace MeowTactics.UI
         // =========================================================
         private void BuildMapSelect(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "MapSelect", new Color(0.06f, 0.05f, 0.12f, 0.98f));
+            var panel = UIFactory.CreatePanel(root, "MapSelect", new Color(0.07f, 0.06f, 0.14f, 1f));
             mapSelectPanel = panel.gameObject;
             UIFactory.StretchFull(panel.rectTransform);
 
@@ -277,7 +277,7 @@ namespace MeowTactics.UI
         // =========================================================
         private void BuildMainMenu(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "MainMenu", new Color(0.06f, 0.05f, 0.12f, 0.97f));
+            var panel = UIFactory.CreatePanel(root, "MainMenu", new Color(0.07f, 0.06f, 0.14f, 1f));
             mainMenuPanel = panel.gameObject;
             UIFactory.StretchFull(panel.rectTransform);
 
@@ -322,7 +322,7 @@ namespace MeowTactics.UI
 
         private void BuildSettings(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "Settings", new Color(0.06f, 0.05f, 0.12f, 0.98f));
+            var panel = UIFactory.CreatePanel(root, "Settings", new Color(0.07f, 0.06f, 0.14f, 1f));
             settingsPanel = panel.gameObject;
             UIFactory.StretchFull(panel.rectTransform);
 
@@ -362,10 +362,12 @@ namespace MeowTactics.UI
 
         private Button MenuButton(Transform parent, string label, Color color, UnityAction onClick)
         {
-            var b = UIFactory.CreateButton(parent, "MenuBtn", label, color, onClick, 28, buttonSprite);
+            // Botão sólido (sem sprite): preenche melhor que o 9-slice em botões largos/baixos.
+            var b = UIFactory.CreateButton(parent, "MenuBtn", label, color, onClick, 28);
             b.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            AddOutline(b.GetComponentInChildren<Text>());
             var le = b.gameObject.AddComponent<LayoutElement>();
-            le.minHeight = 66; le.preferredHeight = 66;
+            le.minHeight = 70; le.preferredHeight = 70;
             return b;
         }
 
