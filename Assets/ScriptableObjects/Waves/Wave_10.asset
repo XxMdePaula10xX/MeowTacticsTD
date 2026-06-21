@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 965d9064c998f5b4ea9c4fb6e2e2642a, type: 3}
+  m_Name: Wave_10
+  m_EditorClassIdentifier: Assembly-CSharp::MeowTactics.Data.WaveData
+  waveNumber: 10
+  enemies:
+  - enemy: {fileID: 11400000, guid: 2130e4117f095e148bef34055fc962c7, type: 2}
+    count: 1
+    scalingMultiplier: 1
+  - enemy: {fileID: 11400000, guid: e95a73d53ca06e24cb68c746cf6ee874, type: 2}
+    count: 10
+    scalingMultiplier: 1.3
+  spawnInterval: 0.9
+  bonusReward: 0
+  isBossWave: 1

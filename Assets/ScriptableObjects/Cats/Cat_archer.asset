@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a868dc8127cf70f43ae47d59c2e24230, type: 3}
+  m_Name: Cat_archer
+  m_EditorClassIdentifier: Assembly-CSharp::MeowTactics.Data.CatData
+  catId: archer
+  catName: Gato Arqueiro
+  description: Um gato preciso que dispara flechas.
+  cost: 3
+  damageType: 0
+  attackType: 1
+  baseDamage: 15
+  attackSpeed: 0.9
+  range: 3.5
+  critChance: 10
+  critMultiplier: 1.5
+  synergies: 0400000006000000
+  appliesSlow: 0
+  slowAmount: 0
+  slowDuration: 0
+  areaDamage: 0
+  areaRadius: 0
+  icon: {fileID: 21300000, guid: c74e706363d65934eb0d652c92c34ccd, type: 3}
+  catPrefab: {fileID: 0}
+  placeholderColor: {r: 0.3, g: 0.65, b: 0.35, a: 1}
