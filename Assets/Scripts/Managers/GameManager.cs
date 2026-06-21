@@ -126,12 +126,32 @@ namespace MeowTactics.Managers
             }
         }
 
+        /// <summary>
+        /// Se true ao carregar a cena, o jogo começa direto (sem menu principal).
+        /// Persiste entre recarregamentos de cena (campo estático).
+        /// </summary>
+        public static bool StartInGame = false;
+
         /// <summary>Recomeça a fase do zero (recarrega a cena atual).</summary>
         public void Restart()
         {
             Time.timeScale = 1f;
             UnityEngine.SceneManagement.SceneManager.LoadScene(
                 UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        }
+
+        /// <summary>Novo jogo: recarrega a cena e entra direto em jogo (pula o menu).</summary>
+        public void NewGame()
+        {
+            StartInGame = true;
+            Restart();
+        }
+
+        /// <summary>Volta ao menu principal (recarrega a cena e mostra o menu).</summary>
+        public void GoToMenu()
+        {
+            StartInGame = false;
+            Restart();
         }
 
         private void SetState(GameState newState)

@@ -71,6 +71,9 @@ namespace MeowTactics.UI
         private GameObject endPanel;
         private Text endText;
 
+        private GameObject mainMenuPanel, pausePanel, settingsPanel;
+        private float musicVolume = 0.6f;
+
         private Coroutine messageRoutine;
         private int gameSpeed = 1;
 
@@ -81,6 +84,7 @@ namespace MeowTactics.UI
             BuildUI();
             Subscribe();
             RefreshAll();
+            if (!GameManager.StartInGame) ShowMainMenu();
         }
 
         // =========================================================
@@ -109,6 +113,152 @@ namespace MeowTactics.UI
             BuildMessage(root);
             BuildWaveBanner(root);
             BuildTooltip(root);
+            BuildMainMenu(root);
+            BuildPauseMenu(root);
+            BuildSettings(root);
+        }
+
+        // =========================================================
+        //  MENU PRINCIPAL / PAUSE / CONFIGURAÇÕES (overlays)
+        // =========================================================
+        private void BuildMainMenu(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "MainMenu", new Color(0.06f, 0.05f, 0.12f, 0.97f));
+            mainMenuPanel = panel.gameObject;
+            UIFactory.StretchFull(panel.rectTransform);
+
+            var title = UIFactory.CreateText(panel.transform, "Title", "MEOW TACTICS TD", 72, ColGold, TextAnchor.MiddleCenter);
+            title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
+            var trt = title.rectTransform;
+            UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            trt.sizeDelta = new Vector2(1200, 100); trt.anchoredPosition = new Vector2(0, -170);
+
+            var col = MenuColumn(panel.transform, 440);
+            MenuButton(col, "Novo Jogo", ColGreen, () => GameManager.Instance?.NewGame());
+            var cont = MenuButton(col, "Continuar", ColCard, () => ShowMessage("Ainda não há jogo salvo."));
+            cont.interactable = false;
+            MenuButton(col, "Escolher Mapa", ColCard, () => ShowMessage("Seleção de mapa chega no próximo bloco!"));
+            MenuButton(col, "Configurações", ColBlue, ShowSettings);
+            MenuButton(col, "Sair", ColRed, () => Application.Quit());
+
+            mainMenuPanel.SetActive(false);
+        }
+
+        private void BuildPauseMenu(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "PauseMenu", new Color(0f, 0f, 0f, 0.84f));
+            pausePanel = panel.gameObject;
+            UIFactory.StretchFull(panel.rectTransform);
+
+            var title = UIFactory.CreateText(panel.transform, "Title", "PAUSADO", 60, ColGold, TextAnchor.MiddleCenter);
+            title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
+            var trt = title.rectTransform;
+            UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            trt.sizeDelta = new Vector2(800, 90); trt.anchoredPosition = new Vector2(0, -180);
+
+            var col = MenuColumn(panel.transform, 440);
+            MenuButton(col, "Continuar", ColGreen, HidePause);
+            MenuButton(col, "Reiniciar", ColBlue, () => GameManager.Instance?.NewGame());
+            MenuButton(col, "Voltar ao Menu", ColCard, () => GameManager.Instance?.GoToMenu());
+            MenuButton(col, "Configurações", ColBlue, ShowSettings);
+
+            pausePanel.SetActive(false);
+        }
+
+        private void BuildSettings(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "Settings", new Color(0.06f, 0.05f, 0.12f, 0.98f));
+            settingsPanel = panel.gameObject;
+            UIFactory.StretchFull(panel.rectTransform);
+
+            var title = UIFactory.CreateText(panel.transform, "Title", "CONFIGURAÇÕES", 54, ColGold, TextAnchor.MiddleCenter);
+            title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
+            var trt = title.rectTransform;
+            UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            trt.sizeDelta = new Vector2(900, 80); trt.anchoredPosition = new Vector2(0, -170);
+
+            var col = MenuColumn(panel.transform, 560);
+
+            SliderRow(col, "Volume da Música", musicVolume, v => musicVolume = v);
+            float sfx = SFXManager.Instance != null ? SFXManager.Instance.volume : 0.55f;
+            SliderRow(col, "Volume dos Efeitos", sfx, v => { if (SFXManager.Instance != null) SFXManager.Instance.volume = v; });
+
+            MenuButton(col, "Resetar Progresso", ColRed, () => { PlayerPrefs.DeleteAll(); ShowMessage("Progresso resetado."); });
+            MenuButton(col, "Voltar", ColGreen, HideSettings);
+
+            settingsPanel.SetActive(false);
+        }
+
+        private Transform MenuColumn(Transform parent, float height)
+        {
+            var col = new GameObject("Buttons", typeof(RectTransform));
+            col.transform.SetParent(parent, false);
+            var rt = col.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            rt.sizeDelta = new Vector2(440, height);
+            rt.anchoredPosition = new Vector2(0, -40);
+            var vlg = col.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 16; vlg.childAlignment = TextAnchor.MiddleCenter;
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            return col.transform;
+        }
+
+        private Button MenuButton(Transform parent, string label, Color color, UnityAction onClick)
+        {
+            var b = UIFactory.CreateButton(parent, "MenuBtn", label, color, onClick, 28, buttonSprite);
+            b.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            var le = b.gameObject.AddComponent<LayoutElement>();
+            le.minHeight = 66; le.preferredHeight = 66;
+            return b;
+        }
+
+        private void SliderRow(Transform parent, string label, float value, UnityAction<float> onChanged)
+        {
+            var lbl = UIFactory.CreateText(parent, "SLabel", label, 24, ColText, TextAnchor.MiddleCenter);
+            lbl.fontStyle = FontStyle.Bold; NoWrap(lbl);
+            var lle = lbl.gameObject.AddComponent<LayoutElement>(); lle.minHeight = 34;
+
+            var go = new GameObject("Slider", typeof(RectTransform), typeof(Slider));
+            go.transform.SetParent(parent, false);
+            var le = go.AddComponent<LayoutElement>(); le.minHeight = 34; le.preferredHeight = 34;
+            var slider = go.GetComponent<Slider>();
+
+            var bg = new GameObject("BG", typeof(RectTransform), typeof(Image));
+            bg.transform.SetParent(go.transform, false);
+            var bgi = bg.GetComponent<Image>(); bgi.color = new Color(0f, 0f, 0f, 0.5f);
+            UIFactory.StretchFull(bg.GetComponent<RectTransform>());
+
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fill.transform.SetParent(go.transform, false);
+            fill.GetComponent<Image>().color = ColGold;
+            var frt = fill.GetComponent<RectTransform>();
+            frt.anchorMin = Vector2.zero; frt.anchorMax = Vector2.one;
+            frt.offsetMin = Vector2.zero; frt.offsetMax = Vector2.zero;
+
+            slider.fillRect = frt;
+            slider.targetGraphic = bgi;
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.minValue = 0f; slider.maxValue = 1f; slider.value = value;
+            if (onChanged != null) slider.onValueChanged.AddListener(onChanged);
+        }
+
+        public void ShowMainMenu() { if (mainMenuPanel != null) mainMenuPanel.SetActive(true); }
+        public void ShowSettings() { if (settingsPanel != null) settingsPanel.SetActive(true); SFXManager.Play(SfxType.Click); }
+        public void HideSettings() { if (settingsPanel != null) settingsPanel.SetActive(false); SFXManager.Play(SfxType.Click); }
+
+        public void OpenPause()
+        {
+            Time.timeScale = 0f;
+            if (pausePanel != null) pausePanel.SetActive(true);
+            SFXManager.Play(SfxType.Click);
+        }
+
+        public void HidePause()
+        {
+            if (pausePanel != null) pausePanel.SetActive(false);
+            HideSettings();
+            Time.timeScale = (GameManager.Instance != null && GameManager.Instance.State == GameState.WaveInProgress) ? gameSpeed : 1f;
+            SFXManager.Play(SfxType.Click);
         }
 
         // Banner de fim de onda (centro-superior, some sozinho)
@@ -217,7 +367,7 @@ namespace MeowTactics.UI
             livesText = StatChip(rightGo.transform, heartSprite, "20", ColRed);
             coinsText = StatChip(rightGo.transform, coinSprite, "10", ColGold);
 
-            pauseBtn  = SmallButton(rightGo.transform, "Pause", "II", ColBlue, TogglePause);
+            pauseBtn  = SmallButton(rightGo.transform, "Pause", "II", ColBlue, OpenPause);
             speed1Btn = SmallButton(rightGo.transform, "Speed1", "1x", ColGreen, () => SetSpeed(1));
             speed2Btn = SmallButton(rightGo.transform, "Speed2", "2x", ColCard, () => SetSpeed(2));
         }
@@ -481,12 +631,21 @@ namespace MeowTactics.UI
             ert.sizeDelta = new Vector2(1200, 400);
             ert.anchoredPosition = new Vector2(0, 80);
 
-            var btn = UIFactory.CreateButton(endPanel.transform, "Restart", "Jogar Novamente", ColGreen,
-                () => GameManager.Instance?.Restart(), 28, buttonSprite);
-            var rt = UIFactory.AsRect(btn);
-            UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            rt.sizeDelta = new Vector2(360, 120);
-            rt.anchoredPosition = new Vector2(0, -160);
+            var btnRow = new GameObject("EndButtons", typeof(RectTransform));
+            btnRow.transform.SetParent(endPanel.transform, false);
+            var brt = btnRow.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(brt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            brt.sizeDelta = new Vector2(740, 96);
+            brt.anchoredPosition = new Vector2(0, -180);
+            var hlg2 = btnRow.AddComponent<HorizontalLayoutGroup>();
+            hlg2.spacing = 24; hlg2.childForceExpandWidth = true; hlg2.childForceExpandHeight = true;
+
+            var again = UIFactory.CreateButton(btnRow.transform, "Restart", "Jogar Novamente", ColGreen,
+                () => GameManager.Instance?.NewGame(), 26, buttonSprite);
+            again.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            var toMenu = UIFactory.CreateButton(btnRow.transform, "ToMenu", "Voltar ao Menu", ColCard,
+                () => GameManager.Instance?.GoToMenu(), 26, buttonSprite);
+            toMenu.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
 
             endPanel.SetActive(false);
         }
@@ -597,19 +756,11 @@ namespace MeowTactics.UI
             SFXManager.Play(SfxType.Click);
         }
 
-        private void TogglePause()
-        {
-            Time.timeScale = Time.timeScale > 0f ? 0f : gameSpeed;
-            UpdateSpeedButtons();
-            SFXManager.Play(SfxType.Click);
-        }
-
         private void UpdateSpeedButtons()
         {
-            bool paused = Time.timeScale == 0f;
-            Tint(pauseBtn, paused ? ColGold : ColBlue);
-            Tint(speed1Btn, (!paused && gameSpeed == 1) ? ColGreen : ColCard);
-            Tint(speed2Btn, (!paused && gameSpeed == 2) ? ColGreen : ColCard);
+            Tint(pauseBtn, ColBlue);
+            Tint(speed1Btn, gameSpeed == 1 ? ColGreen : ColCard);
+            Tint(speed2Btn, gameSpeed == 2 ? ColGreen : ColCard);
         }
 
         private static void Tint(Button b, Color c)
