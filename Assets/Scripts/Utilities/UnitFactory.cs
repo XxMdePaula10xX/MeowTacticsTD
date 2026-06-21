@@ -57,6 +57,24 @@ namespace MeowTactics.Utilities
             }
         }
 
+        /// <summary>Pequeno marcador de tipo acima do inimigo (blindado / resist. mágica / rápido).</summary>
+        private static void CreateEnemyTrait(Transform parent, EnemyData data)
+        {
+            Color c; Sprite spr; float rot = 0f;
+            if (data.armor >= 30f) { c = new Color(0.78f, 0.82f, 0.88f); spr = SpriteFactory.Square; }            // blindado: placa cinza
+            else if (data.magicResistance >= 30f) { c = new Color(0.72f, 0.5f, 1f); spr = SpriteFactory.Square; rot = 45f; } // sombra: gema roxa (losango)
+            else if (data.moveSpeed >= 1.5f) { c = new Color(0.4f, 0.9f, 1f); spr = SpriteFactory.Circle; }       // rápido: ciano
+            else return;
+
+            var go = new GameObject("Trait");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = new Vector3(0.42f, 0.5f, 0f);
+            go.transform.localScale = Vector3.one * 0.26f;
+            go.transform.localRotation = Quaternion.Euler(0f, 0f, rot);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = spr; sr.color = c; sr.sortingOrder = SortHealthBar + 2;
+        }
+
         public static CatUnit CreateCat(CatData data, Vector3 position)
         {
             CatUnit cat;
@@ -164,6 +182,7 @@ namespace MeowTactics.Utilities
             hb.SetFillTransform(fill.transform);
 
             CreateShadow(go.transform, SortEnemy - 1, 0.85f * data.visualScale, -0.5f * data.visualScale);
+            CreateEnemyTrait(go.transform, data);
 
             go.AddComponent<JuiceVisual>();
             go.AddComponent<EnemyUnit>();

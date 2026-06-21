@@ -74,6 +74,20 @@ namespace MeowTactics.UI
         private GameObject mainMenuPanel, pausePanel, settingsPanel;
         private float musicVolume = 0.6f;
 
+        private GameObject tutorialPanel;
+        private Text tutorialText;
+        private int tutorialStep;
+        private Transform detailItemsRow;
+        private static readonly string[] TutorialSteps =
+        {
+            "1/6 — Compre um gato na LOJA (embaixo). Ele vai para o BANCO.",
+            "2/6 — Clique num gato do BANCO e toque no gramado para posicioná-lo.",
+            "3/6 — Clique em INICIAR ONDA (canto direito) para começar a luta.",
+            "4/6 — Derrote inimigos para ganhar moedas e comprar mais gatos.",
+            "5/6 — Junte gatos do mesmo tipo para ativar SINERGIAS (painel à direita).",
+            "6/6 — A cada 3 ondas você escolhe um ITEM — equipe-o tocando num gato!"
+        };
+
         private Coroutine messageRoutine;
         private int gameSpeed = 1;
 
@@ -85,7 +99,11 @@ namespace MeowTactics.UI
             Subscribe();
             RefreshAll();
             if (!GameManager.StartInGame) { ShowMainMenu(); MusicManager.Play(MusicTrack.Menu); }
-            else MusicManager.Play(MusicTrack.Game);
+            else
+            {
+                MusicManager.Play(MusicTrack.Game);
+                if (PlayerPrefs.GetInt("tutorialDone", 0) == 0) ShowTutorial();
+            }
         }
 
         // =========================================================
@@ -117,6 +135,62 @@ namespace MeowTactics.UI
             BuildMainMenu(root);
             BuildPauseMenu(root);
             BuildSettings(root);
+            BuildTutorial(root);
+        }
+
+        // =========================================================
+        //  TUTORIAL (passos guiados, pulável)
+        // =========================================================
+        private void BuildTutorial(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "Tutorial", new Color(0.09f, 0.07f, 0.17f, 0.97f));
+            tutorialPanel = panel.gameObject;
+            var rt = panel.rectTransform;
+            UIFactory.SetAnchors(rt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            rt.sizeDelta = new Vector2(880, 84);
+            rt.anchoredPosition = new Vector2(0, -150);
+
+            tutorialText = UIFactory.CreateText(panel.transform, "Text", "", 20, ColText, TextAnchor.MiddleLeft);
+            tutorialText.fontStyle = FontStyle.Bold;
+            var txrt = tutorialText.rectTransform;
+            UIFactory.SetAnchors(txrt, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f));
+            txrt.offsetMin = new Vector2(22, 6); txrt.offsetMax = new Vector2(-250, -6);
+
+            var nextBtn = UIFactory.CreateButton(panel.transform, "Next", "Próximo", ColGreen, NextTutorial, 18, buttonSprite);
+            nextBtn.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            var nrt = UIFactory.AsRect(nextBtn);
+            UIFactory.SetAnchors(nrt, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(1, 0.5f));
+            nrt.sizeDelta = new Vector2(120, 58); nrt.anchoredPosition = new Vector2(-128, 0);
+
+            var skipBtn = UIFactory.CreateButton(panel.transform, "Skip", "Pular", ColCard, CloseTutorial, 18, buttonSprite);
+            var srt = UIFactory.AsRect(skipBtn);
+            UIFactory.SetAnchors(srt, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(1, 0.5f));
+            srt.sizeDelta = new Vector2(104, 58); srt.anchoredPosition = new Vector2(-12, 0);
+
+            tutorialPanel.SetActive(false);
+        }
+
+        public void ShowTutorial()
+        {
+            if (tutorialPanel == null) return;
+            tutorialStep = 0;
+            tutorialText.text = TutorialSteps[0];
+            tutorialPanel.SetActive(true);
+        }
+
+        private void NextTutorial()
+        {
+            tutorialStep++;
+            if (tutorialStep >= TutorialSteps.Length) { CloseTutorial(); return; }
+            tutorialText.text = TutorialSteps[tutorialStep];
+            SFXManager.Play(SfxType.Click);
+        }
+
+        private void CloseTutorial()
+        {
+            if (tutorialPanel != null) tutorialPanel.SetActive(false);
+            PlayerPrefs.SetInt("tutorialDone", 1);
+            SFXManager.Play(SfxType.Click);
         }
 
         // =========================================================
@@ -554,7 +628,7 @@ namespace MeowTactics.UI
             detailPanel = UIFactory.CreatePanel(root, "DetailPanel", ColPanel, panelSprite).gameObject;
             var rt = (RectTransform)detailPanel.transform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            rt.sizeDelta = new Vector2(580, 540);
+            rt.sizeDelta = new Vector2(580, 600);
 
             // Retrato do gato (topo)
             detailIcon = UIFactory.CreateIcon(detailPanel.transform, "Portrait", null, 110);
@@ -577,6 +651,18 @@ namespace MeowTactics.UI
             UIFactory.SetAnchors(drt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
             drt.sizeDelta = new Vector2(-110, 190);
             drt.anchoredPosition = new Vector2(0, -210);
+
+            // Fileira de ícones dos itens equipados
+            var itemsRowGo = new GameObject("DetailItems", typeof(RectTransform));
+            itemsRowGo.transform.SetParent(detailPanel.transform, false);
+            var irrt = itemsRowGo.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(irrt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
+            irrt.sizeDelta = new Vector2(-120, 46);
+            irrt.anchoredPosition = new Vector2(0, -414);
+            var ihlg = itemsRowGo.AddComponent<HorizontalLayoutGroup>();
+            ihlg.spacing = 8; ihlg.childAlignment = TextAnchor.MiddleCenter;
+            ihlg.childForceExpandWidth = false; ihlg.childForceExpandHeight = false;
+            detailItemsRow = itemsRowGo.transform;
 
             var btnRow = new GameObject("Buttons", typeof(RectTransform));
             btnRow.transform.SetParent(detailPanel.transform, false);
@@ -1089,6 +1175,10 @@ namespace MeowTactics.UI
                 }
                 UIFactory.CreateText(chip.transform, "Name", it.itemName, 12,
                     selected ? Color.black : ColText, TextAnchor.MiddleLeft);
+
+                var trig = chip.AddComponent<EventTrigger>();
+                AddTrigger(trig, EventTriggerType.PointerEnter, _ => ShowTextTooltip(ItemBonusText(it)));
+                AddTrigger(trig, EventTriggerType.PointerExit, _ => HideTooltip());
             }
         }
 
@@ -1133,6 +1223,27 @@ namespace MeowTactics.UI
             sb.Append(cat.Items.Count == 0 ? "nenhum" : ItemNames(cat.Items));
 
             detailText.text = sb.ToString();
+
+            if (detailItemsRow != null)
+            {
+                foreach (Transform c in detailItemsRow) Destroy(c.gameObject);
+                foreach (var it in cat.Items)
+                {
+                    LayoutElement le;
+                    if (it.icon != null)
+                    {
+                        var ic = UIFactory.CreateIcon(detailItemsRow, "Icon", it.icon, 42);
+                        le = ic.gameObject.AddComponent<LayoutElement>();
+                    }
+                    else
+                    {
+                        var sw = UIFactory.CreatePanel(detailItemsRow, "Sw", it.uiColor);
+                        le = sw.gameObject.AddComponent<LayoutElement>();
+                    }
+                    le.minWidth = 42; le.preferredWidth = 42; le.minHeight = 42; le.preferredHeight = 42;
+                }
+            }
+
             detailReturnBtn.interactable = cat.IsPlaced;
             detailPanel.SetActive(true);
         }
@@ -1275,14 +1386,46 @@ namespace MeowTactics.UI
         // =========================================================
         private void ShowSynergyTooltip(SynergyData data)
         {
-            if (tooltipPanel == null || data == null) return;
+            if (data == null) return;
             var sb = new StringBuilder();
             sb.AppendLine($"<b>{DisplayName(data)}</b>");
             foreach (var tier in data.tiers)
                 sb.AppendLine($"{tier.requiredCount}: {tier.description}");
-            tooltipText.text = sb.ToString().TrimEnd();
+            ShowTextTooltip(sb.ToString().TrimEnd());
+        }
+
+        private void ShowTextTooltip(string text)
+        {
+            if (tooltipPanel == null) return;
+            tooltipText.text = text;
             tooltipPanel.transform.position = Input.mousePosition;
             tooltipPanel.SetActive(true);
+        }
+
+        private static string ItemBonusText(ItemData it)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"<b>{it.itemName}</b>");
+            foreach (var e in it.statEffects) sb.AppendLine(StatLabel(e.stat, e.value));
+            if (it.bonusTrueDamagePerHit > 0f) sb.AppendLine($"+{it.bonusTrueDamagePerHit:0} dano verdadeiro/ataque");
+            if (it.grantsSlow) sb.AppendLine("Ataques deixam inimigos lentos");
+            if (it.grantsArea) sb.AppendLine("Ataques causam dano em área");
+            foreach (var s in it.grantedSynergies) sb.AppendLine($"Conta como {s}");
+            return sb.ToString().TrimEnd();
+        }
+
+        private static string StatLabel(BonusStat s, float v)
+        {
+            switch (s)
+            {
+                case BonusStat.AttackSpeedPercent:   return $"+{v:0}% vel. ataque";
+                case BonusStat.CritChancePercent:    return $"+{v:0}% crítico";
+                case BonusStat.ArmorPenetrationFlat: return $"+{v:0} pen. armadura";
+                case BonusStat.MagicPenetrationFlat: return $"+{v:0} pen. mágica";
+                case BonusStat.DamagePercent:        return $"+{v:0}% dano";
+                case BonusStat.RangePercent:         return $"+{v:0}% alcance";
+                default: return "";
+            }
         }
 
         private void HideTooltip()
