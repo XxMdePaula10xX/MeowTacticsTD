@@ -31,6 +31,7 @@ namespace MeowTactics.Managers
         private void Start()
         {
             StartGame();
+            if (LoadOnStart) { LoadOnStart = false; SaveSystem.Restore(); }
         }
 
         public void StartGame()
@@ -71,6 +72,7 @@ namespace MeowTactics.Managers
             SetState(GameState.Preparation);
             ShopManager.Instance?.GenerateShop();
             UIManager.Instance?.ShowWaveSummary(completedWaveNumber, reward, Lives);
+            SaveSystem.Save(); // auto-save no início de cada preparação
 
             // A cada N ondas, oferece a roleta de itens (ex: ondas 3, 6, 9).
             if (GameBalance.ItemDropEveryNWaves > 0 &&
@@ -99,6 +101,8 @@ namespace MeowTactics.Managers
         {
             SetState(GameState.Victory);
             SFXManager.Play(SfxType.Victory);
+            SaveSystem.RecordBest(WaveManager.Instance != null ? WaveManager.Instance.waves.Count : 0);
+            SaveSystem.Clear(); // a run acabou
         }
 
         public void LoseGame()
@@ -106,6 +110,8 @@ namespace MeowTactics.Managers
             SetState(GameState.Defeat);
             WaveManager.Instance?.StopWave();
             SFXManager.Play(SfxType.Defeat);
+            SaveSystem.RecordBest(WaveManager.Instance != null ? WaveManager.Instance.CurrentWaveIndex + 1 : 0);
+            SaveSystem.Clear();
         }
 
         public void PauseGame()
@@ -131,6 +137,15 @@ namespace MeowTactics.Managers
         /// Persiste entre recarregamentos de cena (campo estático).
         /// </summary>
         public static bool StartInGame = false;
+        /// <summary>Se true ao carregar, restaura o jogo salvo (botão Continuar).</summary>
+        public static bool LoadOnStart = false;
+
+        /// <summary>Define as vidas diretamente (usado pelo carregamento de save).</summary>
+        public void SetLives(int value)
+        {
+            Lives = Mathf.Max(0, value);
+            OnLivesChanged?.Invoke(Lives);
+        }
 
         /// <summary>Recomeça a fase do zero (recarrega a cena atual).</summary>
         public void Restart()

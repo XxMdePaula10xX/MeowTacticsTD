@@ -47,6 +47,13 @@ namespace MeowTactics.Managers
             NotifyWaveChanged();
         }
 
+        /// <summary>Define a onda atual diretamente (usado pelo carregamento de save).</summary>
+        public void SetWaveIndex(int index)
+        {
+            CurrentWaveIndex = Mathf.Clamp(index, 0, Mathf.Max(0, waves.Count - 1));
+            NotifyWaveChanged();
+        }
+
         public WaveData CurrentWave =>
             (CurrentWaveIndex >= 0 && CurrentWaveIndex < waves.Count) ? waves[CurrentWaveIndex] : null;
 

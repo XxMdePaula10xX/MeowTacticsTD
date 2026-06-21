@@ -24,6 +24,9 @@ namespace MeowTactics.Cats
         /// <summary>Custo investido, usado para o valor de venda.</summary>
         public int TotalInvested { get; private set; }
 
+        /// <summary>Dano total causado nesta partida (para o ranking do fim).</summary>
+        public float DamageDealt { get; private set; }
+
         public MeowTactics.Map.MapSlot CurrentSlot { get; set; }
 
         /// <summary>Itens equipados neste gato.</summary>
@@ -236,6 +239,7 @@ namespace MeowTactics.Cats
             DamageContext ctx = BuildDamageContext();
             DamageResult result = DamageCalculator.CalculateDamage(CurrentDamage, enemy, ctx);
             enemy.TakeDamage(result.amount, ctx.damageType, ctx);
+            DamageDealt += result.amount;
             ShowDamageNumber(enemy, result);
 
             // Dano verdadeiro extra concedido por itens (ignora defesas).
@@ -244,6 +248,7 @@ namespace MeowTactics.Cats
                 var trueCtx = new DamageContext { damageType = DamageType.True };
                 var trueRes = DamageCalculator.CalculateDamage(itemTrueDamageFlat, enemy, trueCtx);
                 enemy.TakeDamage(trueRes.amount, DamageType.True, trueCtx);
+                DamageDealt += trueRes.amount;
             }
 
             if (EffectiveSlow)

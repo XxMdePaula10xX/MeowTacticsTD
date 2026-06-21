@@ -132,6 +132,17 @@ namespace MeowTactics.Managers
             SynergyManager.Instance?.RecalculateSynergies();
         }
 
+        /// <summary>Posiciona um gato vindo do save (sem validação, na posição salva).</summary>
+        public void PlaceRestoredCat(CatUnit cat, Vector3 pos)
+        {
+            if (cat == null) return;
+            cat.gameObject.SetActive(true);
+            cat.transform.position = new Vector3(pos.x, pos.y, 0f);
+            cat.transform.rotation = Quaternion.identity;
+            cat.IsPlaced = true;
+            if (!placed.Contains(cat)) placed.Add(cat);
+        }
+
         private CatUnit CatNear(Vector3 pos, float radius)
         {
             CatUnit best = null;

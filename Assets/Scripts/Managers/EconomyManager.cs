@@ -31,6 +31,13 @@ namespace MeowTactics.Managers
             OnCoinsChanged?.Invoke(Coins);
         }
 
+        /// <summary>Define o total de moedas diretamente (usado pelo carregamento de save).</summary>
+        public void SetCoins(int amount)
+        {
+            Coins = Mathf.Max(0, amount);
+            OnCoinsChanged?.Invoke(Coins);
+        }
+
         public bool CanAfford(int amount) => Coins >= amount;
 
         public void AddCoins(int amount)

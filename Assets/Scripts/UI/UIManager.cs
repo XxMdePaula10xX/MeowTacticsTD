@@ -74,7 +74,7 @@ namespace MeowTactics.UI
         private GameObject mainMenuPanel, pausePanel, settingsPanel;
         private float musicVolume = 0.6f;
 
-        private GameObject tutorialPanel;
+        private GameObject tutorialPanel, mapSelectPanel;
         private Text tutorialText;
         private int tutorialStep;
         private Transform detailItemsRow;
@@ -135,7 +135,86 @@ namespace MeowTactics.UI
             BuildMainMenu(root);
             BuildPauseMenu(root);
             BuildSettings(root);
+            BuildMapSelect(root);
             BuildTutorial(root);
+        }
+
+        // =========================================================
+        //  SELEÇÃO DE MAPA
+        // =========================================================
+        private void BuildMapSelect(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "MapSelect", new Color(0.06f, 0.05f, 0.12f, 0.98f));
+            mapSelectPanel = panel.gameObject;
+            UIFactory.StretchFull(panel.rectTransform);
+
+            var title = UIFactory.CreateText(panel.transform, "Title", "ESCOLHER MAPA", 54, ColGold, TextAnchor.MiddleCenter);
+            title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
+            var trt = title.rectTransform;
+            UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            trt.sizeDelta = new Vector2(900, 80); trt.anchoredPosition = new Vector2(0, -110);
+
+            var row = new GameObject("Cards", typeof(RectTransform));
+            row.transform.SetParent(panel.transform, false);
+            var rrt = row.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(rrt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            rrt.sizeDelta = new Vector2(1140, 460);
+            rrt.anchoredPosition = new Vector2(0, 10);
+            var hlg = row.AddComponent<HorizontalLayoutGroup>();
+            hlg.spacing = 28; hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
+            hlg.childAlignment = TextAnchor.MiddleCenter;
+
+            MapCard(row.transform, "bosque", "Bosque Fantasma", "Fácil", "Mapa noturno com dois caminhos.", true);
+            MapCard(row.transform, "jardim", "Jardim Místico", "Médio", "Em breve.", false);
+            MapCard(row.transform, "ruinas", "Ruínas Lunares", "Difícil", "Em breve.", false);
+
+            var back = UIFactory.CreateButton(panel.transform, "Back", "Voltar", ColGreen, HideMapSelect, 26, buttonSprite);
+            back.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            var brt = UIFactory.AsRect(back);
+            UIFactory.SetAnchors(brt, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0));
+            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 60);
+
+            mapSelectPanel.SetActive(false);
+        }
+
+        private void MapCard(Transform parent, string mapId, string name, string difficulty, string desc, bool playable)
+        {
+            var card = UIFactory.CreatePanel(parent, "MapCard", new Color(0.16f, 0.13f, 0.27f, 0.98f));
+            var vlg = card.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(16, 16, 18, 18); vlg.spacing = 8;
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.childAlignment = TextAnchor.UpperCenter;
+
+            var nm = UIFactory.CreateText(card.transform, "Name", name, 26, playable ? ColGold : ColDim, TextAnchor.MiddleCenter);
+            nm.fontStyle = FontStyle.Bold; NoWrap(nm); AddMinHeight(nm, 34);
+            var diff = UIFactory.CreateText(card.transform, "Diff", "Dificuldade: " + difficulty, 16, ColText, TextAnchor.MiddleCenter);
+            AddMinHeight(diff, 24);
+            var ds = UIFactory.CreateText(card.transform, "Desc", desc, 15, ColDim, TextAnchor.UpperCenter);
+            var dle = ds.gameObject.AddComponent<LayoutElement>(); dle.minHeight = 120; dle.flexibleHeight = 1;
+            var rec = UIFactory.CreateText(card.transform, "Rec", $"Recorde: onda {SaveSystem.BestWave(mapId)}", 15, ColGold, TextAnchor.MiddleCenter);
+            AddMinHeight(rec, 24);
+
+            if (playable)
+            {
+                var play = UIFactory.CreateButton(card.transform, "Play", "Jogar", ColGreen,
+                    () => { SaveSystem.CurrentMapId = mapId; GameManager.Instance?.NewGame(); }, 22, buttonSprite);
+                play.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+                var le = play.gameObject.AddComponent<LayoutElement>(); le.minHeight = 54;
+            }
+            else
+            {
+                var locked = UIFactory.CreateText(card.transform, "Locked", "Em breve", 18, ColDim, TextAnchor.MiddleCenter);
+                AddMinHeight(locked, 54);
+            }
+        }
+
+        public void ShowMapSelect() { if (mapSelectPanel != null) mapSelectPanel.SetActive(true); SFXManager.Play(SfxType.Click); }
+        public void HideMapSelect() { if (mapSelectPanel != null) mapSelectPanel.SetActive(false); SFXManager.Play(SfxType.Click); }
+
+        private void ContinueGame()
+        {
+            GameManager.LoadOnStart = true;
+            GameManager.Instance?.NewGame();
         }
 
         // =========================================================
@@ -208,11 +287,12 @@ namespace MeowTactics.UI
             UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
             trt.sizeDelta = new Vector2(1200, 100); trt.anchoredPosition = new Vector2(0, -170);
 
-            var col = MenuColumn(panel.transform, 440);
+            var col = MenuColumn(panel.transform, 460);
             MenuButton(col, "Novo Jogo", ColGreen, () => GameManager.Instance?.NewGame());
-            var cont = MenuButton(col, "Continuar", ColCard, () => ShowMessage("Ainda não há jogo salvo."));
-            cont.interactable = false;
-            MenuButton(col, "Escolher Mapa", ColCard, () => ShowMessage("Seleção de mapa chega no próximo bloco!"));
+            bool hasSave = SaveSystem.HasSave();
+            var cont = MenuButton(col, "Continuar", hasSave ? ColGreen : ColCard, ContinueGame);
+            cont.interactable = hasSave;
+            MenuButton(col, "Escolher Mapa", ColBlue, ShowMapSelect);
             MenuButton(col, "Configurações", ColBlue, ShowSettings);
             MenuButton(col, "Sair", ColRed, () => Application.Quit());
 
@@ -713,12 +793,12 @@ namespace MeowTactics.UI
             endPanel = UIFactory.CreatePanel(root, "EndPanel", new Color(0, 0, 0, 0.9f)).gameObject;
             UIFactory.StretchFull((RectTransform)endPanel.transform);
 
-            endText = UIFactory.CreateText(endPanel.transform, "EndText", "", 40, ColGold, TextAnchor.MiddleCenter);
+            endText = UIFactory.CreateText(endPanel.transform, "EndText", "", 38, ColGold, TextAnchor.UpperCenter);
             endText.fontStyle = FontStyle.Bold;
             var ert = endText.rectTransform;
-            UIFactory.SetAnchors(ert, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            ert.sizeDelta = new Vector2(1200, 400);
-            ert.anchoredPosition = new Vector2(0, 80);
+            UIFactory.SetAnchors(ert, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            ert.sizeDelta = new Vector2(1100, 470);
+            ert.anchoredPosition = new Vector2(0, -70);
 
             var btnRow = new GameObject("EndButtons", typeof(RectTransform));
             btnRow.transform.SetParent(endPanel.transform, false);
@@ -1324,7 +1404,8 @@ namespace MeowTactics.UI
                 $"Ondas: {waves}/{waves}\n" +
                 $"Inimigos derrotados: {defeated}\n" +
                 $"Moedas ganhas: {coins}\n" +
-                $"Sinergias ativadas: {everActivated.Count}";
+                $"Sinergias ativadas: {everActivated.Count}" +
+                RankingText();
             endText.color = ColGold;
             endPanel.SetActive(true);
         }
@@ -1338,10 +1419,25 @@ namespace MeowTactics.UI
             endText.text =
                 $"<size=78><b>DERROTA</b></size>\n\n" +
                 $"Você chegou até a onda {wave}/{total}\n" +
-                $"Inimigos derrotados: {defeated}\n\n" +
-                $"Tente combinar mais sinergias!";
+                $"Inimigos derrotados: {defeated}" +
+                RankingText();
             endText.color = ColRed;
             endPanel.SetActive(true);
+        }
+
+        private string RankingText()
+        {
+            if (PlacementManager.Instance == null) return "";
+            var list = new List<CatUnit>(PlacementManager.Instance.PlacedCats);
+            list.RemoveAll(c => c == null);
+            list.Sort((a, b) => b.DamageDealt.CompareTo(a.DamageDealt));
+            int n = Mathf.Min(3, list.Count);
+            if (n == 0) return "";
+            var sb = new StringBuilder();
+            sb.Append("\n\n<size=30><b>Top dano:</b></size>");
+            for (int i = 0; i < n; i++)
+                sb.Append($"\n{i + 1}. {list[i].Data.catName} — {list[i].DamageDealt:0}");
+            return sb.ToString();
         }
 
         // =========================================================
