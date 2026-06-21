@@ -47,6 +47,8 @@ namespace MeowTactics.UI
         private UIPulse startPulse;
 
         private GameObject itemsPanel, bottomPanel;
+        private GameObject nextWavePanel;
+        private Text nextWaveText;
         private Button collapseBtn;
         private bool collapsed;
 
@@ -281,7 +283,7 @@ namespace MeowTactics.UI
             var panel = UIFactory.CreatePanel(root, "SynergyPanel", ColPanel);
             var rt = panel.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1));
-            rt.sizeDelta = new Vector2(280, 470);
+            rt.sizeDelta = new Vector2(300, 470);
             rt.anchoredPosition = new Vector2(-12, -112);
 
             Title(panel.transform, "SINERGIAS");
@@ -312,6 +314,23 @@ namespace MeowTactics.UI
             srt.anchoredPosition = new Vector2(-20, 20);
             startPulse = startWaveButton.gameObject.AddComponent<UIPulse>();
             startPulse.speed = 3.2f; startPulse.amount = 0.05f;
+
+            // Preview da próxima onda (acima do botão Iniciar)
+            var nwp = UIFactory.CreatePanel(root, "NextWavePanel", new Color(0.10f, 0.08f, 0.18f, 0.92f));
+            nextWavePanel = nwp.gameObject;
+            var nwrt = nwp.rectTransform;
+            UIFactory.SetAnchors(nwrt, new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0));
+            nwrt.sizeDelta = new Vector2(290, 150);
+            nwrt.anchoredPosition = new Vector2(-20, 200);
+            var nwTitle = UIFactory.CreateText(nwp.transform, "Title", "PRÓXIMA ONDA", 18, ColGold, TextAnchor.UpperCenter);
+            nwTitle.fontStyle = FontStyle.Bold; NoWrap(nwTitle);
+            var ntrt = nwTitle.rectTransform;
+            UIFactory.SetAnchors(ntrt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
+            ntrt.sizeDelta = new Vector2(-12, 26); ntrt.anchoredPosition = new Vector2(0, -6);
+            nextWaveText = UIFactory.CreateText(nwp.transform, "Text", "", 16, ColText, TextAnchor.UpperLeft);
+            var nxrt = nextWaveText.rectTransform;
+            UIFactory.SetAnchors(nxrt, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f));
+            nxrt.offsetMin = new Vector2(14, 10); nxrt.offsetMax = new Vector2(-14, -34);
 
             // Aba clara de recolher/abrir a loja (canto inferior esquerdo, como uma aba do painel)
             collapseBtn = UIFactory.CreateButton(root, "Collapse", "LOJA  ▼", ColGreen,
@@ -526,7 +545,7 @@ namespace MeowTactics.UI
             }
             if (WaveManager.Instance != null)
             {
-                WaveManager.Instance.OnWaveChanged += (_, __) => UpdateWave();
+                WaveManager.Instance.OnWaveChanged += (_, __) => { UpdateWave(); UpdateNextWavePreview(); };
                 WaveManager.Instance.OnWaveProgress += UpdateWaveProgress;
             }
             if (ShopManager.Instance != null) ShopManager.Instance.OnShopChanged += UpdateShop;
@@ -545,7 +564,7 @@ namespace MeowTactics.UI
             prevActiveSynergies.Clear();
             UpdateCoins(); UpdateLives(); UpdateWave();
             UpdateShop(); UpdateBench(); UpdateSynergies(); UpdateItems();
-            UpdateSpeedButtons();
+            UpdateSpeedButtons(); UpdateNextWavePreview();
         }
 
         private void OnStateChanged(GameState state)
@@ -556,6 +575,8 @@ namespace MeowTactics.UI
             if (startLabel != null) startLabel.text = prep ? "INICIAR\nONDA  ▶" : "ONDA EM\nANDAMENTO";
             if (startPulse != null) startPulse.active = prep;
             if (waveProgressText != null && prep) waveProgressText.text = "Preparação — posicione seus gatos";
+            if (nextWavePanel != null) nextWavePanel.SetActive(prep);
+            if (prep) UpdateNextWavePreview();
 
             // Mantém a velocidade escolhida ao entrar em combate.
             if (state == GameState.WaveInProgress) Time.timeScale = gameSpeed;
@@ -648,6 +669,27 @@ namespace MeowTactics.UI
                 waveProgressText.text = "Preparação — posicione seus gatos";
                 if (waveBarBg != null) waveBarBg.SetActive(false);
             }
+        }
+
+        public void UpdateNextWavePreview()
+        {
+            if (nextWaveText == null || WaveManager.Instance == null) return;
+            var w = WaveManager.Instance.CurrentWave;
+            if (w == null) { nextWaveText.text = ""; return; }
+
+            var counts = new Dictionary<string, int>();
+            var order = new List<string>();
+            foreach (var info in w.enemies)
+            {
+                if (info.enemy == null) continue;
+                string nm = info.enemy.enemyName;
+                if (!counts.ContainsKey(nm)) { counts[nm] = 0; order.Add(nm); }
+                counts[nm] += info.count;
+            }
+            var sb = new StringBuilder();
+            foreach (var nm in order) sb.AppendLine($"{counts[nm]}x {nm}");
+            if (w.isBossWave) sb.Append("<color=#ff7777><b>★ BOSS!</b></color>");
+            nextWaveText.text = sb.ToString().TrimEnd();
         }
 
         // =========================================================
@@ -815,10 +857,9 @@ namespace MeowTactics.UI
                 if (s.IsActive && s.activeTier != null && !string.IsNullOrEmpty(s.activeTier.description))
                 {
                     var bonus = UIFactory.CreateText(synergyContainer, "SynRow",
-                        "     " + s.activeTier.description, 14, new Color(0.86f, 0.86f, 0.62f), TextAnchor.MiddleLeft);
-                    NoWrap(bonus);
+                        "   " + s.activeTier.description, 14, new Color(0.86f, 0.86f, 0.62f), TextAnchor.UpperLeft);
                     var ble = bonus.gameObject.AddComponent<LayoutElement>();
-                    ble.minHeight = 20;
+                    ble.minHeight = 20; // pode crescer se quebrar em 2 linhas
                 }
 
                 // Tooltip ao passar/tocar (mostra os bônus dos níveis).

@@ -21,8 +21,8 @@ namespace MeowTactics.Managers
         public static PlacementManager Instance { get; private set; }
 
         // Distâncias (em unidades de mundo).
-        private const float CatMinDistance = 1.1f; // espaço mínimo entre gatos
-        private const float CatClickRadius = 0.7f; // raio para clicar num gato
+        private const float CatMinDistance = 0.82f; // espaço mínimo entre gatos (mais grudadinhos)
+        private const float CatClickRadius = 0.6f;  // raio para clicar num gato
 
         public CatUnit SelectedBenchCat { get; private set; }
         public CatUnit FocusedCat { get; private set; }
@@ -250,7 +250,7 @@ namespace MeowTactics.Managers
             previewDot = dot.AddComponent<SpriteRenderer>();
             previewDot.sprite = SpriteFactory.Circle;
             previewDot.sortingOrder = 6;
-            dot.transform.localScale = Vector3.one * 1.15f;
+            dot.transform.localScale = Vector3.one * 0.95f;
         }
 
         private Vector3 MouseWorld()

@@ -71,6 +71,12 @@ namespace MeowTactics.Utilities
                 cat = BuildPlaceholderCat(data, position);
             }
             cat.Initialize(data);
+
+            // Ícones de itens equipados acima do gato (objeto separado, segue o gato).
+            var badges = new GameObject("ItemBadges");
+            badges.transform.position = cat.transform.position + new Vector3(0f, 0.78f, 0f);
+            badges.AddComponent<ItemBadges>().Setup(cat);
+
             return cat;
         }
 
@@ -93,8 +99,8 @@ namespace MeowTactics.Utilities
             rsr.sortingOrder = SortRange;
             ring.SetActive(false);
 
-            CreateShadow(go.transform, SortCat - 2, 0.9f, -0.5f);
-            CreateCatPad(go.transform, SortCat - 1, 1.0f, -0.42f, DamageGlow(data.damageType));
+            CreateShadow(go.transform, SortCat - 2, 0.8f, -0.5f);
+            CreateCatPad(go.transform, SortCat - 1, 0.85f, -0.42f, DamageGlow(data.damageType));
 
             go.AddComponent<JuiceVisual>();
             go.AddComponent<CatUnit>();

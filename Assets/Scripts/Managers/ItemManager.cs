@@ -68,12 +68,15 @@ namespace MeowTactics.Managers
                 return false;
             }
 
-            cat.EquipItem(SelectedForEquip);
-            inventory.Remove(SelectedForEquip);
+            var item = SelectedForEquip;
+            cat.EquipItem(item);
+            inventory.Remove(item);
             ClearSelection();
             OnInventoryChanged?.Invoke();
 
             SynergyManager.Instance?.RecalculateSynergies();
+            UIManager.Instance?.ShowMessage($"{item.itemName} equipado em {cat.Data.catName}!");
+            SFXManager.Play(SfxType.Buy);
             return true;
         }
 

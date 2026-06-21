@@ -274,22 +274,22 @@ namespace MeowTactics.EditorTools
             MakeSynergy(SynergyType.Ninja, "Ninja", new Color(0.7f, 0.3f, 0.3f),
                 "Gatos rápidos e focados em ataque contínuo.",
                 (2, "+20% vel. ataque", new[] { (BonusStat.AttackSpeedPercent, 20f) }),
-                (3, "+45% vel. ataque e +10% dano",
+                (3, "+45% vel. e +10% dano",
                     new[] { (BonusStat.AttackSpeedPercent, 45f), (BonusStat.DamagePercent, 10f) }));
 
             // Sniper: alcance + penetração de armadura (essencial contra blindados)
             MakeSynergy(SynergyType.Sniper, "Sniper", new Color(0.3f, 0.55f, 0.85f),
                 "Gatos de longo alcance que furam armadura.",
-                (2, "+20% alcance e +30 pen. armadura",
+                (2, "+20% alc. e +30 pen.arm.",
                     new[] { (BonusStat.RangePercent, 20f), (BonusStat.ArmorPenetrationFlat, 30f) }),
-                (3, "+25% dano e +60 pen. armadura",
+                (3, "+25% dano e +60 pen.arm.",
                     new[] { (BonusStat.DamagePercent, 25f), (BonusStat.ArmorPenetrationFlat, 60f) }));
 
             // Místico: dano mágico + penetração mágica (essencial contra sombras)
             MakeSynergy(SynergyType.Mystic, "Místico", new Color(0.6f, 0.4f, 0.9f),
                 "Gatos mágicos com dano elevado.",
                 (2, "+20% dano", new[] { (BonusStat.DamagePercent, 20f) }),
-                (3, "+45% dano e +25 pen. mágica",
+                (3, "+45% dano e +25 pen.mág.",
                     new[] { (BonusStat.DamagePercent, 45f), (BonusStat.MagicPenetrationFlat, 25f) }));
         }
 
