@@ -505,6 +505,7 @@ namespace MeowTactics.EditorTools
             uiMgr.buttonSprite = EnsureUiSprite("Assets/Art/UI/ui_botao.png",  new Vector4(28, 28, 28, 28));
             uiMgr.coinSprite   = EnsureUiSprite("Assets/Art/UI/ui_moeda.png",  Vector4.zero);
             uiMgr.heartSprite  = EnsureUiSprite("Assets/Art/UI/ui_vida.png",   Vector4.zero);
+            uiMgr.menuBgSprite = EnsureUiSprite("Assets/Art/UI/menu_bg.png",   Vector4.zero);
 
             // ---- Salvar ----
             if (!AssetDatabase.IsValidFolder("Assets/Scenes"))

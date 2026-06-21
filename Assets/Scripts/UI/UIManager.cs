@@ -35,6 +35,7 @@ namespace MeowTactics.UI
         public Sprite buttonSprite;
         public Sprite coinSprite;
         public Sprite heartSprite;
+        public Sprite menuBgSprite;
 
         // ---- Referências de runtime ----
         private Text waveText, waveProgressText, livesText, coinsText, messageText;
@@ -277,7 +278,18 @@ namespace MeowTactics.UI
         // =========================================================
         private void BuildMainMenu(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "MainMenu", new Color(0.07f, 0.06f, 0.14f, 1f));
+            Image panel;
+            if (menuBgSprite != null)
+            {
+                // Arte de fundo personalizada + leve escurecimento para legibilidade.
+                panel = UIFactory.CreatePanel(root, "MainMenu", Color.white, menuBgSprite);
+                var overlay = UIFactory.CreatePanel(panel.transform, "Overlay", new Color(0f, 0f, 0f, 0.42f));
+                UIFactory.StretchFull(overlay.rectTransform);
+            }
+            else
+            {
+                panel = UIFactory.CreatePanel(root, "MainMenu", new Color(0.07f, 0.06f, 0.14f, 1f));
+            }
             mainMenuPanel = panel.gameObject;
             UIFactory.StretchFull(panel.rectTransform);
 
