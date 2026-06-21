@@ -29,9 +29,9 @@ namespace MeowTactics.Managers
             src.loop = true; src.playOnAwake = false; src.spatialBlend = 0f;
 
             menuClip = Resources.Load<AudioClip>("Audio/Music/menu");
-            if (menuClip == null) menuClip = Pad("menu", new[] { 130f, 195f, 260f, 390f }); // acorde mais claro
+            if (menuClip == null) menuClip = MusicLoop("menu", new[] { 523f, 659f, 784f, 659f, 587f, 494f, 440f, 392f }, 131f);
             gameClip = Resources.Load<AudioClip>("Audio/Music/game");
-            if (gameClip == null) gameClip = Pad("game", new[] { 110f, 165f, 220f }); // acorde grave/calmo
+            if (gameClip == null) gameClip = MusicLoop("game", new[] { 392f, 330f, 294f, 247f, 262f, 294f, 330f, 392f }, 110f);
         }
 
         public static void Play(MusicTrack t) { if (Instance != null) Instance.PlayInternal(t); }
@@ -53,22 +53,37 @@ namespace MeowTactics.Managers
             PlayerPrefs.SetFloat("musicVol", volume);
         }
 
-        // Pad ambiente em loop perfeito: 4s, frequências harmônicas (ciclos inteiros),
-        // tremolo de 0.25Hz (1 ciclo em 4s) — não dá "clique" ao repetir.
-        private AudioClip Pad(string name, float[] freqs)
+        // Melodia em loop (8 notas de 0.5s = 4s): cada nota é um "pluck" (ataque rápido +
+        // decaimento) sobre um baixo contínuo. Loop perfeito: as notas terminam ~0 e o
+        // baixo completa ciclos inteiros em 4s. Soa como música, não como zumbido.
+        private AudioClip MusicLoop(string name, float[] notes, float bass)
         {
-            const float dur = 4f;
-            int n = (int)(Rate * dur);
+            const float noteDur = 0.5f;
+            int per = (int)(Rate * noteDur);
+            int n = per * notes.Length;
             var data = new float[n];
+
+            // Baixo suave e contínuo.
             for (int i = 0; i < n; i++)
             {
                 float t = (float)i / Rate;
-                float s = 0f;
-                foreach (var f in freqs) s += Mathf.Sin(2f * Mathf.PI * f * t);
-                s /= freqs.Length;
-                float tremolo = 0.75f + 0.25f * Mathf.Sin(2f * Mathf.PI * 0.25f * t);
-                data[i] = s * tremolo * 0.28f;
+                data[i] = Mathf.Sin(2f * Mathf.PI * bass * t) * 0.10f;
             }
+
+            // Melodia dedilhada por cima.
+            for (int k = 0; k < notes.Length; k++)
+            {
+                float phase = 0f;
+                for (int i = 0; i < per; i++)
+                {
+                    float prog = (float)i / per;
+                    phase += 2f * Mathf.PI * notes[k] / Rate;
+                    float attack = prog < 0.02f ? prog / 0.02f : 1f;
+                    float env = Mathf.Exp(-prog * 4.5f) * attack;
+                    data[k * per + i] += Mathf.Sin(phase) * env * 0.22f;
+                }
+            }
+
             var clip = AudioClip.Create(name, n, 1, Rate, false);
             clip.SetData(data, 0);
             return clip;

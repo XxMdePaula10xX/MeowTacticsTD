@@ -52,6 +52,9 @@ namespace MeowTactics.UI
         private Text nextWaveText;
         private Button collapseBtn;
         private bool collapsed;
+        private RectTransform synergyPanelRt;
+        private Button synergyToggleBtn;
+        private bool synergyCollapsed;
 
         private readonly HashSet<SynergyType> prevActiveSynergies = new HashSet<SynergyType>();
         private readonly HashSet<SynergyType> everActivated = new HashSet<SynergyType>();
@@ -603,11 +606,20 @@ namespace MeowTactics.UI
         {
             var panel = UIFactory.CreatePanel(root, "SynergyPanel", ColPanel);
             var rt = panel.rectTransform;
+            synergyPanelRt = rt;
             UIFactory.SetAnchors(rt, new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1));
             rt.sizeDelta = new Vector2(300, 470);
             rt.anchoredPosition = new Vector2(-12, -112);
 
             Title(panel.transform, "SINERGIAS");
+
+            // Botão recolher (canto superior direito do painel)
+            synergyToggleBtn = UIFactory.CreateButton(panel.transform, "SynToggle", "▼", ColCard, ToggleSynergy, 18);
+            synergyToggleBtn.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            var stt = UIFactory.AsRect(synergyToggleBtn);
+            UIFactory.SetAnchors(stt, new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1));
+            stt.sizeDelta = new Vector2(40, 34);
+            stt.anchoredPosition = new Vector2(-8, -8);
 
             var content = new GameObject("Content", typeof(RectTransform));
             content.transform.SetParent(panel.transform, false);
@@ -742,9 +754,9 @@ namespace MeowTactics.UI
             // Estatísticas
             detailText = UIFactory.CreateText(detailPanel.transform, "Info", "", 20, ColText, TextAnchor.UpperLeft);
             var drt = detailText.rectTransform;
-            UIFactory.SetAnchors(drt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
-            drt.sizeDelta = new Vector2(-110, 190);
-            drt.anchoredPosition = new Vector2(0, -210);
+            drt.anchorMin = new Vector2(0, 1); drt.anchorMax = new Vector2(1, 1); drt.pivot = new Vector2(0.5f, 1);
+            drt.offsetMin = new Vector2(82, -405);   // margem esquerda maior (sai de cima da moldura)
+            drt.offsetMax = new Vector2(-52, -185);
 
             // Fileira de ícones dos itens equipados
             var itemsRowGo = new GameObject("DetailItems", typeof(RectTransform));
@@ -920,6 +932,10 @@ namespace MeowTactics.UI
             if (nextWavePanel != null) nextWavePanel.SetActive(prep);
             if (prep) UpdateNextWavePreview();
 
+            // Auto: recolhe loja/banco e sinergias durante a onda; reabre na preparação.
+            if (state == GameState.WaveInProgress) { SetBottomCollapsed(true); SetSynergyCollapsed(true); }
+            else if (prep) { SetBottomCollapsed(false); SetSynergyCollapsed(false); }
+
             // Mantém a velocidade escolhida ao entrar em combate.
             if (state == GameState.WaveInProgress) Time.timeScale = gameSpeed;
             else if (prep) Time.timeScale = 1f;
@@ -955,11 +971,31 @@ namespace MeowTactics.UI
 
         private void ToggleCollapse()
         {
-            collapsed = !collapsed;
-            if (bottomPanel != null) bottomPanel.SetActive(!collapsed);
-            var lbl = collapseBtn != null ? collapseBtn.GetComponentInChildren<Text>() : null;
-            if (lbl != null) lbl.text = collapsed ? "LOJA  ▲" : "LOJA  ▼";
+            SetBottomCollapsed(!collapsed);
             SFXManager.Play(SfxType.Click);
+        }
+
+        private void SetBottomCollapsed(bool v)
+        {
+            collapsed = v;
+            if (bottomPanel != null) bottomPanel.SetActive(!v);
+            var lbl = collapseBtn != null ? collapseBtn.GetComponentInChildren<Text>() : null;
+            if (lbl != null) lbl.text = v ? "LOJA  ▲" : "LOJA  ▼";
+        }
+
+        private void ToggleSynergy()
+        {
+            SetSynergyCollapsed(!synergyCollapsed);
+            SFXManager.Play(SfxType.Click);
+        }
+
+        private void SetSynergyCollapsed(bool v)
+        {
+            synergyCollapsed = v;
+            if (synergyContainer != null) synergyContainer.gameObject.SetActive(!v);
+            if (synergyPanelRt != null) synergyPanelRt.sizeDelta = new Vector2(300, v ? 50 : 470);
+            var lbl = synergyToggleBtn != null ? synergyToggleBtn.GetComponentInChildren<Text>() : null;
+            if (lbl != null) lbl.text = v ? "▲" : "▼";
         }
 
         // =========================================================
