@@ -84,7 +84,8 @@ namespace MeowTactics.UI
             BuildUI();
             Subscribe();
             RefreshAll();
-            if (!GameManager.StartInGame) ShowMainMenu();
+            if (!GameManager.StartInGame) { ShowMainMenu(); MusicManager.Play(MusicTrack.Menu); }
+            else MusicManager.Play(MusicTrack.Game);
         }
 
         // =========================================================
@@ -179,7 +180,9 @@ namespace MeowTactics.UI
 
             var col = MenuColumn(panel.transform, 560);
 
-            SliderRow(col, "Volume da Música", musicVolume, v => musicVolume = v);
+            float music = MusicManager.Instance != null ? MusicManager.Instance.volume : musicVolume;
+            SliderRow(col, "Volume da Música", music,
+                v => { if (MusicManager.Instance != null) MusicManager.Instance.SetVolume(v); });
             float sfx = SFXManager.Instance != null ? SFXManager.Instance.volume : 0.55f;
             SliderRow(col, "Volume dos Efeitos", sfx, v => { if (SFXManager.Instance != null) SFXManager.Instance.volume = v; });
 

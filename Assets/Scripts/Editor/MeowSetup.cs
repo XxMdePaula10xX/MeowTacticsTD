@@ -483,6 +483,7 @@ namespace MeowTactics.EditorTools
             // ---- Sistemas (managers) ----
             var sys = new GameObject("GameSystems");
             sys.AddComponent<SFXManager>();
+            sys.AddComponent<MusicManager>();
             sys.AddComponent<EconomyManager>();
             var shop = sys.AddComponent<ShopManager>();
             sys.AddComponent<BenchManager>();
