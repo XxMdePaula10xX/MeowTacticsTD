@@ -362,16 +362,19 @@ namespace MeowTactics.EditorTools
 
         private static void GenerateWaves(Dictionary<string, EnemyData> e)
         {
-            MakeWave(1, 0.8f, false, (e["ghostling"], 10, 1.0f));
-            MakeWave(2, 0.8f, false, (e["ghostling"], 14, 1.15f));
-            MakeWave(3, 0.75f, false, (e["ghostling"], 10, 1.2f), (e["swift"], 4, 1.2f));
-            MakeWave(4, 0.75f, false, (e["armored"], 8, 1.2f), (e["ghostling"], 8, 1.2f));
-            MakeWave(5, 0.7f, false, (e["shadow"], 10, 1.25f));
-            MakeWave(6, 0.65f, false, (e["swift"], 12, 1.3f), (e["ghostling"], 8, 1.3f));
-            MakeWave(7, 0.65f, false, (e["armored"], 10, 1.35f), (e["shadow"], 10, 1.35f));
-            MakeWave(8, 0.6f, false, (e["ghostling"], 10, 1.4f), (e["swift"], 8, 1.4f), (e["shadow"], 7, 1.4f));
-            MakeWave(9, 0.55f, false, (e["armored"], 10, 1.5f), (e["shadow"], 10, 1.5f), (e["swift"], 10, 1.5f));
-            MakeWave(10, 0.9f, true, (e["king"], 1, 1.0f), (e["ghostling"], 10, 1.3f));
+            // O escalonamento de vida/armadura/RM por onda é GLOBAL (ver EnemyUnit.Initialize:
+            // +18% vida/onda etc.). Aqui o multiplicador de grupo fica 1.0; cada onda traz
+            // uma COMPOSIÇÃO diferente (variedade) e mais inimigos.
+            MakeWave(1,  0.80f, false, (e["ghostling"], 12, 1f));                                   // básica
+            MakeWave(2,  0.75f, false, (e["ghostling"], 12, 1f), (e["swift"], 5, 1f));              // intro rápidos
+            MakeWave(3,  0.50f, false, (e["swift"], 16, 1f), (e["ghostling"], 4, 1f));              // enxame rápido
+            MakeWave(4,  0.70f, false, (e["armored"], 10, 1f), (e["ghostling"], 6, 1f));            // blindados
+            MakeWave(5,  0.70f, false, (e["shadow"], 12, 1f), (e["ghostling"], 5, 1f));             // resist. mágica
+            MakeWave(6,  0.60f, false, (e["armored"], 8, 1f), (e["shadow"], 8, 1f), (e["swift"], 6, 1f)); // mista
+            MakeWave(7,  0.50f, false, (e["swift"], 16, 1f), (e["armored"], 8, 1f));                // enxame + blindados
+            MakeWave(8,  0.70f, false, (e["king"], 1, 0.5f), (e["shadow"], 8, 1f), (e["armored"], 8, 1f)); // mini-boss
+            MakeWave(9,  0.55f, false, (e["armored"], 12, 1f), (e["shadow"], 12, 1f), (e["swift"], 10, 1f)); // pesada mista
+            MakeWave(10, 0.70f, true,  (e["king"], 1, 1f), (e["ghostling"], 12, 1f), (e["swift"], 8, 1f));   // BOSS
         }
 
         private static void MakeWave(int number, float interval, bool boss,

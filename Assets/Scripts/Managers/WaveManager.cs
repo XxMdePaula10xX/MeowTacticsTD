@@ -128,7 +128,8 @@ namespace MeowTactics.Managers
 
             // Recompensa de onda: base + número da onda + bônus específico.
             int waveNumber = CurrentWaveIndex + 1;
-            int reward = GameBalance.CoinsPerWaveBase + waveNumber + (wave != null ? wave.bonusReward : 0);
+            // Recompensa de onda = 3 + floor(onda/2) (+ bônus específico da onda)
+            int reward = GameBalance.CoinsPerWaveBase + (waveNumber / 2) + (wave != null ? wave.bonusReward : 0);
             EconomyManager.Instance?.AddCoins(reward);
 
             int completedWaveNumber = CurrentWaveIndex + 1;

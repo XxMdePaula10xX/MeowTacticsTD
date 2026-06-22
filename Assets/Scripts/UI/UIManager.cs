@@ -63,9 +63,7 @@ namespace MeowTactics.UI
         private Text waveBannerText, tooltipText;
         private Coroutine waveBannerRoutine;
 
-        private GameObject detailPanel;
-        private Image detailIcon;
-        private Text detailNameText, detailText;
+        private GameObject detailPanel, detailContent;
         private Button detailSellBtn, detailReturnBtn;
         private CatUnit detailCat;
 
@@ -81,7 +79,6 @@ namespace MeowTactics.UI
         private GameObject tutorialPanel, mapSelectPanel;
         private Text tutorialText;
         private int tutorialStep;
-        private Transform detailItemsRow;
         private static readonly string[] TutorialSteps =
         {
             "1/6 — Compre um gato na LOJA (embaixo). Ele vai para o BANCO.",
@@ -731,62 +728,54 @@ namespace MeowTactics.UI
         // ---------- Painéis modais ----------
         private void BuildDetailPanel(Transform root)
         {
-            detailPanel = UIFactory.CreatePanel(root, "DetailPanel", ColPanel, panelSprite).gameObject;
-            var rt = (RectTransform)detailPanel.transform;
+            // Moldura dourada limpa: retângulo dourado + interior roxo escuro.
+            var outer = UIFactory.CreatePanel(root, "DetailPanel", ColGold);
+            detailPanel = outer.gameObject;
+            var rt = outer.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            rt.sizeDelta = new Vector2(580, 600);
+            rt.sizeDelta = new Vector2(540, 720);
 
-            // Retrato do gato (topo)
-            detailIcon = UIFactory.CreateIcon(detailPanel.transform, "Portrait", null, 110);
-            detailIcon.enabled = false;
-            var irt = detailIcon.rectTransform;
-            UIFactory.SetAnchors(irt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
-            irt.anchoredPosition = new Vector2(0, -54);
+            var inner = UIFactory.CreatePanel(outer.transform, "Inner", new Color(0.13f, 0.11f, 0.24f, 0.99f));
+            UIFactory.StretchFull(inner.rectTransform, 6f);
 
-            // Nome
-            detailNameText = UIFactory.CreateText(detailPanel.transform, "Name", "", 28, ColGold, TextAnchor.MiddleCenter);
-            detailNameText.fontStyle = FontStyle.Bold; NoWrap(detailNameText); AddOutline(detailNameText);
-            var nrt = detailNameText.rectTransform;
-            UIFactory.SetAnchors(nrt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
-            nrt.sizeDelta = new Vector2(480, 40);
-            nrt.anchoredPosition = new Vector2(0, -176);
+            // Conteúdo (preenche o interior, deixando espaço pros botões embaixo)
+            var content = new GameObject("Content", typeof(RectTransform));
+            content.transform.SetParent(inner.transform, false);
+            var crt = content.GetComponent<RectTransform>();
+            crt.anchorMin = Vector2.zero; crt.anchorMax = Vector2.one;
+            crt.offsetMin = new Vector2(0, 92); crt.offsetMax = Vector2.zero;
+            var vlg = content.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(28, 28, 22, 10); vlg.spacing = 5;
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.childAlignment = TextAnchor.UpperCenter;
+            detailContent = content;
 
-            // Estatísticas
-            detailText = UIFactory.CreateText(detailPanel.transform, "Info", "", 20, ColText, TextAnchor.UpperLeft);
-            var drt = detailText.rectTransform;
-            drt.anchorMin = new Vector2(0, 1); drt.anchorMax = new Vector2(1, 1); drt.pivot = new Vector2(0.5f, 1);
-            drt.offsetMin = new Vector2(82, -405);   // margem esquerda maior (sai de cima da moldura)
-            drt.offsetMax = new Vector2(-52, -185);
-
-            // Fileira de ícones dos itens equipados
-            var itemsRowGo = new GameObject("DetailItems", typeof(RectTransform));
-            itemsRowGo.transform.SetParent(detailPanel.transform, false);
-            var irrt = itemsRowGo.GetComponent<RectTransform>();
-            UIFactory.SetAnchors(irrt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
-            irrt.sizeDelta = new Vector2(-120, 46);
-            irrt.anchoredPosition = new Vector2(0, -414);
-            var ihlg = itemsRowGo.AddComponent<HorizontalLayoutGroup>();
-            ihlg.spacing = 8; ihlg.childAlignment = TextAnchor.MiddleCenter;
-            ihlg.childForceExpandWidth = false; ihlg.childForceExpandHeight = false;
-            detailItemsRow = itemsRowGo.transform;
-
+            // Botões fixos no rodapé (nunca cortam)
             var btnRow = new GameObject("Buttons", typeof(RectTransform));
-            btnRow.transform.SetParent(detailPanel.transform, false);
+            btnRow.transform.SetParent(inner.transform, false);
             var brt = btnRow.GetComponent<RectTransform>();
             UIFactory.SetAnchors(brt, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0));
-            brt.sizeDelta = new Vector2(-90, 84);
-            brt.anchoredPosition = new Vector2(0, 38);
+            brt.sizeDelta = new Vector2(-36, 70);
+            brt.anchoredPosition = new Vector2(0, 14);
             var hlg = btnRow.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 10; hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
+            hlg.spacing = 12; hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
 
-            detailSellBtn = UIFactory.CreateButton(btnRow.transform, "Sell", "Vender", ColRed,
-                () => { if (detailCat != null) PlacementManager.Instance?.SellCat(detailCat); }, 20, buttonSprite);
-            detailReturnBtn = UIFactory.CreateButton(btnRow.transform, "Return", "Voltar p/ banco", ColBlue,
-                () => { if (detailCat != null) PlacementManager.Instance?.ReturnCatToBench(detailCat); }, 18, buttonSprite);
-            UIFactory.CreateButton(btnRow.transform, "Close", "Fechar", ColCard,
-                () => PlacementManager.Instance?.ClearFocus(), 20, buttonSprite);
+            detailSellBtn = DetailButton(btnRow.transform, "Vender", ColRed,
+                () => { if (detailCat != null) PlacementManager.Instance?.SellCat(detailCat); });
+            detailReturnBtn = DetailButton(btnRow.transform, "Mover p/ banco", ColBlue,
+                () => { if (detailCat != null) PlacementManager.Instance?.ReturnCatToBench(detailCat); });
+            DetailButton(btnRow.transform, "Fechar", ColCard,
+                () => PlacementManager.Instance?.ClearFocus());
 
             detailPanel.SetActive(false);
+        }
+
+        private Button DetailButton(Transform parent, string label, Color color, UnityAction onClick)
+        {
+            var b = UIFactory.CreateButton(parent, "DBtn", label, color, onClick, 20);
+            var t = b.GetComponentInChildren<Text>();
+            t.fontStyle = FontStyle.Bold; AddOutline(t);
+            return b;
         }
 
         private void BuildDraftPanel(Transform root)
@@ -1331,51 +1320,83 @@ namespace MeowTactics.UI
         // =========================================================
         public void ShowCatDetail(CatUnit cat)
         {
-            if (cat == null) return;
+            if (cat == null || detailContent == null) return;
             detailCat = cat;
 
-            if (detailIcon != null)
+            foreach (Transform c in detailContent.transform) Destroy(c.gameObject);
+
+            var name = DetailText(cat.Data.catName, 30, ColGold, TextAnchor.MiddleCenter, 40);
+            name.fontStyle = FontStyle.Bold; NoWrap(name); AddOutline(name);
+
+            DetailText($"{DamageName(cat.Data.damageType)}  •  {SynergyNames(new List<SynergyType>(cat.GetEffectiveSynergies()))}",
+                15, ColDim, TextAnchor.MiddleCenter, 22);
+
+            if (cat.Data.icon != null)
             {
-                detailIcon.sprite = cat.Data.icon;
-                detailIcon.enabled = cat.Data.icon != null;
+                var ic = UIFactory.CreateIcon(detailContent.transform, "Portrait", cat.Data.icon, 82);
+                var le = ic.gameObject.AddComponent<LayoutElement>(); le.minHeight = 82; le.preferredHeight = 82;
             }
-            if (detailNameText != null) detailNameText.text = cat.Data.catName;
 
-            var sb = new StringBuilder();
-            sb.AppendLine($"<i>{cat.Data.description}</i>");
-            sb.AppendLine();
-            sb.AppendLine($"<b>Dano:</b> {cat.CurrentDamage:0.#}  ({DamageName(cat.Data.damageType)})");
-            sb.AppendLine($"<b>Vel. ataque:</b> {cat.CurrentAttackSpeed:0.##}/s");
-            sb.AppendLine($"<b>Alcance:</b> {cat.CurrentRange:0.#}");
-            sb.AppendLine($"<b>Crítico:</b> {cat.CurrentCritChance:0}%");
-            sb.AppendLine($"<b>Sinergias:</b> {SynergyNames(new List<SynergyType>(cat.GetEffectiveSynergies()))}");
-            sb.Append($"<b>Itens:</b> ");
-            sb.Append(cat.Items.Count == 0 ? "nenhum" : ItemNames(cat.Items));
+            DetailHeader("ATRIBUTOS");
+            StatRow("Dano", $"{cat.CurrentDamage:0.#}", ColText);
+            StatRow("Tipo de dano", DamageName(cat.Data.damageType), DamageColor(cat.Data.damageType));
+            StatRow("Vel. ataque", $"{cat.CurrentAttackSpeed:0.##}/s", ColText);
+            StatRow("Alcance", $"{cat.CurrentRange:0.#}", ColText);
+            StatRow("Crítico", $"{cat.CurrentCritChance:0}%", ColText);
 
-            detailText.text = sb.ToString();
+            DetailHeader("SINERGIAS");
+            DetailText(SynergyNames(new List<SynergyType>(cat.GetEffectiveSynergies())),
+                16, new Color(0.7f, 0.85f, 1f), TextAnchor.MiddleCenter, 24);
 
-            if (detailItemsRow != null)
-            {
-                foreach (Transform c in detailItemsRow) Destroy(c.gameObject);
-                foreach (var it in cat.Items)
-                {
-                    LayoutElement le;
-                    if (it.icon != null)
-                    {
-                        var ic = UIFactory.CreateIcon(detailItemsRow, "Icon", it.icon, 42);
-                        le = ic.gameObject.AddComponent<LayoutElement>();
-                    }
-                    else
-                    {
-                        var sw = UIFactory.CreatePanel(detailItemsRow, "Sw", it.uiColor);
-                        le = sw.gameObject.AddComponent<LayoutElement>();
-                    }
-                    le.minWidth = 42; le.preferredWidth = 42; le.minHeight = 42; le.preferredHeight = 42;
-                }
-            }
+            DetailHeader(cat.Items.Count > 0 ? "ITENS EQUIPADOS" : "ITENS");
+            if (cat.Items.Count == 0) DetailText("nenhum", 15, ColDim, TextAnchor.MiddleCenter, 22);
+            else foreach (var it in cat.Items) ItemDetailRow(it);
 
             detailReturnBtn.interactable = cat.IsPlaced;
             detailPanel.SetActive(true);
+        }
+
+        private Text DetailText(string txt, int size, Color color, TextAnchor anchor, float minH)
+        {
+            var t = UIFactory.CreateText(detailContent.transform, "DTxt", txt, size, color, anchor);
+            var le = t.gameObject.AddComponent<LayoutElement>(); le.minHeight = minH; le.preferredHeight = minH;
+            return t;
+        }
+
+        private void DetailHeader(string txt)
+        {
+            var t = UIFactory.CreateText(detailContent.transform, "DHdr", txt, 16, ColGold, TextAnchor.MiddleLeft);
+            t.fontStyle = FontStyle.Bold; NoWrap(t);
+            var le = t.gameObject.AddComponent<LayoutElement>(); le.minHeight = 28; le.preferredHeight = 28;
+        }
+
+        private void StatRow(string label, string value, Color valColor)
+        {
+            var row = new GameObject("StatRow", typeof(RectTransform));
+            row.transform.SetParent(detailContent.transform, false);
+            var le = row.AddComponent<LayoutElement>(); le.minHeight = 26; le.preferredHeight = 26;
+            var hlg = row.AddComponent<HorizontalLayoutGroup>();
+            hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true; hlg.childAlignment = TextAnchor.MiddleLeft;
+            var l = UIFactory.CreateText(row.transform, "L", label, 16, ColDim, TextAnchor.MiddleLeft); NoWrap(l);
+            var v = UIFactory.CreateText(row.transform, "V", value, 16, valColor, TextAnchor.MiddleRight); v.fontStyle = FontStyle.Bold; NoWrap(v);
+        }
+
+        private void ItemDetailRow(ItemData it)
+        {
+            var row = new GameObject("ItemRow", typeof(RectTransform));
+            row.transform.SetParent(detailContent.transform, false);
+            var le = row.AddComponent<LayoutElement>(); le.minHeight = 44; le.preferredHeight = 44;
+            var hlg = row.AddComponent<HorizontalLayoutGroup>();
+            hlg.spacing = 8; hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false; hlg.childAlignment = TextAnchor.MiddleLeft;
+            if (it.icon != null)
+            {
+                var ic = UIFactory.CreateIcon(row.transform, "Icon", it.icon, 40);
+                var ile = ic.gameObject.AddComponent<LayoutElement>();
+                ile.minWidth = 40; ile.preferredWidth = 40; ile.minHeight = 40; ile.preferredHeight = 40;
+            }
+            var txt = UIFactory.CreateText(row.transform, "Txt",
+                $"<b>{it.itemName}</b>   <color=#9fe89f>{it.description}</color>", 14, ColText, TextAnchor.MiddleLeft);
+            var tle = txt.gameObject.AddComponent<LayoutElement>(); tle.minWidth = 380; tle.flexibleWidth = 1;
         }
 
         public void HideCatDetail()

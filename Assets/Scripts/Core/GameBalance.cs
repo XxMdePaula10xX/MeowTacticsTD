@@ -7,15 +7,19 @@ namespace MeowTactics.Core
     /// </summary>
     public static class GameBalance
     {
-        // ---- Economia ----
-        public const int StartingCoins = 10;
+        // ---- Economia ---- (AJUSTE AQUI a dificuldade econômica)
+        public const int StartingCoins = 7;     // menos moedas iniciais (era 10)
         public const int StartingLives = 20;
         public const int ShopSize = 5;
         public const int BenchSize = 8;
         public const int RerollCost = 2;
         public const int CoinsPerKill = 1;
-        public const int CoinsPerWaveBase = 5; // recompensa = base + número da onda
-        public const float SellRatio = 0.7f;   // venda devolve 70% do investido
+        // Recompensa de onda = 3 + floor(onda/2)  (ver WaveManager.EndWave)
+        public const int CoinsPerWaveBase = 3;
+        public const float SellRatio = 0.55f;   // venda devolve 55% do investido (era 70%)
+
+        // Chance de um inimigo "comum" (coinReward <= 1) dropar 1 moeda. Elites/boss dão sempre.
+        public const float CommonCoinDropChance = 0.3f;
 
         // ---- Combate ----
         public const float CritMultiplierDefault = 1.5f;

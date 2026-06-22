@@ -59,11 +59,18 @@ namespace MeowTactics.Enemies
             pathIndex = 0;
             PathProgress = 0f;
 
-            MaxHealth = data.maxHealth * scalingMultiplier;
+            // Escalonamento por onda (0-based): vida +18%/onda; armadura/RM +5%/onda
+            // a partir da onda 4; velocidade +3%/onda (limite 1.3x).
+            int w = WaveManager.Instance != null ? WaveManager.Instance.CurrentWaveIndex : 0;
+            float hpScale  = scalingMultiplier * (1f + 0.18f * w);
+            float defScale = scalingMultiplier * (w >= 3 ? 1f + 0.05f * (w - 2) : 1f);
+            float spdScale = Mathf.Min(1.3f, 1f + 0.03f * w);
+
+            MaxHealth = data.maxHealth * hpScale;
             CurrentHealth = MaxHealth;
-            CurrentArmor = data.armor * scalingMultiplier;
-            CurrentMagicResistance = data.magicResistance * scalingMultiplier;
-            CurrentMoveSpeed = data.moveSpeed; // velocidade não escala por padrão
+            CurrentArmor = data.armor * defScale;
+            CurrentMagicResistance = data.magicResistance * defScale;
+            CurrentMoveSpeed = data.moveSpeed * spdScale;
 
             slowFactor = 1f;
             slowTimer = 0f;
@@ -153,15 +160,24 @@ namespace MeowTactics.Enemies
             IsAlive = false;
             Active.Remove(this);
 
-            EconomyManager.Instance?.AddCoins(Data.coinReward);
+            // Moeda: comuns (coinReward <= 1) têm CHANCE de dropar; elites/boss dão sempre.
+            int dropped = Data.coinReward;
+            if (dropped <= 1)
+                dropped = (Random.value < GameBalance.CommonCoinDropChance) ? 1 : 0;
+
+            if (dropped > 0)
+            {
+                EconomyManager.Instance?.AddCoins(dropped);
+                SFXManager.Play(SfxType.Coin);
+                FloatingText.Spawn(transform.position, "+" + dropped, new Color(1f, 0.85f, 0.3f), 1f);
+            }
+
             GameManager.Instance?.RegisterEnemyDefeated();
             WaveManager.Instance?.OnEnemyRemoved(this);
             SFXManager.Play(SfxType.EnemyDeath);
-            SFXManager.Play(SfxType.Coin);
 
-            // Moedinha pulando + "poof" de morte.
+            // "poof" de morte.
             if (healthBar != null) healthBar.gameObject.SetActive(false);
-            FloatingText.Spawn(transform.position, "+" + Data.coinReward, new Color(1f, 0.85f, 0.3f), 1f);
             if (juice != null) juice.PlayDeath();
             else Destroy(gameObject);
         }
