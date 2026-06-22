@@ -31,7 +31,7 @@ namespace MeowTactics.UI
             return rt;
         }
 
-        public static Image CreatePanel(Transform parent, string name, Color color, Sprite sprite = null)
+        public static Image CreatePanel(Transform parent, string name, Color color, Sprite sprite = null, bool rounded = true)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
             go.transform.SetParent(parent, false);
@@ -42,9 +42,16 @@ namespace MeowTactics.UI
                 img.type = Image.Type.Sliced;  // estica o miolo, mantém a moldura
                 img.color = Color.white;
             }
+            else if (rounded)
+            {
+                // Sem arte: usamos o retângulo arredondado procedural, tingido pela cor.
+                img.sprite = UISprites.Rounded;
+                img.type = Image.Type.Sliced;
+                img.color = color;
+            }
             else
             {
-                img.color = color;
+                img.color = color; // tira reta chapada (faixas finas etc.)
             }
             return img;
         }
@@ -92,6 +99,9 @@ namespace MeowTactics.UI
             }
             else
             {
+                // Botão arredondado procedural, tingido pela cor de fundo.
+                img.sprite = UISprites.Rounded;
+                img.type = Image.Type.Sliced;
                 img.color = bgColor;
             }
             var btn = go.GetComponent<Button>();

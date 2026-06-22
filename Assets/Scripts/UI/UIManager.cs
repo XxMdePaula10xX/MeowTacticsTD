@@ -145,9 +145,10 @@ namespace MeowTactics.UI
         // =========================================================
         private void BuildMapSelect(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "MapSelect", new Color(0.07f, 0.06f, 0.14f, 1f));
+            var panel = UIFactory.CreatePanel(root, "MapSelect", new Color(0.07f, 0.06f, 0.14f, 1f), null, false);
             mapSelectPanel = panel.gameObject;
             UIFactory.StretchFull(panel.rectTransform);
+            Appear(mapSelectPanel, 1f);
 
             var title = UIFactory.CreateText(panel.transform, "Title", "ESCOLHER MAPA", 54, ColGold, TextAnchor.MiddleCenter);
             title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
@@ -225,6 +226,7 @@ namespace MeowTactics.UI
         {
             var panel = UIFactory.CreatePanel(root, "Tutorial", new Color(0.09f, 0.07f, 0.17f, 0.97f));
             tutorialPanel = panel.gameObject;
+            Appear(tutorialPanel);
             var rt = panel.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
             rt.sizeDelta = new Vector2(880, 84);
@@ -283,15 +285,16 @@ namespace MeowTactics.UI
             {
                 // Arte de fundo personalizada + leve escurecimento para legibilidade.
                 panel = UIFactory.CreatePanel(root, "MainMenu", Color.white, menuBgSprite);
-                var overlay = UIFactory.CreatePanel(panel.transform, "Overlay", new Color(0f, 0f, 0f, 0.42f));
+                var overlay = UIFactory.CreatePanel(panel.transform, "Overlay", new Color(0f, 0f, 0f, 0.42f), null, false);
                 UIFactory.StretchFull(overlay.rectTransform);
             }
             else
             {
-                panel = UIFactory.CreatePanel(root, "MainMenu", new Color(0.07f, 0.06f, 0.14f, 1f));
+                panel = UIFactory.CreatePanel(root, "MainMenu", new Color(0.07f, 0.06f, 0.14f, 1f), null, false);
             }
             mainMenuPanel = panel.gameObject;
             UIFactory.StretchFull(panel.rectTransform);
+            Appear(mainMenuPanel, 1f);
 
             var title = UIFactory.CreateText(panel.transform, "Title", "MEOW TACTICS TD", 72, ColGold, TextAnchor.MiddleCenter);
             title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
@@ -313,9 +316,10 @@ namespace MeowTactics.UI
 
         private void BuildPauseMenu(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "PauseMenu", new Color(0f, 0f, 0f, 0.84f));
+            var panel = UIFactory.CreatePanel(root, "PauseMenu", new Color(0f, 0f, 0f, 0.84f), null, false);
             pausePanel = panel.gameObject;
             UIFactory.StretchFull(panel.rectTransform);
+            Appear(pausePanel, 1f);
 
             var title = UIFactory.CreateText(panel.transform, "Title", "PAUSADO", 60, ColGold, TextAnchor.MiddleCenter);
             title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
@@ -334,9 +338,10 @@ namespace MeowTactics.UI
 
         private void BuildSettings(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "Settings", new Color(0.07f, 0.06f, 0.14f, 1f));
+            var panel = UIFactory.CreatePanel(root, "Settings", new Color(0.07f, 0.06f, 0.14f, 1f), null, false);
             settingsPanel = panel.gameObject;
             UIFactory.StretchFull(panel.rectTransform);
+            Appear(settingsPanel, 1f);
 
             var title = UIFactory.CreateText(panel.transform, "Title", "CONFIGURAÇÕES", 54, ColGold, TextAnchor.MiddleCenter);
             title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
@@ -473,7 +478,7 @@ namespace MeowTactics.UI
         // ---------- Top bar ----------
         private void BuildTopBar(Transform root)
         {
-            var bar = UIFactory.CreatePanel(root, "TopBar", ColDark);
+            var bar = UIFactory.CreatePanel(root, "TopBar", ColDark, null, false);
             var rt = bar.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
             rt.sizeDelta = new Vector2(0, 100);
@@ -505,7 +510,7 @@ namespace MeowTactics.UI
             prt.anchoredPosition = new Vector2(0, -22);
 
             // Barra de progresso da onda
-            var barBg = UIFactory.CreatePanel(bar.transform, "WaveBarBg", new Color(0f, 0f, 0f, 0.55f));
+            var barBg = UIFactory.CreatePanel(bar.transform, "WaveBarBg", new Color(0f, 0f, 0f, 0.55f), null, false);
             waveBarBg = barBg.gameObject;
             var bgrt = barBg.rectTransform;
             UIFactory.SetAnchors(bgrt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
@@ -731,6 +736,7 @@ namespace MeowTactics.UI
             // Moldura dourada limpa: retângulo dourado + interior roxo escuro.
             var outer = UIFactory.CreatePanel(root, "DetailPanel", ColGold);
             detailPanel = outer.gameObject;
+            Appear(detailPanel);
             var rt = outer.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             rt.sizeDelta = new Vector2(540, 720);
@@ -780,8 +786,9 @@ namespace MeowTactics.UI
 
         private void BuildDraftPanel(Transform root)
         {
-            draftPanel = UIFactory.CreatePanel(root, "DraftPanel", new Color(0, 0, 0, 0.85f)).gameObject;
+            draftPanel = UIFactory.CreatePanel(root, "DraftPanel", new Color(0, 0, 0, 0.85f), null, false).gameObject;
             UIFactory.StretchFull((RectTransform)draftPanel.transform);
+            Appear(draftPanel, 1f);
 
             var t = UIFactory.CreateText(draftPanel.transform, "Title", "ESCOLHA UM ITEM!", 44, ColGold, TextAnchor.MiddleCenter);
             t.fontStyle = FontStyle.Bold; NoWrap(t); AddOutline(t);
@@ -805,8 +812,9 @@ namespace MeowTactics.UI
 
         private void BuildEndPanel(Transform root)
         {
-            endPanel = UIFactory.CreatePanel(root, "EndPanel", new Color(0, 0, 0, 0.9f)).gameObject;
+            endPanel = UIFactory.CreatePanel(root, "EndPanel", new Color(0, 0, 0, 0.9f), null, false).gameObject;
             UIFactory.StretchFull((RectTransform)endPanel.transform);
+            Appear(endPanel, 1f);
 
             endText = UIFactory.CreateText(endPanel.transform, "EndText", "", 38, ColGold, TextAnchor.UpperCenter);
             endText.fontStyle = FontStyle.Bold;
@@ -873,6 +881,16 @@ namespace MeowTactics.UI
             var o = t.gameObject.AddComponent<Outline>();
             o.effectColor = new Color(0f, 0f, 0f, 0.7f);
             o.effectDistance = new Vector2(2f, -2f);
+        }
+
+        /// <summary>Adiciona fade-in + leve "pop" ao mostrar a tela/modal.</summary>
+        private static void Appear(GameObject go, float startScale = 0.96f)
+        {
+            if (go == null) return;
+            if (go.GetComponent<CanvasGroup>() == null) go.AddComponent<CanvasGroup>();
+            var a = go.GetComponent<UIAppear>();
+            if (a == null) a = go.AddComponent<UIAppear>();
+            a.startScale = startScale;
         }
 
         // =========================================================
@@ -1095,7 +1113,7 @@ namespace MeowTactics.UI
 
             // Faixa de raridade (topo do card)
             Color rar = RarityColor(cat.cost);
-            var strip = UIFactory.CreatePanel(card.transform, "Rarity", rar);
+            var strip = UIFactory.CreatePanel(card.transform, "Rarity", rar, null, false);
             var sle = strip.gameObject.AddComponent<LayoutElement>();
             sle.minHeight = 4; sle.preferredHeight = 4;
 

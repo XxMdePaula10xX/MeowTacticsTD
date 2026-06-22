@@ -503,9 +503,10 @@ namespace MeowTactics.EditorTools
             items.allItems = LoadAll<ItemData>(ItemsDir);
             waveMgr.waves = LoadWavesSorted();
 
-            // Liga as artes de interface (se existirem). Borda em pixels = moldura do 9-slice.
-            uiMgr.panelSprite  = EnsureUiSprite("Assets/Art/UI/ui_painel.png", new Vector4(50, 50, 50, 50));
-            uiMgr.buttonSprite = EnsureUiSprite("Assets/Art/UI/ui_botao.png",  new Vector4(28, 28, 28, 28));
+            // Painéis/botões agora usam o retângulo arredondado procedural (UISprites.Rounded),
+            // gerado em runtime e tingido pela cor — visual mais limpo que as artes de madeira.
+            uiMgr.panelSprite  = null;
+            uiMgr.buttonSprite = null;
             uiMgr.coinSprite   = EnsureUiSprite("Assets/Art/UI/ui_moeda.png",  Vector4.zero);
             uiMgr.heartSprite  = EnsureUiSprite("Assets/Art/UI/ui_vida.png",   Vector4.zero);
             uiMgr.menuBgSprite = EnsureUiSprite("Assets/Art/UI/menu_bg.png",   Vector4.zero);
