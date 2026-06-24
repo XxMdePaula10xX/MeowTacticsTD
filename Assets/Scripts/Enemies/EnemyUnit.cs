@@ -203,6 +203,8 @@ namespace MeowTactics.Enemies
             GameManager.Instance?.RegisterEnemyDefeated();
             WaveManager.Instance?.OnEnemyRemoved(this);
             SFXManager.Play(SfxType.EnemyDeath);
+            AchievementManager.Instance?.Report("kills", 1);
+            if (Data.isBoss) AchievementManager.Instance?.Report("bossKills", 1);
 
             // "poof" de morte.
             if (healthBar != null) healthBar.gameObject.SetActive(false);

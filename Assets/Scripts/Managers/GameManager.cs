@@ -159,6 +159,7 @@ namespace MeowTactics.Managers
         public void NewGame()
         {
             StartInGame = true;
+            AchievementManager.Instance?.Report("games", 1);
             Restart();
         }
 

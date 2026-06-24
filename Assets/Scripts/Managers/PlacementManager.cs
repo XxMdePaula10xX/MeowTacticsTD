@@ -129,6 +129,7 @@ namespace MeowTactics.Managers
             cat.IsPlaced = true;
             if (!placed.Contains(cat)) placed.Add(cat);
 
+            AchievementManager.Instance?.ReportMax("maxCatsPlaced", placed.Count);
             SynergyManager.Instance?.RecalculateSynergies();
         }
 

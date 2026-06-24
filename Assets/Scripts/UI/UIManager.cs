@@ -90,6 +90,7 @@ namespace MeowTactics.UI
 
         private GameObject tutorialPanel, mapSelectPanel;
         private GameObject collectionPanel;
+        private GameObject achievementsPanel;
         private Text tutorialText;
         private int tutorialStep;
         private static readonly string[] TutorialSteps =
@@ -168,6 +169,7 @@ namespace MeowTactics.UI
             BuildSettings(root);
             BuildMapSelect(root);
             BuildCollection(root);
+            BuildAchievements(root);
             BuildTutorial(root);
         }
 
@@ -485,6 +487,162 @@ namespace MeowTactics.UI
         public void HideCollection() { if (collectionPanel != null) collectionPanel.SetActive(false); SFXManager.Play(SfxType.Click); }
 
         // =========================================================
+        //  CONQUISTAS
+        // =========================================================
+        private Text achievementsCountText;
+
+        private void BuildAchievements(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "Achievements", new Color(0.07f, 0.06f, 0.14f, 1f), null, false);
+            achievementsPanel = panel.gameObject;
+            UIFactory.StretchFull(panel.rectTransform);
+            Appear(achievementsPanel, 1f);
+
+            var title = UIFactory.CreateText(panel.transform, "Title", "CONQUISTAS", 54, ColGold, TextAnchor.MiddleCenter);
+            title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
+            var trt = title.rectTransform;
+            UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            trt.sizeDelta = new Vector2(900, 80); trt.anchoredPosition = new Vector2(0, -52);
+
+            achievementsCountText = UIFactory.CreateText(panel.transform, "Count", "", 22, ColText, TextAnchor.MiddleCenter);
+            achievementsCountText.fontStyle = FontStyle.Bold; NoWrap(achievementsCountText);
+            var ctrt = achievementsCountText.rectTransform;
+            UIFactory.SetAnchors(ctrt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            ctrt.sizeDelta = new Vector2(600, 30); ctrt.anchoredPosition = new Vector2(0, -104);
+
+            // Área rolável
+            var scrollGo = new GameObject("Scroll", typeof(RectTransform), typeof(ScrollRect));
+            scrollGo.transform.SetParent(panel.transform, false);
+            var scrt = scrollGo.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(scrt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            scrt.sizeDelta = new Vector2(1320, 720);
+            scrt.anchoredPosition = new Vector2(0, -36);
+            var scroll = scrollGo.GetComponent<ScrollRect>();
+            scroll.horizontal = false; scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 32f;
+
+            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
+            viewport.transform.SetParent(scrollGo.transform, false);
+            UIFactory.StretchFull(viewport.GetComponent<RectTransform>());
+
+            var content = new GameObject("Content", typeof(RectTransform));
+            content.transform.SetParent(viewport.transform, false);
+            var crt = content.GetComponent<RectTransform>();
+            crt.anchorMin = new Vector2(0, 1); crt.anchorMax = new Vector2(1, 1); crt.pivot = new Vector2(0.5f, 1);
+            crt.offsetMin = Vector2.zero; crt.offsetMax = Vector2.zero;
+            var vlg = content.AddComponent<VerticalLayoutGroup>();
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.spacing = S8; vlg.padding = new RectOffset(6, S16, 6, S16);
+            var fitter = content.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            scroll.viewport = viewport.GetComponent<RectTransform>(); scroll.content = crt;
+
+            if (AchievementManager.Instance != null)
+                foreach (var a in AchievementManager.Instance.All) AchievementRow(content.transform, a);
+
+            var back = UIFactory.CreateButton(panel.transform, "Back", "Voltar", ColGreen, HideAchievements, 26, buttonSprite);
+            back.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            AddShadow(back.image, 4f, 0.35f);
+            var brt = UIFactory.AsRect(back);
+            UIFactory.SetAnchors(brt, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0));
+            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 40);
+
+            achievementsPanel.SetActive(false);
+        }
+
+        private void AchievementRow(Transform parent, MeowTactics.Managers.AchievementDef a)
+        {
+            var mgr = AchievementManager.Instance;
+            bool done = mgr != null && mgr.IsUnlocked(a);
+            int prog = mgr != null ? mgr.Progress(a) : 0;
+
+            // Moldura dourada quando desbloqueada.
+            Color border = done ? ColGold : new Color(0.30f, 0.30f, 0.40f, 1f);
+            var row = UIFactory.CreatePanel(parent, "AchRow", border);
+            AddShadow(row, 3f, 0.25f);
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 96; le.preferredHeight = 96;
+
+            var inner = UIFactory.CreatePanel(row.transform, "Fill",
+                done ? new Color(0.20f, 0.17f, 0.10f, 1f) : new Color(0.15f, 0.14f, 0.22f, 1f));
+            UIFactory.StretchFull(inner.rectTransform, 3f); inner.raycastTarget = false;
+            var hlg = inner.gameObject.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(14, 16, 10, 10); hlg.spacing = S16;
+            hlg.childAlignment = TextAnchor.MiddleLeft;
+            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
+
+            // Badge (troféu/cadeado)
+            var badge = UIFactory.CreatePanel(inner.transform, "Badge",
+                done ? ColGold : new Color(0.10f, 0.10f, 0.16f, 1f));
+            Fixed(badge, 64, 64);
+            var bt = UIFactory.CreateText(badge.transform, "B", done ? "★" : "?", 34,
+                done ? new Color(0.2f, 0.15f, 0f) : ColDim, TextAnchor.MiddleCenter);
+            bt.fontStyle = FontStyle.Bold;
+            UIFactory.StretchFull(bt.rectTransform);
+
+            // Coluna: título + descrição + barra de progresso
+            var colGo = new GameObject("Col", typeof(RectTransform));
+            colGo.transform.SetParent(inner.transform, false);
+            var cle = colGo.AddComponent<LayoutElement>(); cle.flexibleWidth = 1;
+            var cvl = colGo.AddComponent<VerticalLayoutGroup>();
+            cvl.childAlignment = TextAnchor.MiddleLeft; cvl.spacing = 3;
+            cvl.childForceExpandWidth = true; cvl.childForceExpandHeight = false;
+
+            var nm = UIFactory.CreateText(colGo.transform, "Name", a.title, 22,
+                done ? ColGold : ColText, TextAnchor.UpperLeft);
+            nm.fontStyle = FontStyle.Bold; NoWrap(nm); AddMinHeight(nm, 28);
+            var ds = UIFactory.CreateText(colGo.transform, "Desc", a.desc, 14, ColDim, TextAnchor.UpperLeft);
+            NoWrap(ds); AddMinHeight(ds, 18);
+
+            // Barra de progresso
+            ProgressBar(colGo.transform, prog, a.target, done);
+        }
+
+        /// <summary>Barra de progresso com texto "x/y" (verde quando completa).</summary>
+        private void ProgressBar(Transform parent, int value, int target, bool done)
+        {
+            var bar = UIFactory.CreatePanel(parent, "Bar", new Color(0f, 0f, 0f, 0.45f));
+            var le = bar.gameObject.AddComponent<LayoutElement>(); le.minHeight = 22; le.preferredHeight = 22;
+
+            float ratio = target > 0 ? Mathf.Clamp01((float)value / target) : 0f;
+            var fill = UIFactory.CreatePanel(bar.transform, "Fill", done ? ColGreen : ColBlue);
+            fill.raycastTarget = false;
+            var frt = fill.rectTransform;
+            frt.anchorMin = new Vector2(0, 0); frt.anchorMax = new Vector2(ratio, 1);
+            frt.pivot = new Vector2(0, 0.5f); frt.offsetMin = Vector2.zero; frt.offsetMax = Vector2.zero;
+
+            var txt = UIFactory.CreateText(bar.transform, "Txt",
+                done ? "Concluída!" : $"{value} / {target}", 13, Color.white, TextAnchor.MiddleCenter);
+            txt.fontStyle = FontStyle.Bold; AddOutline(txt);
+            UIFactory.StretchFull(txt.rectTransform);
+        }
+
+        public void ShowAchievements()
+        {
+            if (achievementsPanel == null) return;
+            RefreshAchievements();
+            achievementsPanel.SetActive(true);
+            SFXManager.Play(SfxType.Click);
+        }
+
+        public void HideAchievements() { if (achievementsPanel != null) achievementsPanel.SetActive(false); SFXManager.Play(SfxType.Click); }
+
+        // Reconstrói as linhas (progresso pode ter mudado desde a última abertura).
+        private void RefreshAchievements()
+        {
+            if (achievementsPanel == null || AchievementManager.Instance == null) return;
+            var content = achievementsPanel.transform.Find("Scroll/Viewport/Content");
+            if (content != null)
+            {
+                ClearDynamic(content, "AchRow");
+                foreach (var a in AchievementManager.Instance.All) AchievementRow(content, a);
+            }
+            if (achievementsCountText != null)
+                achievementsCountText.text =
+                    $"{AchievementManager.Instance.UnlockedCount()} / {AchievementManager.Instance.All.Count} desbloqueadas";
+        }
+
+        // =========================================================
         //  TUTORIAL (passos guiados, pulável)
         // =========================================================
         private void BuildTutorial(Transform root)
@@ -573,6 +731,7 @@ namespace MeowTactics.UI
             var cont = MenuButton(col, "Continuar", hasSave ? ColGreen : ColCard, ContinueGame);
             cont.interactable = hasSave;
             MenuButton(col, "Coleção", ColBlue, ShowCollection);
+            MenuButton(col, "Conquistas", ColBlue, ShowAchievements);
             MenuButton(col, "Configurações", ColBlue, ShowSettings);
             // A Apple não permite/recomenda botão de "sair" no iOS (o sistema gerencia isso).
 #if UNITY_STANDALONE || UNITY_EDITOR
@@ -1762,11 +1921,15 @@ namespace MeowTactics.UI
                         everActivated.Add(s.data.synergyType);
                         ShowMessage($"SINERGIA ATIVADA: {DisplayName(s)}!   {s.activeTier.description}");
                         SFXManager.Play(SfxType.Synergy);
+                        AchievementManager.Instance?.Report("synergiesActivated", 1);
                     }
                 }
 
                 BuildSynergyRow(s);
             }
+
+            // Conquista de "X sinergias ativas na mesma partida".
+            AchievementManager.Instance?.ReportMax("maxSynergiesInMatch", nowActive.Count);
 
             prevActiveSynergies.Clear();
             foreach (var t in nowActive) prevActiveSynergies.Add(t);
@@ -2087,6 +2250,7 @@ namespace MeowTactics.UI
         public void ShowVictoryScreen()
         {
             if (endPanel == null) return;
+            AchievementManager.Instance?.Report("wins", 1);
             int waves = WaveManager.Instance != null ? WaveManager.Instance.waves.Count : 10;
             int defeated = GameManager.Instance != null ? GameManager.Instance.EnemiesDefeated : 0;
             int coins = EconomyManager.Instance != null ? EconomyManager.Instance.TotalEarned : 0;

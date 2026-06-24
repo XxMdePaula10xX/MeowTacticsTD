@@ -133,6 +133,8 @@ namespace MeowTactics.Managers
             EconomyManager.Instance?.AddCoins(reward);
 
             int completedWaveNumber = CurrentWaveIndex + 1;
+            AchievementManager.Instance?.Report("waves", 1);
+            AchievementManager.Instance?.ReportMax("bestWave", completedWaveNumber);
             bool wasLastWave = CurrentWaveIndex >= waves.Count - 1;
             if (!wasLastWave)
             {

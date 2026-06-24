@@ -77,6 +77,7 @@ namespace MeowTactics.Managers
             SynergyManager.Instance?.RecalculateSynergies();
             UIManager.Instance?.ShowMessage($"{item.itemName} equipado em {cat.Data.catName}!");
             SFXManager.Play(SfxType.Buy);
+            AchievementManager.Instance?.Report("itemsEquipped", 1);
             return true;
         }
 

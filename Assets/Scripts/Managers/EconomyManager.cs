@@ -44,7 +44,7 @@ namespace MeowTactics.Managers
         {
             if (amount == 0) return;
             Coins += amount;
-            if (amount > 0) TotalEarned += amount;
+            if (amount > 0) { TotalEarned += amount; AchievementManager.Instance?.Report("coins", amount); }
             OnCoinsChanged?.Invoke(Coins);
         }
 

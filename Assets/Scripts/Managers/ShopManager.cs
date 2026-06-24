@@ -78,6 +78,7 @@ namespace MeowTactics.Managers
             currentShopOptions[shopIndex] = null; // slot fica vazio até o próximo reroll
             OnShopChanged?.Invoke();
             SFXManager.Play(SfxType.Buy);
+            AchievementManager.Instance?.Report("catsBought", 1);
         }
 
         public void RerollShop()
@@ -91,6 +92,7 @@ namespace MeowTactics.Managers
             }
             GenerateShop();
             SFXManager.Play(SfxType.Click);
+            AchievementManager.Instance?.Report("rerolls", 1);
         }
     }
 }
