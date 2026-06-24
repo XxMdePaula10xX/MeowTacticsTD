@@ -176,10 +176,16 @@ namespace MeowTactics.Utilities
             var go = new GameObject("Enemy_" + data.enemyName);
             go.transform.position = position;
 
-            var sr = go.AddComponent<SpriteRenderer>();
+            // Visual num filho separado, que GIRA na direção do movimento — assim a
+            // barra de vida e o marcador de tipo (filhos da raiz) NÃO giram junto.
+            var visual = new GameObject("Visual");
+            visual.transform.SetParent(go.transform, false);
+            var sr = visual.AddComponent<SpriteRenderer>();
             sr.sprite = data.icon != null ? data.icon : SpriteFactory.Circle;
             sr.color = data.icon != null ? Color.white : data.placeholderColor;
             sr.sortingOrder = SortEnemy;
+            var vjuice = visual.AddComponent<JuiceVisual>();
+            vjuice.destroyRoot = go.transform; // o "poof" destrói o inimigo inteiro
 
             // Barra de vida (boss tem barra maior e mais alta = destacada)
             float barW = data.isBoss ? 1.5f : 1.0f;
@@ -212,7 +218,6 @@ namespace MeowTactics.Utilities
             CreateShadow(go.transform, SortEnemy - 1, 0.85f * data.visualScale, -0.5f * data.visualScale);
             CreateEnemyTrait(go.transform, data);
 
-            go.AddComponent<JuiceVisual>();
             go.AddComponent<EnemyUnit>();
             return go.GetComponent<EnemyUnit>();
         }

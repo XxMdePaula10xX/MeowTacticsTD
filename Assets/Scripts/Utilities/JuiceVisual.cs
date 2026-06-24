@@ -14,6 +14,10 @@ namespace MeowTactics.Utilities
     /// </summary>
     public class JuiceVisual : MonoBehaviour
     {
+        /// <summary>Se definido, o "poof" de morte destrói ESTE objeto (ex.: a raiz do inimigo)
+        /// em vez do próprio. Usado quando o JuiceVisual fica num filho "Visual" que gira.</summary>
+        public Transform destroyRoot;
+
         private SpriteRenderer sr;
         private Vector3 baseScale = Vector3.one;
         private Color baseColor = Color.white;
@@ -93,7 +97,7 @@ namespace MeowTactics.Utilities
                 }
                 yield return null;
             }
-            Destroy(gameObject);
+            Destroy(destroyRoot != null ? destroyRoot.gameObject : gameObject);
         }
     }
 }

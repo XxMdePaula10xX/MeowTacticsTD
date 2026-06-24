@@ -37,6 +37,11 @@ namespace MeowTactics.Enemies
         private SpriteRenderer sprite;
         private HealthBar healthBar;
         private JuiceVisual juice;
+        private Transform visual; // filho que gira para a direção do movimento
+
+        // Arte vista de cima aponta a "frente" para BAIXO; +90 faz mirar a direção certa.
+        private const float SpriteForwardOffset = 90f;
+        private const float TurnSpeed = 720f; // graus por segundo
 
         // Lentidão temporária
         private float slowFactor = 1f; // 1 = sem lentidão
@@ -44,9 +49,22 @@ namespace MeowTactics.Enemies
 
         private void Awake()
         {
-            sprite = GetComponent<SpriteRenderer>();
+            // O visual (sprite + juice) fica num filho "Visual" que gira; a barra de
+            // vida fica na raiz, em pé. Fallback: tudo na raiz (compatível com prefabs).
+            Transform v = transform.Find("Visual");
+            if (v != null)
+            {
+                visual = v;
+                sprite = v.GetComponent<SpriteRenderer>();
+                juice = v.GetComponent<JuiceVisual>();
+            }
+            else
+            {
+                visual = transform;
+                sprite = GetComponent<SpriteRenderer>();
+                juice = GetComponent<JuiceVisual>();
+            }
             healthBar = GetComponentInChildren<HealthBar>();
-            juice = GetComponent<JuiceVisual>();
         }
 
         /// <summary>
@@ -122,6 +140,7 @@ namespace MeowTactics.Enemies
 
             Vector3 target = path[pathIndex];
             float step = CurrentMoveSpeed * GameBalance.EnemySpeedScale * slowFactor * Time.deltaTime;
+            FaceDirection(target - transform.position);
             transform.position = Vector3.MoveTowards(transform.position, target, step);
 
             if (Vector3.Distance(transform.position, target) < 0.05f)
@@ -131,6 +150,15 @@ namespace MeowTactics.Enemies
 
             // Progresso aproximado (0..1) para priorização de alvo
             PathProgress = path.Count <= 1 ? 1f : (float)pathIndex / (path.Count - 1);
+        }
+
+        /// <summary>Gira o visual para apontar na direção do movimento (próximo ponto).</summary>
+        private void FaceDirection(Vector3 dir)
+        {
+            if (visual == null || dir.sqrMagnitude < 0.0001f) return;
+            float ang = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + SpriteForwardOffset;
+            Quaternion want = Quaternion.Euler(0f, 0f, ang);
+            visual.rotation = Quaternion.RotateTowards(visual.rotation, want, TurnSpeed * Time.deltaTime);
         }
 
         public void TakeDamage(float amount, DamageType type, DamageContext context)
