@@ -19,16 +19,18 @@ namespace MeowTactics.UI
     {
         public static UIManager Instance { get; private set; }
 
-        // ---- Paleta (mais contraste) ----
-        private static readonly Color ColDark   = new Color(0.08f, 0.07f, 0.14f, 0.96f);
-        private static readonly Color ColPanel  = new Color(0.15f, 0.12f, 0.25f, 0.97f);
-        private static readonly Color ColCard   = new Color(0.27f, 0.23f, 0.42f, 1f);
-        private static readonly Color ColGold   = new Color(1f, 0.86f, 0.35f);
-        private static readonly Color ColText   = new Color(0.97f, 0.96f, 1f);
-        private static readonly Color ColGreen  = new Color(0.32f, 0.80f, 0.42f);
-        private static readonly Color ColRed    = new Color(0.92f, 0.38f, 0.40f);
-        private static readonly Color ColBlue   = new Color(0.36f, 0.62f, 0.92f);
-        private static readonly Color ColDim    = new Color(0.55f, 0.55f, 0.62f);
+        // ---- Paleta (noite aconchegante, alto contraste) ----
+        // Base índigo-noturno + acento dourado quente. Tons harmonizados para
+        // que painel/card/botão tenham separação clara sem brigar entre si.
+        private static readonly Color ColDark   = new Color(0.06f, 0.07f, 0.13f, 0.98f); // barras (topo/baixo)
+        private static readonly Color ColPanel  = new Color(0.12f, 0.12f, 0.22f, 0.98f); // painéis flutuantes
+        private static readonly Color ColCard   = new Color(0.21f, 0.20f, 0.34f, 1f);    // cards/itens
+        private static readonly Color ColGold   = new Color(1f, 0.82f, 0.32f);           // acento/títulos
+        private static readonly Color ColText   = new Color(0.95f, 0.95f, 0.99f);        // texto principal
+        private static readonly Color ColGreen  = new Color(0.30f, 0.78f, 0.46f);        // positivo/comprar
+        private static readonly Color ColRed    = new Color(0.93f, 0.39f, 0.42f);        // perigo/vender
+        private static readonly Color ColBlue   = new Color(0.36f, 0.64f, 0.95f);        // neutro/ação
+        private static readonly Color ColDim    = new Color(0.56f, 0.57f, 0.66f);        // texto secundário
 
         // ---- Sprites de UI (ligados pelo MeowSetup) ----
         public Sprite panelSprite;
@@ -182,6 +184,7 @@ namespace MeowTactics.UI
         private void MapCard(Transform parent, string mapId, string name, string difficulty, string desc, bool playable)
         {
             var card = UIFactory.CreatePanel(parent, "MapCard", new Color(0.16f, 0.13f, 0.27f, 0.98f));
+            AddShadow(card, 5f, 0.35f);
             var vlg = card.gameObject.AddComponent<VerticalLayoutGroup>();
             vlg.padding = new RectOffset(16, 16, 18, 18); vlg.spacing = 8;
             vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
@@ -383,6 +386,7 @@ namespace MeowTactics.UI
             var b = UIFactory.CreateButton(parent, "MenuBtn", label, color, onClick, 28);
             b.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
             AddOutline(b.GetComponentInChildren<Text>());
+            AddShadow(b.image, 4f, 0.35f);
             var le = b.gameObject.AddComponent<LayoutElement>();
             le.minHeight = 70; le.preferredHeight = 70;
             return b;
@@ -441,6 +445,7 @@ namespace MeowTactics.UI
         private void BuildWaveBanner(Transform root)
         {
             var panel = UIFactory.CreatePanel(root, "WaveBanner", new Color(0.10f, 0.08f, 0.18f, 0.95f), panelSprite);
+            AddShadow(panel);
             waveBanner = panel.gameObject;
             var rt = panel.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
@@ -458,6 +463,7 @@ namespace MeowTactics.UI
         private void BuildTooltip(Transform root)
         {
             var panel = UIFactory.CreatePanel(root, "Tooltip", new Color(0.05f, 0.04f, 0.10f, 0.97f), panelSprite);
+            AddShadow(panel);
             panel.raycastTarget = false; // não rouba o cursor (evita flicker)
             tooltipPanel = panel.gameObject;
             var rt = panel.rectTransform;
@@ -584,6 +590,7 @@ namespace MeowTactics.UI
         private void BuildItemsPanel(Transform root)
         {
             var panel = UIFactory.CreatePanel(root, "ItemsPanel", ColPanel);
+            AddShadow(panel);
             itemsPanel = panel.gameObject;
             var rt = panel.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1));
@@ -607,6 +614,7 @@ namespace MeowTactics.UI
         private void BuildSynergyPanel(Transform root)
         {
             var panel = UIFactory.CreatePanel(root, "SynergyPanel", ColPanel);
+            AddShadow(panel);
             var rt = panel.rectTransform;
             synergyPanelRt = rt;
             UIFactory.SetAnchors(rt, new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1));
@@ -652,6 +660,7 @@ namespace MeowTactics.UI
 
             // Preview da próxima onda (acima do botão Iniciar)
             var nwp = UIFactory.CreatePanel(root, "NextWavePanel", new Color(0.10f, 0.08f, 0.18f, 0.92f));
+            AddShadow(nwp);
             nextWavePanel = nwp.gameObject;
             var nwrt = nwp.rectTransform;
             UIFactory.SetAnchors(nwrt, new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0));
@@ -678,6 +687,7 @@ namespace MeowTactics.UI
 
             // Painel recolhível (loja em cima, banco embaixo)
             var panelImg = UIFactory.CreatePanel(root, "BottomPanel", ColDark);
+            AddShadow(panelImg, 7f, 0.45f);
             bottomPanel = panelImg.gameObject;
             var brt = panelImg.rectTransform;
             UIFactory.SetAnchors(brt, new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0));
@@ -736,6 +746,7 @@ namespace MeowTactics.UI
             // Moldura dourada limpa: retângulo dourado + interior roxo escuro.
             var outer = UIFactory.CreatePanel(root, "DetailPanel", ColGold);
             detailPanel = outer.gameObject;
+            AddShadow(outer, 9f, 0.5f);
             Appear(detailPanel);
             var rt = outer.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
@@ -845,6 +856,7 @@ namespace MeowTactics.UI
         private void BuildMessage(Transform root)
         {
             var panel = UIFactory.CreatePanel(root, "MessageToast", new Color(0, 0, 0, 0.82f));
+            AddShadow(panel, 5f, 0.5f);
             var rt = panel.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
             rt.sizeDelta = new Vector2(760, 64);
@@ -881,6 +893,15 @@ namespace MeowTactics.UI
             var o = t.gameObject.AddComponent<Outline>();
             o.effectColor = new Color(0f, 0f, 0f, 0.7f);
             o.effectDistance = new Vector2(2f, -2f);
+        }
+
+        /// <summary>Sombra projetada suave atrás de um painel/botão (dá profundidade).</summary>
+        private static void AddShadow(Graphic g, float dist = 6f, float alpha = 0.40f)
+        {
+            if (g == null) return;
+            var s = g.gameObject.AddComponent<Shadow>();
+            s.effectColor = new Color(0f, 0f, 0f, alpha);
+            s.effectDistance = new Vector2(dist, -dist);
         }
 
         /// <summary>Adiciona fade-in + leve "pop" ao mostrar a tela/modal.</summary>
@@ -1092,9 +1113,12 @@ namespace MeowTactics.UI
             card.transform.SetParent(parent, false);
             bool afford = cat != null && ShopManager.Instance != null && ShopManager.Instance.CanBuy(cat);
             var img = card.GetComponent<Image>();
+            img.sprite = UISprites.Rounded;
+            img.type = Image.Type.Sliced;
             img.color = cat == null
                 ? new Color(0.15f, 0.15f, 0.18f, 0.9f)
                 : (afford ? ColCard : new Color(0.13f, 0.11f, 0.17f, 0.95f));
+            AddShadow(img, 4f, 0.3f);
             var btn = card.GetComponent<Button>();
             btn.interactable = cat != null; // mesmo sem moeda, deixa clicar p/ mostrar aviso
             if (cat != null && onClick != null) btn.onClick.AddListener(onClick);
@@ -1443,7 +1467,11 @@ namespace MeowTactics.UI
         {
             var card = new GameObject("DraftBtn", typeof(RectTransform), typeof(Image), typeof(Button));
             card.transform.SetParent(parent, false);
-            card.GetComponent<Image>().color = new Color(0.16f, 0.13f, 0.27f, 0.98f);
+            var dimg = card.GetComponent<Image>();
+            dimg.sprite = UISprites.Rounded;
+            dimg.type = Image.Type.Sliced;
+            dimg.color = new Color(0.16f, 0.13f, 0.27f, 0.98f);
+            AddShadow(dimg, 6f, 0.4f);
             card.GetComponent<Button>().onClick.AddListener(onClick);
 
             var vlg = card.AddComponent<VerticalLayoutGroup>();
