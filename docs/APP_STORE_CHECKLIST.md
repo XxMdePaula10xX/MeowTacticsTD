@@ -31,6 +31,12 @@ Status: 🟢 feito · 🟡 em andamento / parcial · 🔴 a fazer · ⚪ depende
 - 🔴 **Graphics API = Metal** (padrão no iOS; confirmar que OpenGLES não está forçado).
 - 🟡 **Performance** — jogo leve; gerar texturas procedurais 1x no início (ok).
   Travar em 60 FPS (`Application.targetFrameRate = 60`) e testar em device antigo.
+- 🟢 **Notificações locais + badge** — `NotificationManager.cs` agenda lembretes
+  ("volte a jogar") em 1/3/7 dias quando o app vai pro background, e o badge do
+  ícone SOME ao abrir o app. **Requer instalar o pacote** *Mobile Notifications*
+  (Window > Package Manager > Unity Registry > **Mobile Notifications**). O código
+  iOS só compila no build do device, então o pacote só é preciso na hora do build.
+  Pedir permissão de notificação conta como boa prática (a Apple aceita).
 
 ## B) Assets obrigatórios
 
