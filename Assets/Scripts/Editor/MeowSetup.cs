@@ -35,8 +35,56 @@ namespace MeowTactics.EditorTools
         {
             GenerateContent();
             BuildGameScene();
+            SetAppIcon();
             EditorUtility.DisplayDialog("Meow Tactics TD",
                 "Tudo pronto! 🎉\n\nConteúdo gerado e cena 'Game' montada.\nAperte o botão Play para jogar.", "Eba!");
+        }
+
+        // =====================================================================
+        //  ÍCONE DO APP
+        // =====================================================================
+        private const string AppIconPath = "Assets/Art/UI/app_icon.png";
+
+        /// <summary>
+        /// Define o ícone do app a partir de "Assets/Art/UI/app_icon.png" (1024x1024,
+        /// quadrado, sem transparência). Aplica como ícone padrão e para iOS.
+        /// </summary>
+        [MenuItem("MeowTactics/Definir Ícone do App", false, 40)]
+        public static void SetAppIcon()
+        {
+            if (!System.IO.File.Exists(AppIconPath))
+            {
+                Debug.LogWarning("[MeowTactics] Ícone não encontrado. Salve a imagem (1024x1024) em " + AppIconPath);
+                return;
+            }
+
+            // Importa como textura padrão e opaca (a Apple não aceita ícone com transparência).
+            var importer = AssetImporter.GetAtPath(AppIconPath) as TextureImporter;
+            if (importer != null)
+            {
+                bool changed = false;
+                if (importer.textureType != TextureImporterType.Default) { importer.textureType = TextureImporterType.Default; changed = true; }
+                if (importer.alphaIsTransparency) { importer.alphaIsTransparency = false; changed = true; }
+                if (importer.maxTextureSize < 1024) { importer.maxTextureSize = 1024; changed = true; }
+                if (changed) importer.SaveAndReimport();
+            }
+
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(AppIconPath);
+            if (tex == null) { Debug.LogWarning("[MeowTactics] Falha ao carregar o ícone em " + AppIconPath); return; }
+
+            // Ícone padrão (vale para plataformas sem ícone específico).
+            PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.Unknown, new[] { tex });
+
+            // iOS: preenche todos os tamanhos com o mesmo ícone (Unity reescala no build).
+            var sizes = PlayerSettings.GetIconSizesForTargetGroup(BuildTargetGroup.iOS);
+            if (sizes != null && sizes.Length > 0)
+            {
+                var icons = new Texture2D[sizes.Length];
+                for (int i = 0; i < icons.Length; i++) icons[i] = tex;
+                PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.iOS, icons);
+            }
+
+            Debug.Log("[MeowTactics] Ícone do app definido a partir de " + AppIconPath);
         }
 
         // =====================================================================

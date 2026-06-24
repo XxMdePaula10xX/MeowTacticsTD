@@ -40,8 +40,10 @@ Status: 🟢 feito · 🟡 em andamento / parcial · 🔴 a fazer · ⚪ depende
 
 ## B) Assets obrigatórios
 
-- 🔴 **Ícone do app** 1024×1024 (sem transparência, sem cantos arredondados — a
-  Apple arredonda). Posso te dar o prompt de geração.
+- 🟡 **Ícone do app** — salve a arte 1024×1024 (quadrada, SEM transparência, SEM
+  cantos arredondados) em `Assets/Art/UI/app_icon.png`. O menu *MeowTactics >
+  Definir Ícone do App* (e o "Fazer Tudo") aplica automaticamente como ícone
+  padrão e do iOS. Falta só conferir no build.
 - 🔴 **Launch Screen** (tela de abertura) — pode ser uma cor sólida + logo, ou a
   arte do menu. Configura em *Player Settings → Splash/Launch*.
 - 🔴 **Screenshots** para a loja, nos tamanhos exigidos: 6.7" (iPhone 15/16 Pro Max)
