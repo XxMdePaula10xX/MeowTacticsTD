@@ -1,0 +1,15 @@
+COLOQUE AQUI AS ARTES DOS INIMIGOS (top-down, PNG com fundo transparente).
+
+Use EXATAMENTE estes nomes (tudo minúsculo):
+
+  inimigo_ghostling.png
+  inimigo_swift.png
+  inimigo_armored.png
+  inimigo_shadow.png
+  inimigo_wraith.png
+  inimigo_bulwark.png
+  inimigo_warden.png
+  inimigo_king.png
+
+Depois, no Unity: MeowTactics -> Fazer Tudo (reimporta e liga as artes aos inimigos).
+Pode apagar este arquivo quando quiser. Sem a arte, o jogo usa um placeholder.

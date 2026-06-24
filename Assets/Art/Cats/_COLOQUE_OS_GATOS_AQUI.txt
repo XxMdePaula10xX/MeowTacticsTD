@@ -1,0 +1,17 @@
+COLOQUE AQUI AS ARTES DOS GATOS (top-down, PNG com fundo transparente).
+
+Use EXATAMENTE estes nomes (tudo minúsculo):
+
+  gato_ninja.png
+  gato_archer.png
+  gato_sniper.png
+  gato_mage.png
+  gato_shaman.png
+  gato_samurai.png
+  gato_pirate.png
+  gato_witch.png
+  gato_wolf.png
+  gato_monk.png
+
+Depois, no Unity: MeowTactics -> Fazer Tudo (reimporta e liga as artes aos gatos).
+Pode apagar este arquivo quando quiser. Sem a arte, o jogo usa um placeholder.
