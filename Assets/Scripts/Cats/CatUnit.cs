@@ -52,6 +52,14 @@ namespace MeowTactics.Cats
         private SpriteRenderer sprite;
         private Transform rangeIndicator;
         private JuiceVisual juice;
+        private SpriteRenderer selectionGlow; // brilho da base quando selecionado
+
+        /// <summary>Liga o brilho da base (criado pela UnitFactory) para acender ao selecionar.</summary>
+        public void SetSelectionGlow(SpriteRenderer glow)
+        {
+            selectionGlow = glow;
+            if (selectionGlow != null) selectionGlow.enabled = false;
+        }
 
         private void Awake()
         {
@@ -327,6 +335,7 @@ namespace MeowTactics.Cats
         // ---------- Range indicator ----------
         public void ShowRange()
         {
+            if (selectionGlow != null) selectionGlow.enabled = true;
             if (rangeIndicator == null) return;
             rangeIndicator.gameObject.SetActive(true);
             rangeIndicator.localScale = Vector3.one * (CurrentRange * 2f);
@@ -334,6 +343,7 @@ namespace MeowTactics.Cats
 
         public void HideRange()
         {
+            if (selectionGlow != null) selectionGlow.enabled = false;
             if (rangeIndicator != null)
                 rangeIndicator.gameObject.SetActive(false);
         }

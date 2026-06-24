@@ -32,6 +32,15 @@ namespace MeowTactics.UI
         private static readonly Color ColBlue   = new Color(0.36f, 0.64f, 0.95f);        // neutro/ação
         private static readonly Color ColDim    = new Color(0.56f, 0.57f, 0.66f);        // texto secundário
 
+        // Vidro escuro (barras/painéis translúcidos) + linha de borda iluminada.
+        private static readonly Color ColGlass     = new Color(0.10f, 0.10f, 0.20f, 0.82f);
+        private static readonly Color ColGlassDeep = new Color(0.11f, 0.10f, 0.24f, 0.90f); // loja (roxo/azul)
+        private static readonly Color ColBorder    = new Color(0.55f, 0.62f, 0.95f, 0.55f); // borda azulada sutil
+        private static readonly Color ColSlot      = new Color(0f, 0f, 0f, 0.30f);          // slot vazio
+
+        // Espaçamentos do design system (8 / 12 / 16 / 24).
+        private const int S8 = 8, S12 = 12, S16 = 16, S24 = 24;
+
         // ---- Sprites de UI (ligados pelo MeowSetup) ----
         public Sprite panelSprite;
         public Sprite buttonSprite;
@@ -45,13 +54,14 @@ namespace MeowTactics.UI
         private RectTransform waveBarFill;
         private Transform shopContainer, benchContainer, synergyContainer, itemsContainer;
         private Text benchLabel, startLabel;
+        private GameObject startPlayIcon;
         private Button startWaveButton, rerollButton;
         private Button pauseBtn, speed1Btn, speed2Btn;
         private UIPulse startPulse;
 
         private GameObject itemsPanel, bottomPanel;
         private GameObject nextWavePanel;
-        private Text nextWaveText;
+        private Transform threatContainer;
         private Button collapseBtn;
         private bool collapsed;
         private RectTransform synergyPanelRt;
@@ -484,11 +494,20 @@ namespace MeowTactics.UI
         // ---------- Top bar ----------
         private void BuildTopBar(Transform root)
         {
-            var bar = UIFactory.CreatePanel(root, "TopBar", ColDark, null, false);
+            var bar = UIFactory.CreatePanel(root, "TopBar", ColGlass, null, false);
             var rt = bar.rectTransform;
             UIFactory.SetAnchors(rt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
             rt.sizeDelta = new Vector2(0, 100);
             rt.anchoredPosition = Vector2.zero;
+
+            // Linha de borda inferior sutil (estilo vidro).
+            var border = new GameObject("BottomBorder", typeof(RectTransform), typeof(Image));
+            border.transform.SetParent(bar.transform, false);
+            var bimg = border.GetComponent<Image>();
+            bimg.color = new Color(ColBorder.r, ColBorder.g, ColBorder.b, 0.35f); bimg.raycastTarget = false;
+            var bordRt = border.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(bordRt, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0));
+            bordRt.sizeDelta = new Vector2(0, 2); bordRt.anchoredPosition = Vector2.zero;
 
             // Título (esquerda)
             var title = UIFactory.CreateText(bar.transform, "Title", "MEOW TACTICS", 26, ColGold, TextAnchor.MiddleLeft);
@@ -556,23 +575,19 @@ namespace MeowTactics.UI
 
         private Text StatChip(Transform parent, Sprite icon, string initial, Color color)
         {
-            var go = new GameObject("Stat", typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var h = go.AddComponent<HorizontalLayoutGroup>();
-            h.childAlignment = TextAnchor.MiddleCenter; h.spacing = 6;
-            h.childForceExpandWidth = false; h.childForceExpandHeight = false;
-            var le = go.AddComponent<LayoutElement>(); le.minWidth = 130;
+            // Pílula arredondada de vidro escuro com ícone + valor.
+            var pill = Pill(parent, "Stat", new Color(0f, 0f, 0f, 0.35f), S12, 6, S8);
+            var le = pill.gameObject.AddComponent<LayoutElement>(); le.minHeight = 60; le.minWidth = 120;
 
             if (icon != null)
             {
-                var img = UIFactory.CreateIcon(go.transform, "Icon", icon, 46);
-                var ile = img.gameObject.AddComponent<LayoutElement>();
-                ile.minWidth = 46; ile.preferredWidth = 46; ile.minHeight = 46; ile.preferredHeight = 46;
+                var img = UIFactory.CreateIcon(pill.transform, "Icon", icon, 40);
+                Fixed(img, 40, 40);
             }
-            var txt = UIFactory.CreateText(go.transform, "Val", initial, 30, color, TextAnchor.MiddleLeft);
-            txt.fontStyle = FontStyle.Bold;
+            var txt = UIFactory.CreateText(pill.transform, "Val", initial, 28, color, TextAnchor.MiddleLeft);
+            txt.fontStyle = FontStyle.Bold; AddOutline(txt);
             NoWrap(txt);
-            var tle = txt.gameObject.AddComponent<LayoutElement>(); tle.minWidth = 70;
+            var tle = txt.gameObject.AddComponent<LayoutElement>(); tle.minWidth = 46;
             return txt;
         }
 
@@ -613,13 +628,15 @@ namespace MeowTactics.UI
         // ---------- Painel de sinergias (direita, compacto) ----------
         private void BuildSynergyPanel(Transform root)
         {
-            var panel = UIFactory.CreatePanel(root, "SynergyPanel", ColPanel);
+            var panel = UIFactory.CreatePanel(root, "SynergyPanel", ColGlass);
             AddShadow(panel);
+            AddSheen(panel.transform, 0.07f);
+            AddTopBorder(panel.transform, ColBorder, 3f);
             var rt = panel.rectTransform;
             synergyPanelRt = rt;
             UIFactory.SetAnchors(rt, new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1));
-            rt.sizeDelta = new Vector2(300, 470);
-            rt.anchoredPosition = new Vector2(-12, -112);
+            rt.sizeDelta = new Vector2(290, 392);
+            rt.anchoredPosition = new Vector2(-S16, -112);
 
             Title(panel.transform, "SINERGIAS");
 
@@ -645,36 +662,35 @@ namespace MeowTactics.UI
         // ---------- Área inferior: loja + banco (recolhível) + INICIAR ----------
         private void BuildBottomArea(Transform root)
         {
-            // Botão grande INICIAR ONDA (sempre visível, canto inferior direito)
-            startWaveButton = UIFactory.CreateButton(root, "StartWave", "INICIAR\nONDA  ▶", ColGreen,
-                () => GameManager.Instance?.StartWave(), 30, buttonSprite);
-            startLabel = startWaveButton.GetComponentInChildren<Text>();
-            startLabel.fontStyle = FontStyle.Bold;
-            AddOutline(startLabel);
-            var srt = UIFactory.AsRect(startWaveButton);
-            UIFactory.SetAnchors(srt, new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0));
-            srt.sizeDelta = new Vector2(300, 170);
-            srt.anchoredPosition = new Vector2(-20, 20);
-            startPulse = startWaveButton.gameObject.AddComponent<UIPulse>();
-            startPulse.speed = 3.2f; startPulse.amount = 0.05f;
+            // Botão grande INICIAR ONDA (premium: moldura clara + verde gradiente + ▶)
+            BuildStartButton(root);
 
-            // Preview da próxima onda (acima do botão Iniciar)
-            var nwp = UIFactory.CreatePanel(root, "NextWavePanel", new Color(0.10f, 0.08f, 0.18f, 0.92f));
+            // Preview da próxima onda (acima do botão Iniciar) — painel de ameaça com ícones.
+            var nwp = UIFactory.CreatePanel(root, "NextWavePanel", ColGlass);
             AddShadow(nwp);
+            AddSheen(nwp.transform, 0.07f);
+            AddTopBorder(nwp.transform, new Color(0.95f, 0.45f, 0.4f, 0.6f), 3f); // borda avermelhada (ameaça)
             nextWavePanel = nwp.gameObject;
             var nwrt = nwp.rectTransform;
             UIFactory.SetAnchors(nwrt, new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0));
-            nwrt.sizeDelta = new Vector2(290, 150);
-            nwrt.anchoredPosition = new Vector2(-20, 200);
-            var nwTitle = UIFactory.CreateText(nwp.transform, "Title", "PRÓXIMA ONDA", 18, ColGold, TextAnchor.UpperCenter);
+            nwrt.sizeDelta = new Vector2(290, 168);
+            nwrt.anchoredPosition = new Vector2(-S16, 210);
+            var nwTitle = UIFactory.CreateText(nwp.transform, "Title", "AMEAÇA — PRÓXIMA ONDA", 16, new Color(1f, 0.7f, 0.6f), TextAnchor.UpperCenter);
             nwTitle.fontStyle = FontStyle.Bold; NoWrap(nwTitle);
             var ntrt = nwTitle.rectTransform;
             UIFactory.SetAnchors(ntrt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
-            ntrt.sizeDelta = new Vector2(-12, 26); ntrt.anchoredPosition = new Vector2(0, -6);
-            nextWaveText = UIFactory.CreateText(nwp.transform, "Text", "", 16, ColText, TextAnchor.UpperLeft);
-            var nxrt = nextWaveText.rectTransform;
-            UIFactory.SetAnchors(nxrt, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f));
-            nxrt.offsetMin = new Vector2(14, 10); nxrt.offsetMax = new Vector2(-14, -34);
+            ntrt.sizeDelta = new Vector2(-12, 26); ntrt.anchoredPosition = new Vector2(0, -8);
+
+            var threatGo = new GameObject("Threats", typeof(RectTransform));
+            threatGo.transform.SetParent(nwp.transform, false);
+            var thrt = threatGo.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(thrt, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f));
+            thrt.offsetMin = new Vector2(10, 10); thrt.offsetMax = new Vector2(-10, -36);
+            var tgrid = threatGo.AddComponent<GridLayoutGroup>();
+            tgrid.cellSize = new Vector2(82, 56); tgrid.spacing = new Vector2(6, 6);
+            tgrid.padding = new RectOffset(2, 2, 2, 2);
+            tgrid.childAlignment = TextAnchor.UpperLeft;
+            threatContainer = threatGo.transform;
 
             // Aba clara de recolher/abrir a loja (canto inferior esquerdo, como uma aba do painel)
             collapseBtn = UIFactory.CreateButton(root, "Collapse", "LOJA  ▼", ColGreen,
@@ -683,27 +699,27 @@ namespace MeowTactics.UI
             var crt2 = UIFactory.AsRect(collapseBtn);
             UIFactory.SetAnchors(crt2, new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0));
             crt2.sizeDelta = new Vector2(160, 48);
-            crt2.anchoredPosition = new Vector2(16, 320);
+            crt2.anchoredPosition = new Vector2(16, 352);
 
-            // Painel recolhível (loja em cima, banco embaixo)
-            var panelImg = UIFactory.CreatePanel(root, "BottomPanel", ColDark);
-            AddShadow(panelImg, 7f, 0.45f);
+            // Painel recolhível (loja em cima, banco embaixo) — vidro escuro roxo/azul.
+            var panelImg = UIFactory.CreatePanel(root, "BottomPanel", ColGlassDeep);
+            AddShadow(panelImg, 8f, 0.5f);
             bottomPanel = panelImg.gameObject;
+            AddSheen(bottomPanel.transform, 0.08f);
+            AddTopBorder(bottomPanel.transform, ColBorder, 3f);
             var brt = panelImg.rectTransform;
             UIFactory.SetAnchors(brt, new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0));
-            brt.sizeDelta = new Vector2(1560, 300);
-            brt.anchoredPosition = new Vector2(20, 14);
+            brt.sizeDelta = new Vector2(1560, 330);
+            brt.anchoredPosition = new Vector2(S16, S16);
 
             // Linha da LOJA
-            var shopRow = Row(bottomPanel.transform, "ShopRow", 168, -8);
+            var shopRow = Row(bottomPanel.transform, "ShopRow", 196, -8);
             Label(shopRow, "LOJA", ColGold, 70);
-            rerollButton = UIFactory.CreateButton(shopRow, "Reroll", "Atualizar\n(2 moedas)", ColBlue,
-                () => ShopManager.Instance?.RerollShop(), 17, buttonSprite);
-            AddWidth(rerollButton, 130);
             shopContainer = shopRow;
+            rerollButton = BuildRerollButton(shopRow);
 
             // Linha do BANCO (chips com largura fixa, alinhados à esquerda)
-            var benchRow = Row(bottomPanel.transform, "BenchRow", 108, 10);
+            var benchRow = Row(bottomPanel.transform, "BenchRow", 104, 10);
             benchRow.GetComponent<HorizontalLayoutGroup>().childForceExpandWidth = false;
             benchLabel = Label(benchRow, "BANCO 0/8", ColText, 130);
             benchContainer = benchRow;
@@ -738,6 +754,82 @@ namespace MeowTactics.UI
         {
             var le = c.gameObject.AddComponent<LayoutElement>();
             le.minWidth = width; le.preferredWidth = width; le.flexibleWidth = 0;
+        }
+
+        /// <summary>Botão grande INICIAR ONDA: moldura clara + verde com brilho de vidro + ▶.</summary>
+        private void BuildStartButton(Transform root)
+        {
+            var card = new GameObject("StartWave", typeof(RectTransform), typeof(Image), typeof(Button));
+            card.transform.SetParent(root, false);
+            var outer = card.GetComponent<Image>();
+            outer.sprite = UISprites.Rounded; outer.type = Image.Type.Sliced;
+            outer.color = new Color(0.62f, 0.95f, 0.62f, 1f); // moldura clara
+            AddShadow(outer, 8f, 0.5f);
+            startWaveButton = card.GetComponent<Button>();
+            startWaveButton.onClick.AddListener(() => GameManager.Instance?.StartWave());
+            var srt = card.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(srt, new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0));
+            srt.sizeDelta = new Vector2(300, 170);
+            srt.anchoredPosition = new Vector2(-S16, S16 + 4);
+
+            var inner = UIFactory.CreatePanel(card.transform, "Fill", ColGreen);
+            UIFactory.StretchFull(inner.rectTransform, 4f);
+            inner.raycastTarget = false;
+            AddSheen(inner.transform, 0.18f);
+
+            var vlg = inner.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.childAlignment = TextAnchor.MiddleCenter; vlg.spacing = 2;
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.padding = new RectOffset(6, 6, 10, 10);
+
+            var play = UIFactory.CreateText(inner.transform, "Play", "▶", 44, Color.white, TextAnchor.MiddleCenter);
+            play.fontStyle = FontStyle.Bold; AddMinHeight(play, 48);
+            startPlayIcon = play.gameObject;
+            startLabel = UIFactory.CreateText(inner.transform, "Label", "INICIAR ONDA", 26, Color.white, TextAnchor.MiddleCenter);
+            startLabel.fontStyle = FontStyle.Bold; NoWrap(startLabel); AddMinHeight(startLabel, 30);
+
+            startPulse = card.AddComponent<UIPulse>();
+            startPulse.speed = 3.2f; startPulse.amount = 0.05f;
+        }
+
+        /// <summary>Botão "Atualizar" temático: moldura dourada, ícone de refresh, custo + moeda.</summary>
+        private Button BuildRerollButton(Transform parent)
+        {
+            var card = new GameObject("Reroll", typeof(RectTransform), typeof(Image), typeof(Button));
+            card.transform.SetParent(parent, false);
+            var outer = card.GetComponent<Image>();
+            outer.sprite = UISprites.Rounded; outer.type = Image.Type.Sliced; outer.color = ColGold;
+            AddShadow(outer, 4f, 0.4f);
+            var btn = card.GetComponent<Button>();
+            btn.onClick.AddListener(() => ShopManager.Instance?.RerollShop());
+            var le = card.AddComponent<LayoutElement>();
+            le.minWidth = 116; le.preferredWidth = 116; le.flexibleWidth = 0;
+
+            var inner = UIFactory.CreatePanel(card.transform, "Fill", new Color(0.20f, 0.28f, 0.50f, 1f));
+            UIFactory.StretchFull(inner.rectTransform, 3f);
+            inner.raycastTarget = false;
+            var vlg = inner.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.childAlignment = TextAnchor.MiddleCenter; vlg.spacing = 2;
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.padding = new RectOffset(4, 4, 6, 6);
+
+            var refresh = UIFactory.CreateText(inner.transform, "Icon", "↻", 34, ColGold, TextAnchor.MiddleCenter);
+            refresh.fontStyle = FontStyle.Bold; NoWrap(refresh); AddMinHeight(refresh, 34);
+
+            var costRow = new GameObject("Cost", typeof(RectTransform));
+            costRow.transform.SetParent(inner.transform, false);
+            var h = costRow.AddComponent<HorizontalLayoutGroup>();
+            h.childAlignment = TextAnchor.MiddleCenter; h.spacing = 4;
+            h.childForceExpandWidth = false; h.childForceExpandHeight = false;
+            var crle = costRow.AddComponent<LayoutElement>(); crle.minHeight = 22; crle.preferredHeight = 22;
+            if (coinSprite != null)
+            {
+                var ci = UIFactory.CreateIcon(costRow.transform, "Coin", coinSprite, 18);
+                Fixed(ci, 18, 18);
+            }
+            var cost = UIFactory.CreateText(costRow.transform, "N", GameBalance.RerollCost.ToString(), 18, ColText, TextAnchor.MiddleLeft);
+            cost.fontStyle = FontStyle.Bold; NoWrap(cost);
+            return btn;
         }
 
         // ---------- Painéis modais ----------
@@ -915,6 +1007,92 @@ namespace MeowTactics.UI
         }
 
         // =========================================================
+        //  DESIGN SYSTEM — componentes reutilizáveis
+        // =========================================================
+
+        /// <summary>Brilho de vidro: gradiente claro no topo, esmaece pra baixo. Inset pra não vazar nos cantos.</summary>
+        private static void AddSheen(Transform panel, float alpha = 0.10f)
+        {
+            var go = new GameObject("Sheen", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(panel, false);
+            var img = go.GetComponent<Image>();
+            img.sprite = UISprites.Sheen;
+            img.type = Image.Type.Sliced;
+            img.color = new Color(1f, 1f, 1f, alpha);
+            img.raycastTarget = false;
+            UIFactory.StretchFull(go.GetComponent<RectTransform>(), 5f);
+            IgnoreLayout(go);
+            go.transform.SetAsFirstSibling(); // fica atrás do conteúdo
+        }
+
+        /// <summary>Faz um elemento ser ignorado por layout groups (mantém ancoragem própria).</summary>
+        private static void IgnoreLayout(GameObject go)
+        {
+            var le = go.GetComponent<LayoutElement>() ?? go.AddComponent<LayoutElement>();
+            le.ignoreLayout = true;
+        }
+
+        /// <summary>Linha fina e iluminada na borda superior do painel (estilo vidro).</summary>
+        private static void AddTopBorder(Transform panel, Color color, float height = 3f)
+        {
+            var go = new GameObject("TopBorder", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(panel, false);
+            var img = go.GetComponent<Image>();
+            img.sprite = UISprites.Rounded;
+            img.type = Image.Type.Sliced;
+            img.color = color;
+            img.raycastTarget = false;
+            IgnoreLayout(go);
+            var rt = go.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(rt, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1));
+            rt.sizeDelta = new Vector2(-24, height);
+            rt.anchoredPosition = new Vector2(0, -2);
+        }
+
+        /// <summary>Card com moldura colorida: Image externa (cor da borda) + Image interna (fundo).
+        /// Devolve a Image INTERNA (onde vai o conteúdo).</summary>
+        private static Image BorderedCard(Transform parent, string name, Color border, Color fill, float thickness = 3f)
+        {
+            var outer = UIFactory.CreatePanel(parent, name, border);
+            var inner = UIFactory.CreatePanel(outer.transform, "Fill", fill);
+            UIFactory.StretchFull(inner.rectTransform, thickness);
+            return inner;
+        }
+
+        /// <summary>Chip arredondado (pílula) com HorizontalLayoutGroup pronto pra ícone+texto.</summary>
+        private static Image Pill(Transform parent, string name, Color bg, int padX = 10, int padY = 4, int spacing = 6)
+        {
+            var img = UIFactory.CreatePanel(parent, name, bg);
+            var h = img.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.childAlignment = TextAnchor.MiddleCenter; h.spacing = spacing;
+            h.childForceExpandWidth = false; h.childForceExpandHeight = false;
+            h.padding = new RectOffset(padX, padX, padY, padY);
+            return img;
+        }
+
+        /// <summary>Brilho radial atrás de um elemento (sinergia completa / seleção).</summary>
+        private static Image GlowBehind(Transform parent, Color color, float padding = -10f)
+        {
+            var go = new GameObject("Glow", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var img = go.GetComponent<Image>();
+            img.sprite = UISprites.Glow;
+            img.color = color;
+            img.raycastTarget = false;
+            UIFactory.StretchFull(go.GetComponent<RectTransform>(), padding);
+            IgnoreLayout(go);
+            go.transform.SetAsFirstSibling();
+            return img;
+        }
+
+        private static LayoutElement Fixed(Component c, float w, float h)
+        {
+            var le = c.gameObject.GetComponent<LayoutElement>() ?? c.gameObject.AddComponent<LayoutElement>();
+            le.minWidth = w; le.preferredWidth = w; le.minHeight = h; le.preferredHeight = h; le.flexibleWidth = 0; le.flexibleHeight = 0;
+            return le;
+        }
+
+        // =========================================================
         //  EVENTOS
         // =========================================================
         private void Subscribe()
@@ -954,7 +1132,8 @@ namespace MeowTactics.UI
             bool prep = state == GameState.Preparation;
             if (startWaveButton != null) startWaveButton.interactable = prep;
             if (rerollButton != null) rerollButton.interactable = prep;
-            if (startLabel != null) startLabel.text = prep ? "INICIAR\nONDA  ▶" : "ONDA EM\nANDAMENTO";
+            if (startLabel != null) startLabel.text = prep ? "INICIAR ONDA" : "EM ANDAMENTO";
+            if (startPlayIcon != null) startPlayIcon.SetActive(prep);
             if (startPulse != null) startPulse.active = prep;
             if (waveProgressText != null && prep) waveProgressText.text = "Preparação — posicione seus gatos";
             if (nextWavePanel != null) nextWavePanel.SetActive(prep);
@@ -1021,7 +1200,7 @@ namespace MeowTactics.UI
         {
             synergyCollapsed = v;
             if (synergyContainer != null) synergyContainer.gameObject.SetActive(!v);
-            if (synergyPanelRt != null) synergyPanelRt.sizeDelta = new Vector2(300, v ? 50 : 470);
+            if (synergyPanelRt != null) synergyPanelRt.sizeDelta = new Vector2(290, v ? 50 : 392);
             var lbl = synergyToggleBtn != null ? synergyToggleBtn.GetComponentInChildren<Text>() : null;
             if (lbl != null) lbl.text = v ? "▲" : "▼";
         }
@@ -1071,23 +1250,55 @@ namespace MeowTactics.UI
 
         public void UpdateNextWavePreview()
         {
-            if (nextWaveText == null || WaveManager.Instance == null) return;
+            if (threatContainer == null || WaveManager.Instance == null) return;
+            ClearDynamic(threatContainer, "Threat");
             var w = WaveManager.Instance.CurrentWave;
-            if (w == null) { nextWaveText.text = ""; return; }
+            if (w == null) return;
 
-            var counts = new Dictionary<string, int>();
-            var order = new List<string>();
+            // Agrupa por tipo de inimigo, preservando a ordem de aparição.
+            var counts = new Dictionary<EnemyData, int>();
+            var order = new List<EnemyData>();
             foreach (var info in w.enemies)
             {
                 if (info.enemy == null) continue;
-                string nm = info.enemy.enemyName;
-                if (!counts.ContainsKey(nm)) { counts[nm] = 0; order.Add(nm); }
-                counts[nm] += info.count;
+                if (!counts.ContainsKey(info.enemy)) { counts[info.enemy] = 0; order.Add(info.enemy); }
+                counts[info.enemy] += info.count;
             }
-            var sb = new StringBuilder();
-            foreach (var nm in order) sb.AppendLine($"{counts[nm]}x {nm}");
-            if (w.isBossWave) sb.Append("<color=#ff7777><b>★ BOSS!</b></color>");
-            nextWaveText.text = sb.ToString().TrimEnd();
+            foreach (var e in order) ThreatChip(e, counts[e]);
+        }
+
+        /// <summary>Chip de ameaça: ícone do inimigo + quantidade, com borda colorida pelo tipo.</summary>
+        private void ThreatChip(EnemyData e, int count)
+        {
+            Color border = ThreatColor(e);
+            var cell = BorderedCard(threatContainer, "Threat", border, new Color(0.10f, 0.10f, 0.16f, 0.95f), 2.5f);
+            var hlg = cell.gameObject.AddComponent<HorizontalLayoutGroup>();
+            hlg.childAlignment = TextAnchor.MiddleCenter; hlg.spacing = 4;
+            hlg.padding = new RectOffset(4, 4, 2, 2);
+            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
+
+            if (e.icon != null)
+            {
+                var ic = UIFactory.CreateIcon(cell.transform, "Icon", e.icon, 40);
+                Fixed(ic, 40, 40);
+            }
+            else
+            {
+                var sw = UIFactory.CreatePanel(cell.transform, "Sw", border);
+                Fixed(sw, 32, 32);
+            }
+            var txt = UIFactory.CreateText(cell.transform, "N", "x" + count, 18, ColText, TextAnchor.MiddleLeft);
+            txt.fontStyle = FontStyle.Bold; NoWrap(txt);
+            if (e.isBoss) { txt.color = ColGold; txt.text = "★" + count; }
+        }
+
+        private static Color ThreatColor(EnemyData e)
+        {
+            if (e.isBoss) return new Color(1f, 0.8f, 0.3f);              // boss: dourado
+            if (e.armor >= 30f) return new Color(0.78f, 0.82f, 0.90f);  // blindado: cinza
+            if (e.magicResistance >= 30f) return new Color(0.72f, 0.5f, 1f); // místico: roxo
+            if (e.moveSpeed >= 1.5f) return new Color(0.4f, 0.9f, 1f);   // veloz: ciano
+            return new Color(0.85f, 0.5f, 0.5f);                         // comum: vermelho suave
         }
 
         // =========================================================
@@ -1112,66 +1323,85 @@ namespace MeowTactics.UI
             var card = new GameObject("ShopCard", typeof(RectTransform), typeof(Image), typeof(Button));
             card.transform.SetParent(parent, false);
             bool afford = cat != null && ShopManager.Instance != null && ShopManager.Instance.CanBuy(cat);
-            var img = card.GetComponent<Image>();
-            img.sprite = UISprites.Rounded;
-            img.type = Image.Type.Sliced;
-            img.color = cat == null
-                ? new Color(0.15f, 0.15f, 0.18f, 0.9f)
-                : (afford ? ColCard : new Color(0.13f, 0.11f, 0.17f, 0.95f));
-            AddShadow(img, 4f, 0.3f);
+
+            // Moldura externa colorida pela raridade.
+            Color rar = cat != null ? RarityColor(cat.cost) : new Color(0.28f, 0.28f, 0.34f, 1f);
+            var outer = card.GetComponent<Image>();
+            outer.sprite = UISprites.Rounded; outer.type = Image.Type.Sliced;
+            outer.color = cat == null ? new Color(0.20f, 0.20f, 0.26f, 0.9f)
+                                      : (afford ? rar : new Color(rar.r * 0.5f, rar.g * 0.5f, rar.b * 0.5f, 0.9f));
+            AddShadow(outer, 5f, 0.4f);
             var btn = card.GetComponent<Button>();
             btn.interactable = cat != null; // mesmo sem moeda, deixa clicar p/ mostrar aviso
             if (cat != null && onClick != null) btn.onClick.AddListener(onClick);
 
-            var vlg = card.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(5, 5, 4, 4); vlg.spacing = 0;
-            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
-            vlg.childAlignment = TextAnchor.UpperCenter;
-
             if (cat == null)
             {
-                var dash = UIFactory.CreateText(card.transform, "Dash", "—", 26, ColDim);
-                AddMinHeight(dash, 80);
+                var empty = UIFactory.CreatePanel(card.transform, "Fill", new Color(0.12f, 0.12f, 0.17f, 0.95f));
+                UIFactory.StretchFull(empty.rectTransform, 3f); empty.raycastTarget = false;
+                var dash = UIFactory.CreateText(empty.transform, "Dash", "—", 26, ColDim);
+                UIFactory.StretchFull(dash.rectTransform);
                 return;
             }
 
-            // Faixa de raridade (topo do card)
-            Color rar = RarityColor(cat.cost);
-            var strip = UIFactory.CreatePanel(card.transform, "Rarity", rar, null, false);
-            var sle = strip.gameObject.AddComponent<LayoutElement>();
-            sle.minHeight = 4; sle.preferredHeight = 4;
+            // Fundo interno escuro (gradiente via sheen) dentro da moldura.
+            Color fill = afford ? new Color(0.16f, 0.15f, 0.28f, 1f) : new Color(0.11f, 0.10f, 0.16f, 0.97f);
+            var inner = UIFactory.CreatePanel(card.transform, "Fill", fill);
+            UIFactory.StretchFull(inner.rectTransform, 3f);
+            inner.raycastTarget = false;
+            AddSheen(inner.transform, 0.10f);
+
+            var vlg = inner.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(6, 6, S8, S8); vlg.spacing = 4;
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.childAlignment = TextAnchor.UpperCenter;
 
             // Ícone grande do gato (esmaecido se não puder comprar)
             if (cat.icon != null)
             {
-                var icon = UIFactory.CreateIcon(card.transform, "Icon", cat.icon, 80);
+                var icon = UIFactory.CreateIcon(inner.transform, "Icon", cat.icon, 96);
                 icon.color = afford ? Color.white : new Color(0.55f, 0.55f, 0.6f, 0.85f);
-                AddMinHeight(icon, 80);
+                AddMinHeight(icon, 96);
             }
-            // Nome (cor por raridade)
-            var name = UIFactory.CreateText(card.transform, "Name", cat.catName, 18, rar, TextAnchor.MiddleCenter);
-            name.fontStyle = FontStyle.Bold; NoWrap(name); AddMinHeight(name, 22);
 
-            // Linha de custo: [moeda] custo  •  tipo
+            // Nome (alto contraste)
+            var name = UIFactory.CreateText(inner.transform, "Name", cat.catName, 18,
+                afford ? ColText : ColDim, TextAnchor.MiddleCenter);
+            name.fontStyle = FontStyle.Bold; NoWrap(name); AddOutline(name); AddMinHeight(name, 22);
+
+            // Custo: moeda + número dourado bem visível
             var costRow = new GameObject("CostRow", typeof(RectTransform));
-            costRow.transform.SetParent(card.transform, false);
+            costRow.transform.SetParent(inner.transform, false);
             var crl = costRow.AddComponent<HorizontalLayoutGroup>();
-            crl.childAlignment = TextAnchor.MiddleCenter; crl.spacing = 4;
+            crl.childAlignment = TextAnchor.MiddleCenter; crl.spacing = 5;
             crl.childForceExpandWidth = false; crl.childForceExpandHeight = false;
-            var crle = costRow.AddComponent<LayoutElement>(); crle.minHeight = 22; crle.preferredHeight = 22;
+            var crle = costRow.AddComponent<LayoutElement>(); crle.minHeight = 26; crle.preferredHeight = 26;
             if (coinSprite != null)
             {
-                var ci = UIFactory.CreateIcon(costRow.transform, "Coin", coinSprite, 20);
-                var cile = ci.gameObject.AddComponent<LayoutElement>();
-                cile.minWidth = 20; cile.preferredWidth = 20; cile.minHeight = 20; cile.preferredHeight = 20;
+                var ci = UIFactory.CreateIcon(costRow.transform, "Coin", coinSprite, 24);
+                Fixed(ci, 24, 24);
             }
-            var costTxt = UIFactory.CreateText(costRow.transform, "Cost",
-                $"{cat.cost}   {DamageName(cat.damageType)}", 15, ColGold, TextAnchor.MiddleLeft);
+            var costTxt = UIFactory.CreateText(costRow.transform, "Cost", cat.cost.ToString(), 20, ColGold, TextAnchor.MiddleLeft);
             costTxt.fontStyle = FontStyle.Bold; NoWrap(costTxt);
 
-            // Sinergias
-            var syn = UIFactory.CreateText(card.transform, "Syn", SynergyNames(cat.synergies), 13, DamageColor(cat.damageType), TextAnchor.MiddleCenter);
-            NoWrap(syn); AddMinHeight(syn, 16);
+            // Chips de sinergia (classe/origem)
+            var chipRow = new GameObject("Chips", typeof(RectTransform));
+            chipRow.transform.SetParent(inner.transform, false);
+            var chl = chipRow.AddComponent<HorizontalLayoutGroup>();
+            chl.childAlignment = TextAnchor.MiddleCenter; chl.spacing = 4;
+            chl.childForceExpandWidth = false; chl.childForceExpandHeight = false;
+            var chle = chipRow.AddComponent<LayoutElement>(); chle.minHeight = 24; chle.preferredHeight = 24;
+            foreach (var t in cat.synergies) SynergyChip(chipRow.transform, t);
+        }
+
+        /// <summary>Chip pequeno (pílula) de uma sinergia, colorido pela cor da sinergia.</summary>
+        private void SynergyChip(Transform parent, SynergyType t)
+        {
+            Color c = SynergyColor(t);
+            var pill = Pill(parent, "Chip", new Color(c.r, c.g, c.b, 0.30f), 8, 2, 0);
+            var txt = UIFactory.CreateText(pill.transform, "T", SynergyLabel(t), 12,
+                Color.Lerp(c, Color.white, 0.45f), TextAnchor.MiddleCenter);
+            txt.fontStyle = FontStyle.Bold; NoWrap(txt);
         }
 
         private static void AddMinHeight(Component c, float h)
@@ -1196,25 +1426,40 @@ namespace MeowTactics.UI
                 CatUnit c = cat;
                 var chip = new GameObject("BenchChip", typeof(RectTransform), typeof(Image), typeof(Button));
                 chip.transform.SetParent(benchContainer, false);
-                chip.GetComponent<Image>().color = ColCard;
+                var ci = chip.GetComponent<Image>();
+                ci.sprite = UISprites.Rounded; ci.type = Image.Type.Sliced; ci.color = ColCard;
+                AddShadow(ci, 3f, 0.3f);
                 chip.GetComponent<Button>().onClick.AddListener(() => PlacementManager.Instance?.SelectBenchCatForPlacement(c));
                 var chipLe = chip.AddComponent<LayoutElement>();
-                chipLe.minWidth = 170; chipLe.preferredWidth = 190; chipLe.flexibleWidth = 0;
+                chipLe.minWidth = 150; chipLe.preferredWidth = 162; chipLe.flexibleWidth = 0;
 
                 var hlg = chip.AddComponent<HorizontalLayoutGroup>();
-                hlg.padding = new RectOffset(6, 6, 4, 4); hlg.spacing = 6;
+                hlg.padding = new RectOffset(S8, S8, 4, 4); hlg.spacing = S8;
                 hlg.childAlignment = TextAnchor.MiddleLeft;
                 hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
 
                 if (c.Data.icon != null)
                 {
-                    var icon = UIFactory.CreateIcon(chip.transform, "Icon", c.Data.icon, 64);
-                    var ile = icon.gameObject.AddComponent<LayoutElement>();
-                    ile.minWidth = 64; ile.minHeight = 64; ile.preferredWidth = 64; ile.preferredHeight = 64;
+                    var icon = UIFactory.CreateIcon(chip.transform, "Icon", c.Data.icon, 60);
+                    Fixed(icon, 60, 60);
                 }
-                string txt = c.Data.catName + (c.Items.Count > 0 ? $"\n[{c.Items.Count} itens]" : "");
+                string txt = c.Data.catName + (c.Items.Count > 0 ? $"\n<color=#9fe89f>{c.Items.Count} itens</color>" : "");
                 UIFactory.CreateText(chip.transform, "Name", txt, 14, ColText, TextAnchor.MiddleLeft);
             }
+
+            // Slots vazios (visual de banco com espaços livres).
+            int empties = Mathf.Max(0, GameBalance.BenchSize - count);
+            for (int i = 0; i < empties; i++) BenchEmptySlot(benchContainer);
+        }
+
+        /// <summary>Slot vazio do banco: quadradinho arredondado discreto.</summary>
+        private void BenchEmptySlot(Transform parent)
+        {
+            var slot = UIFactory.CreatePanel(parent, "BenchChip", ColSlot);
+            var le = slot.gameObject.AddComponent<LayoutElement>();
+            le.minWidth = 60; le.preferredWidth = 60; le.flexibleWidth = 0;
+            var dot = UIFactory.CreateText(slot.transform, "Dot", "+", 24, new Color(1f, 1f, 1f, 0.18f), TextAnchor.MiddleCenter);
+            UIFactory.StretchFull(dot.rectTransform);
         }
 
         // =========================================================
@@ -1244,32 +1489,7 @@ namespace MeowTactics.UI
                     }
                 }
 
-                int next = NextThreshold(s.data, s.count);
-                Color col = s.IsActive ? Color.Lerp(s.data.uiColor, ColGold, 0.35f) : ColDim;
-                string mark = s.IsActive ? "  ★" : "";
-                var txt = UIFactory.CreateText(synergyContainer, "SynRow",
-                    $"•  {DisplayName(s)}   {s.count}/{next}{mark}", 21, col, TextAnchor.MiddleLeft);
-                if (s.IsActive) { txt.fontStyle = FontStyle.Bold; AddOutline(txt); }
-                NoWrap(txt);
-                var le = txt.gameObject.AddComponent<LayoutElement>();
-                le.minHeight = 28;
-
-                // Bônus resumido logo abaixo (só quando a sinergia está ativa).
-                if (s.IsActive && s.activeTier != null && !string.IsNullOrEmpty(s.activeTier.description))
-                {
-                    var bonus = UIFactory.CreateText(synergyContainer, "SynRow",
-                        "   " + s.activeTier.description, 14, new Color(0.86f, 0.86f, 0.62f), TextAnchor.UpperLeft);
-                    var ble = bonus.gameObject.AddComponent<LayoutElement>();
-                    ble.minHeight = 20; // pode crescer se quebrar em 2 linhas
-                }
-
-                // Tooltip ao passar/tocar (mostra os bônus dos níveis).
-                txt.raycastTarget = true;
-                SynergyData data = s.data;
-                var trigger = txt.gameObject.AddComponent<EventTrigger>();
-                AddTrigger(trigger, EventTriggerType.PointerEnter, _ => ShowSynergyTooltip(data));
-                AddTrigger(trigger, EventTriggerType.PointerClick, _ => ShowSynergyTooltip(data));
-                AddTrigger(trigger, EventTriggerType.PointerExit, _ => HideTooltip());
+                BuildSynergyRow(s);
             }
 
             prevActiveSynergies.Clear();
@@ -1281,6 +1501,62 @@ namespace MeowTactics.UI
                     "Posicione gatos para\nativar sinergias!", 16, ColDim, TextAnchor.UpperLeft);
                 var le = hint.gameObject.AddComponent<LayoutElement>(); le.minHeight = 50;
             }
+        }
+
+        /// <summary>Linha compacta de sinergia: badge de contagem + nome + nível, com glow/★ quando completa.</summary>
+        private void BuildSynergyRow(SynergyStatus s)
+        {
+            int next = NextThreshold(s.data, s.count);
+            Color c = s.data.uiColor;
+            bool active = s.IsActive;
+
+            // Fundo da linha (mais aceso quando ativa) — pílula arredondada.
+            Color rowBg = active ? new Color(c.r, c.g, c.b, 0.22f) : ColSlot;
+            var row = UIFactory.CreatePanel(synergyContainer, "SynRow", rowBg);
+            var rle = row.gameObject.AddComponent<LayoutElement>(); rle.minHeight = 44; rle.preferredHeight = 44;
+            var hlg = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            hlg.childAlignment = TextAnchor.MiddleLeft; hlg.spacing = S8;
+            hlg.padding = new RectOffset(8, 8, 4, 4);
+            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = true;
+
+            if (active) GlowBehind(row.transform, new Color(c.r, c.g, c.b, 0.45f), -6f);
+
+            // Badge de contagem (quadrado arredondado colorido).
+            var badge = UIFactory.CreatePanel(row.transform, "Badge",
+                active ? c : new Color(c.r * 0.5f, c.g * 0.5f, c.b * 0.5f, 0.9f));
+            Fixed(badge, 34, 34);
+            var bnum = UIFactory.CreateText(badge.transform, "N", s.count.ToString(), 18, Color.white, TextAnchor.MiddleCenter);
+            bnum.fontStyle = FontStyle.Bold; AddOutline(bnum);
+            UIFactory.StretchFull(bnum.rectTransform);
+
+            // Coluna central: nome + nível alvo.
+            var colGo = new GameObject("Col", typeof(RectTransform));
+            colGo.transform.SetParent(row.transform, false);
+            var cle = colGo.AddComponent<LayoutElement>(); cle.flexibleWidth = 1;
+            var cvl = colGo.AddComponent<VerticalLayoutGroup>();
+            cvl.childAlignment = TextAnchor.MiddleLeft; cvl.spacing = 0;
+            cvl.childForceExpandWidth = true; cvl.childForceExpandHeight = false;
+            var nm = UIFactory.CreateText(colGo.transform, "Name", DisplayName(s), 18,
+                active ? Color.Lerp(c, Color.white, 0.5f) : ColText, TextAnchor.MiddleLeft);
+            nm.fontStyle = FontStyle.Bold; NoWrap(nm); AddMinHeight(nm, 22);
+            var sub = UIFactory.CreateText(colGo.transform, "Sub",
+                active && s.activeTier != null ? s.activeTier.description : $"{s.count} / {next}",
+                12, active ? new Color(0.86f, 0.86f, 0.62f) : ColDim, TextAnchor.MiddleLeft);
+            NoWrap(sub); AddMinHeight(sub, 16);
+
+            // Estrela de conquista quando completa.
+            if (active)
+            {
+                var star = UIFactory.CreateText(row.transform, "Star", "★", 22, ColGold, TextAnchor.MiddleCenter);
+                AddOutline(star); Fixed(star, 24, 30);
+            }
+
+            // Tooltip ao passar/tocar.
+            SynergyData data = s.data;
+            var trigger = row.gameObject.AddComponent<EventTrigger>();
+            AddTrigger(trigger, EventTriggerType.PointerEnter, _ => ShowSynergyTooltip(data));
+            AddTrigger(trigger, EventTriggerType.PointerClick, _ => ShowSynergyTooltip(data));
+            AddTrigger(trigger, EventTriggerType.PointerExit, _ => HideTooltip());
         }
 
         private static string DisplayName(SynergyStatus s)
@@ -1663,6 +1939,28 @@ namespace MeowTactics.UI
             if (cost >= 4) return new Color(0.75f, 0.45f, 1f);   // épico (roxo)
             if (cost == 3) return new Color(0.40f, 0.70f, 1f);   // raro (azul)
             return new Color(0.70f, 0.80f, 0.75f);               // comum (cinza-esverdeado)
+        }
+
+        // ---- Lookup de sinergia (nome/cor) a partir do SynergyType ----
+        private static SynergyData FindSynergy(SynergyType t)
+        {
+            var m = SynergyManager.Instance;
+            if (m == null) return null;
+            foreach (var s in m.allSynergies)
+                if (s != null && s.synergyType == t) return s;
+            return null;
+        }
+
+        private static string SynergyLabel(SynergyType t)
+        {
+            var d = FindSynergy(t);
+            return (d != null && !string.IsNullOrEmpty(d.displayName)) ? d.displayName : t.ToString();
+        }
+
+        private static Color SynergyColor(SynergyType t)
+        {
+            var d = FindSynergy(t);
+            return d != null ? d.uiColor : new Color(0.6f, 0.62f, 0.7f);
         }
 
         // =========================================================

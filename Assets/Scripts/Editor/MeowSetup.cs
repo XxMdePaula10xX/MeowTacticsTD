@@ -291,6 +291,54 @@ namespace MeowTactics.EditorTools
                 (2, "+20% dano", new[] { (BonusStat.DamagePercent, 20f) }),
                 (3, "+45% dano e +25 pen.mág.",
                     new[] { (BonusStat.DamagePercent, 45f), (BonusStat.MagicPenetrationFlat, 25f) }));
+
+            // Guardião: força bruta — dano e crítico.
+            MakeSynergy(SynergyType.Guardian, "Guardião", new Color(0.85f, 0.45f, 0.40f),
+                "Gatos resistentes que batem forte.",
+                (2, "+15% dano", new[] { (BonusStat.DamagePercent, 15f) }),
+                (3, "+30% dano e +15% crítico",
+                    new[] { (BonusStat.DamagePercent, 30f), (BonusStat.CritChancePercent, 15f) }));
+
+            // Caçador: velocidade de ataque.
+            MakeSynergy(SynergyType.Hunter, "Caçador", new Color(0.45f, 0.80f, 0.40f),
+                "Gatos ágeis que atacam sem parar.",
+                (2, "+18% vel. ataque", new[] { (BonusStat.AttackSpeedPercent, 18f) }),
+                (3, "+35% vel. e +10% dano",
+                    new[] { (BonusStat.AttackSpeedPercent, 35f), (BonusStat.DamagePercent, 10f) }));
+
+            // Sombra: crítico (golpes traiçoeiros).
+            MakeSynergy(SynergyType.Shadow, "Sombra", new Color(0.55f, 0.40f, 0.75f),
+                "Gatos furtivos que acertam pontos fracos.",
+                (2, "+20% crítico", new[] { (BonusStat.CritChancePercent, 20f) }),
+                (3, "+40% crítico e +12% dano",
+                    new[] { (BonusStat.CritChancePercent, 40f), (BonusStat.DamagePercent, 12f) }));
+
+            // Floresta: alcance.
+            MakeSynergy(SynergyType.Forest, "Floresta", new Color(0.40f, 0.70f, 0.45f),
+                "Gatos da mata que enxergam longe.",
+                (2, "+15% alcance", new[] { (BonusStat.RangePercent, 15f) }),
+                (3, "+30% alcance e +10% dano",
+                    new[] { (BonusStat.RangePercent, 30f), (BonusStat.DamagePercent, 10f) }));
+
+            // Tecnologia: cadência + penetração de armadura.
+            MakeSynergy(SynergyType.Technology, "Tecnologia", new Color(0.35f, 0.75f, 0.90f),
+                "Gatos equipados com engenhocas precisas.",
+                (2, "+20% vel. ataque", new[] { (BonusStat.AttackSpeedPercent, 20f) }),
+                (3, "+35% vel. e +30 pen.arm.",
+                    new[] { (BonusStat.AttackSpeedPercent, 35f), (BonusStat.ArmorPenetrationFlat, 30f) }));
+
+            // Suporte: dano para o time (buff geral).
+            MakeSynergy(SynergyType.Support, "Suporte", new Color(0.40f, 0.80f, 0.70f),
+                "Gatos que fortalecem os aliados.",
+                (2, "+12% dano", new[] { (BonusStat.DamagePercent, 12f) }),
+                (3, "+25% dano", new[] { (BonusStat.DamagePercent, 25f) }));
+
+            // Estrela: poder bruto raro.
+            MakeSynergy(SynergyType.Star, "Estrela", new Color(1f, 0.82f, 0.32f),
+                "Gatos lendários de poder estelar.",
+                (2, "+20% dano", new[] { (BonusStat.DamagePercent, 20f) }),
+                (3, "+40% dano e +20% crítico",
+                    new[] { (BonusStat.DamagePercent, 40f), (BonusStat.CritChancePercent, 20f) }));
         }
 
         private static void MakeSynergy(SynergyType type, string name, Color color, string desc,

@@ -4,6 +4,7 @@ using MeowTactics.Core;
 using MeowTactics.Cats;
 using MeowTactics.Data;
 using MeowTactics.Enemies;
+using MeowTactics.UI;
 
 namespace MeowTactics.Utilities
 {
@@ -32,18 +33,44 @@ namespace MeowTactics.Utilities
             s.AddComponent<ShadowFollow>().Setup(target, offsetY);
         }
 
-        /// <summary>Anel colorido (por tipo de dano) sob o gato, para destacá-lo do cenário.</summary>
-        private static void CreateCatPad(Transform target, int sortingOrder, float width, float offsetY, Color color)
+        /// <summary>Base de tabuleiro sob o gato: placa escura + borda colorida por classe +
+        /// brilho de seleção (desligado por padrão). Devolve o SpriteRenderer do brilho.</summary>
+        private static SpriteRenderer CreateCatPad(Transform target, int sortingOrder, float width, float offsetY, Color color)
         {
-            var s = new GameObject("BasePad");
-            var sr = s.AddComponent<SpriteRenderer>();
-            sr.sprite = SpriteFactory.Ring;
-            sr.color = new Color(color.r, color.g, color.b, 0.6f);
-            sr.sortingOrder = sortingOrder;
-            s.transform.localScale = new Vector3(width, width * 0.42f, 1f);
+            var root = new GameObject("BasePad");
             var p = target.position;
-            s.transform.position = new Vector3(p.x, p.y + offsetY, p.z + 0.005f);
-            s.AddComponent<ShadowFollow>().Setup(target, offsetY);
+            root.transform.position = new Vector3(p.x, p.y + offsetY, p.z + 0.01f);
+            root.AddComponent<ShadowFollow>().Setup(target, offsetY);
+
+            // Brilho radial de seleção (acende quando o gato é selecionado).
+            var glow = new GameObject("Glow");
+            glow.transform.SetParent(root.transform, false);
+            var gsr = glow.AddComponent<SpriteRenderer>();
+            gsr.sprite = UISprites.Glow;
+            gsr.color = new Color(color.r, color.g, color.b, 0.85f);
+            gsr.sortingOrder = sortingOrder - 1;
+            glow.transform.localScale = new Vector3(width * 2.1f, width * 1.0f, 1f);
+            gsr.enabled = false;
+
+            // Placa escura (dá contraste com o gramado).
+            var plate = new GameObject("Plate");
+            plate.transform.SetParent(root.transform, false);
+            var psr = plate.AddComponent<SpriteRenderer>();
+            psr.sprite = UISprites.Disc;
+            psr.color = new Color(0f, 0f, 0f, 0.32f);
+            psr.sortingOrder = sortingOrder;
+            plate.transform.localScale = new Vector3(width, width * 0.42f, 1f);
+
+            // Borda colorida pela classe (tipo de dano).
+            var rim = new GameObject("Rim");
+            rim.transform.SetParent(root.transform, false);
+            var rsr = rim.AddComponent<SpriteRenderer>();
+            rsr.sprite = SpriteFactory.Ring;
+            rsr.color = new Color(color.r, color.g, color.b, 0.9f);
+            rsr.sortingOrder = sortingOrder + 1;
+            rim.transform.localScale = new Vector3(width, width * 0.42f, 1f);
+
+            return gsr;
         }
 
         private static Color DamageGlow(DamageType t)
@@ -117,12 +144,13 @@ namespace MeowTactics.Utilities
             rsr.sortingOrder = SortRange;
             ring.SetActive(false);
 
-            CreateShadow(go.transform, SortCat - 2, 0.8f, -0.5f);
-            CreateCatPad(go.transform, SortCat - 1, 0.85f, -0.42f, DamageGlow(data.damageType));
+            CreateShadow(go.transform, SortCat - 2, 0.62f, -0.45f);
+            var padGlow = CreateCatPad(go.transform, SortCat - 1, 0.66f, -0.40f, DamageGlow(data.damageType));
 
             go.AddComponent<JuiceVisual>();
-            go.AddComponent<CatUnit>();
-            return go.GetComponent<CatUnit>();
+            var cu = go.AddComponent<CatUnit>();
+            cu.SetSelectionGlow(padGlow);
+            return cu;
         }
 
         public static EnemyUnit CreateEnemy(EnemyData data, float scaling, Vector3 position,
