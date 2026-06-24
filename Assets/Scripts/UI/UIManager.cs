@@ -105,7 +105,12 @@ namespace MeowTactics.UI
         private Coroutine messageRoutine;
         private int gameSpeed = 1;
 
-        private void Awake() => Instance = this;
+        private void Awake()
+        {
+            Instance = this;
+            // 60 FPS estável em mobile (evita oscilação e poupa bateria).
+            Application.targetFrameRate = 60;
+        }
 
         private void Start()
         {
@@ -136,15 +141,26 @@ namespace MeowTactics.UI
             scaler.matchWidthOrHeight = 0.5f;
             Transform root = canvasGo.transform;
 
-            BuildTopBar(root);
-            BuildItemsPanel(root);
-            BuildSynergyPanel(root);
-            BuildBottomArea(root);
+            // Container que respeita a Safe Area do iPhone (notch/Dynamic Island/home).
+            // A HUD de jogo (barras, painéis, botões nas bordas) vai AQUI dentro.
+            // Os overlays de tela cheia (menu, pausa, etc.) ficam no root, full-bleed.
+            var safeGo = new GameObject("SafeArea", typeof(RectTransform));
+            safeGo.transform.SetParent(root, false);
+            var safeRt = safeGo.GetComponent<RectTransform>();
+            safeRt.anchorMin = Vector2.zero; safeRt.anchorMax = Vector2.one;
+            safeRt.offsetMin = Vector2.zero; safeRt.offsetMax = Vector2.zero;
+            safeGo.AddComponent<SafeArea>();
+            Transform safe = safeGo.transform;
+
+            BuildTopBar(safe);
+            BuildItemsPanel(safe);
+            BuildSynergyPanel(safe);
+            BuildBottomArea(safe);
             BuildDetailPanel(root);
             BuildDraftPanel(root);
             BuildEndPanel(root);
-            BuildMessage(root);
-            BuildWaveBanner(root);
+            BuildMessage(safe);
+            BuildWaveBanner(safe);
             BuildTooltip(root);
             BuildMainMenu(root);
             BuildPauseMenu(root);
@@ -557,7 +573,10 @@ namespace MeowTactics.UI
             cont.interactable = hasSave;
             MenuButton(col, "Coleção", ColBlue, ShowCollection);
             MenuButton(col, "Configurações", ColBlue, ShowSettings);
+            // A Apple não permite/recomenda botão de "sair" no iOS (o sistema gerencia isso).
+#if UNITY_STANDALONE || UNITY_EDITOR
             MenuButton(col, "Sair", ColRed, () => Application.Quit());
+#endif
 
             mainMenuPanel.SetActive(false);
         }
