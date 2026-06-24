@@ -89,6 +89,7 @@ namespace MeowTactics.UI
         private float musicVolume = 0.6f;
 
         private GameObject tutorialPanel, mapSelectPanel;
+        private GameObject collectionPanel;
         private Text tutorialText;
         private int tutorialStep;
         private static readonly string[] TutorialSteps =
@@ -149,6 +150,7 @@ namespace MeowTactics.UI
             BuildPauseMenu(root);
             BuildSettings(root);
             BuildMapSelect(root);
+            BuildCollection(root);
             BuildTutorial(root);
         }
 
@@ -233,6 +235,239 @@ namespace MeowTactics.UI
         }
 
         // =========================================================
+        //  COLEÇÃO (gatos, inimigos e sinergias)
+        // =========================================================
+        private void BuildCollection(Transform root)
+        {
+            var panel = UIFactory.CreatePanel(root, "Collection", new Color(0.07f, 0.06f, 0.14f, 1f), null, false);
+            collectionPanel = panel.gameObject;
+            UIFactory.StretchFull(panel.rectTransform);
+            Appear(collectionPanel, 1f);
+
+            var title = UIFactory.CreateText(panel.transform, "Title", "COLEÇÃO", 54, ColGold, TextAnchor.MiddleCenter);
+            title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
+            var trt = title.rectTransform;
+            UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            trt.sizeDelta = new Vector2(900, 80); trt.anchoredPosition = new Vector2(0, -60);
+
+            // Área rolável (entre o título e o botão Voltar)
+            var scrollGo = new GameObject("Scroll", typeof(RectTransform), typeof(ScrollRect));
+            scrollGo.transform.SetParent(panel.transform, false);
+            var scrt = scrollGo.GetComponent<RectTransform>();
+            UIFactory.SetAnchors(scrt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            scrt.sizeDelta = new Vector2(1520, 760);
+            scrt.anchoredPosition = new Vector2(0, -20);
+            var scroll = scrollGo.GetComponent<ScrollRect>();
+            scroll.horizontal = false; scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 32f;
+
+            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
+            viewport.transform.SetParent(scrollGo.transform, false);
+            var vprt = viewport.GetComponent<RectTransform>();
+            UIFactory.StretchFull(vprt);
+
+            var content = new GameObject("Content", typeof(RectTransform));
+            content.transform.SetParent(viewport.transform, false);
+            var crt = content.GetComponent<RectTransform>();
+            crt.anchorMin = new Vector2(0, 1); crt.anchorMax = new Vector2(1, 1); crt.pivot = new Vector2(0.5f, 1);
+            crt.offsetMin = Vector2.zero; crt.offsetMax = Vector2.zero;
+            var vlg = content.AddComponent<VerticalLayoutGroup>();
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.spacing = S12; vlg.padding = new RectOffset(6, S16, 6, S16);
+            var fitter = content.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            scroll.viewport = vprt; scroll.content = crt;
+
+            // --- Conteúdo ---
+            CollectionHeader(content.transform, "GATOS");
+            if (ShopManager.Instance != null)
+            {
+                var cats = new List<CatData>(ShopManager.Instance.availableCats);
+                cats.Sort((a, b) => a.cost.CompareTo(b.cost));
+                foreach (var c in cats) if (c != null) CatCodexRow(content.transform, c);
+            }
+
+            CollectionHeader(content.transform, "INIMIGOS");
+            foreach (var e in AllEnemies()) EnemyCodexRow(content.transform, e);
+
+            CollectionHeader(content.transform, "SINERGIAS");
+            if (SynergyManager.Instance != null)
+                foreach (var s in SynergyManager.Instance.allSynergies) if (s != null) SynergyCodexRow(content.transform, s);
+
+            // Botão Voltar
+            var back = UIFactory.CreateButton(panel.transform, "Back", "Voltar", ColGreen, HideCollection, 26, buttonSprite);
+            back.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            AddShadow(back.image, 4f, 0.35f);
+            var brt = UIFactory.AsRect(back);
+            UIFactory.SetAnchors(brt, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0));
+            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 40);
+
+            collectionPanel.SetActive(false);
+        }
+
+        private void CollectionHeader(Transform parent, string text)
+        {
+            var h = UIFactory.CreatePanel(parent, "Hdr", new Color(ColGold.r, ColGold.g, ColGold.b, 0.14f));
+            var le = h.gameObject.AddComponent<LayoutElement>(); le.minHeight = 46; le.preferredHeight = 46;
+            var t = UIFactory.CreateText(h.transform, "T", text, 28, ColGold, TextAnchor.MiddleLeft);
+            t.fontStyle = FontStyle.Bold; NoWrap(t);
+            var trt = t.rectTransform; UIFactory.StretchFull(trt, 0f);
+            trt.offsetMin = new Vector2(16, 0);
+        }
+
+        private void CatCodexRow(Transform parent, CatData c)
+        {
+            var row = UIFactory.CreatePanel(parent, "CatRow", ColCard);
+            AddShadow(row, 3f, 0.25f);
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 162; le.preferredHeight = 162;
+            var hlg = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(14, 14, 12, 12); hlg.spacing = S16;
+            hlg.childAlignment = TextAnchor.UpperLeft;
+            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
+
+            CodexIcon(row.transform, c.icon, c.placeholderColor, 120);
+
+            var colGo = NewColumn(row.transform);
+            var nm = UIFactory.CreateText(colGo, "Name", c.catName, 24, ColGold, TextAnchor.UpperLeft);
+            nm.fontStyle = FontStyle.Bold; NoWrap(nm); AddMinHeight(nm, 30);
+
+            string mech = "";
+            if (c.areaDamage) mech += "   •   Área";
+            if (c.appliesSlow) mech += "   •   Lentidão";
+            var stats = UIFactory.CreateText(colGo, "Stats",
+                $"<color=#{ToHex(DamageColor(c.damageType))}><b>{DamageName(c.damageType)}</b></color>   •   Dano {c.baseDamage:0}   •   Vel {c.attackSpeed:0.##}/s   •   Alcance {c.range:0.#}   •   Crít {c.critChance:0}%{mech}",
+                15, ColText, TextAnchor.UpperLeft);
+            NoWrap(stats); AddMinHeight(stats, 22);
+
+            var desc = UIFactory.CreateText(colGo, "Desc", c.description, 14, ColDim, TextAnchor.UpperLeft);
+            var dle = desc.gameObject.AddComponent<LayoutElement>(); dle.minHeight = 36; dle.flexibleHeight = 1;
+
+            var chips = new GameObject("Chips", typeof(RectTransform));
+            chips.transform.SetParent(colGo, false);
+            var chl = chips.AddComponent<HorizontalLayoutGroup>();
+            chl.childAlignment = TextAnchor.MiddleLeft; chl.spacing = 6;
+            chl.childForceExpandWidth = false; chl.childForceExpandHeight = false;
+            var chle = chips.AddComponent<LayoutElement>(); chle.minHeight = 26; chle.preferredHeight = 26;
+            foreach (var t in c.synergies) SynergyChip(chips.transform, t);
+        }
+
+        private void EnemyCodexRow(Transform parent, EnemyData e)
+        {
+            var row = UIFactory.CreatePanel(parent, "EnemyRow", ColCard);
+            AddShadow(row, 3f, 0.25f);
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 150; le.preferredHeight = 150;
+            var hlg = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(14, 14, 12, 12); hlg.spacing = S16;
+            hlg.childAlignment = TextAnchor.UpperLeft;
+            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
+
+            CodexIcon(row.transform, e.icon, e.placeholderColor, 108);
+
+            var colGo = NewColumn(row.transform);
+            var nm = UIFactory.CreateText(colGo, "Name", e.enemyName + (e.isBoss ? "  ★ BOSS" : ""), 24,
+                e.isBoss ? ColGold : ColText, TextAnchor.UpperLeft);
+            nm.fontStyle = FontStyle.Bold; NoWrap(nm); AddMinHeight(nm, 30);
+
+            var stats = UIFactory.CreateText(colGo, "Stats",
+                $"Vida {e.maxHealth:0}   •   <color=#bfc6d0>Armadura {e.armor:0}</color>   •   <color=#b89cff>Resist. Mág {e.magicResistance:0}</color>   •   Vel {e.moveSpeed:0.##}",
+                15, ColText, TextAnchor.UpperLeft);
+            NoWrap(stats); AddMinHeight(stats, 22);
+
+            Color rc = ThreatColor(e);
+            var hint = UIFactory.CreateText(colGo, "Hint", ResistText(e), 14, rc, TextAnchor.UpperLeft);
+            NoWrap(hint); AddMinHeight(hint, 22);
+
+            var desc = UIFactory.CreateText(colGo, "Desc", e.description, 14, ColDim, TextAnchor.UpperLeft);
+            var dle = desc.gameObject.AddComponent<LayoutElement>(); dle.minHeight = 30; dle.flexibleHeight = 1;
+        }
+
+        private void SynergyCodexRow(Transform parent, SynergyData s)
+        {
+            var row = UIFactory.CreatePanel(parent, "SynRow2", ColCard);
+            AddShadow(row, 3f, 0.25f);
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 134; le.preferredHeight = 134;
+            var hlg = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(14, 14, 12, 12); hlg.spacing = S16;
+            hlg.childAlignment = TextAnchor.UpperLeft;
+            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
+
+            // Badge colorido com a inicial
+            var badge = UIFactory.CreatePanel(row.transform, "Badge", s.uiColor);
+            Fixed(badge, 64, 64);
+            var bt = UIFactory.CreateText(badge.transform, "B",
+                string.IsNullOrEmpty(s.displayName) ? "?" : s.displayName.Substring(0, 1).ToUpper(), 32, Color.white, TextAnchor.MiddleCenter);
+            bt.fontStyle = FontStyle.Bold; AddOutline(bt); UIFactory.StretchFull(bt.rectTransform);
+
+            var colGo = NewColumn(row.transform);
+            var nm = UIFactory.CreateText(colGo, "Name", DisplayName(s), 24, Color.Lerp(s.uiColor, Color.white, 0.4f), TextAnchor.UpperLeft);
+            nm.fontStyle = FontStyle.Bold; NoWrap(nm); AddMinHeight(nm, 30);
+
+            var dsc = UIFactory.CreateText(colGo, "Desc", s.description, 14, ColDim, TextAnchor.UpperLeft);
+            NoWrap(dsc); AddMinHeight(dsc, 20);
+
+            foreach (var tier in s.tiers)
+            {
+                var t = UIFactory.CreateText(colGo, "Tier",
+                    $"<b>{tier.requiredCount}</b>:  {tier.description}", 15, ColText, TextAnchor.UpperLeft);
+                NoWrap(t); AddMinHeight(t, 22);
+            }
+        }
+
+        // Coluna vertical flexível usada nas linhas da coleção.
+        private Transform NewColumn(Transform parent)
+        {
+            var colGo = new GameObject("Col", typeof(RectTransform));
+            colGo.transform.SetParent(parent, false);
+            var cle = colGo.AddComponent<LayoutElement>(); cle.flexibleWidth = 1;
+            var cvl = colGo.AddComponent<VerticalLayoutGroup>();
+            cvl.childAlignment = TextAnchor.UpperLeft; cvl.spacing = 3;
+            cvl.childForceExpandWidth = true; cvl.childForceExpandHeight = false;
+            return colGo.transform;
+        }
+
+        // Ícone (arte) ou amostra de cor quando não há arte.
+        private void CodexIcon(Transform parent, Sprite icon, Color fallback, float size)
+        {
+            if (icon != null)
+            {
+                var ic = UIFactory.CreateIcon(parent, "Icon", icon, size);
+                Fixed(ic, size, size);
+            }
+            else
+            {
+                var sw = UIFactory.CreatePanel(parent, "Swatch", fallback);
+                Fixed(sw, size, size);
+            }
+        }
+
+        private List<EnemyData> AllEnemies()
+        {
+            var list = new List<EnemyData>();
+            var seen = new HashSet<EnemyData>();
+            if (WaveManager.Instance != null)
+                foreach (var w in WaveManager.Instance.waves)
+                    if (w != null)
+                        foreach (var info in w.enemies)
+                            if (info.enemy != null && seen.Add(info.enemy)) list.Add(info.enemy);
+            return list;
+        }
+
+        private static string ResistText(EnemyData e)
+        {
+            if (e.armor >= 30f && e.magicResistance >= 30f) return "Resiste a físico E mágico — use DANO VERDADEIRO (Samurai/Monge)";
+            if (e.armor >= 30f) return "Resistente a físico — use penetração de armadura ou dano verdadeiro";
+            if (e.magicResistance >= 30f) return "Resistente a mágico — use penetração mágica ou dano físico";
+            if (e.moveSpeed >= 1.5f) return "Muito rápido — priorize alcance e lentidão";
+            return "Sem resistências especiais";
+        }
+
+        private static string ToHex(Color c) => ColorUtility.ToHtmlStringRGB(c);
+
+        public void ShowCollection() { if (collectionPanel != null) collectionPanel.SetActive(true); SFXManager.Play(SfxType.Click); }
+        public void HideCollection() { if (collectionPanel != null) collectionPanel.SetActive(false); SFXManager.Play(SfxType.Click); }
+
+        // =========================================================
         //  TUTORIAL (passos guiados, pulável)
         // =========================================================
         private void BuildTutorial(Transform root)
@@ -315,12 +550,12 @@ namespace MeowTactics.UI
             UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
             trt.sizeDelta = new Vector2(1200, 100); trt.anchoredPosition = new Vector2(0, -170);
 
-            var col = MenuColumn(panel.transform, 460);
-            MenuButton(col, "Novo Jogo", ColGreen, () => GameManager.Instance?.NewGame());
+            var col = MenuColumn(panel.transform, 540);
+            MenuButton(col, "Novo Jogo", ColGreen, ShowMapSelect);
             bool hasSave = SaveSystem.HasSave();
             var cont = MenuButton(col, "Continuar", hasSave ? ColGreen : ColCard, ContinueGame);
             cont.interactable = hasSave;
-            MenuButton(col, "Escolher Mapa", ColBlue, ShowMapSelect);
+            MenuButton(col, "Coleção", ColBlue, ShowCollection);
             MenuButton(col, "Configurações", ColBlue, ShowSettings);
             MenuButton(col, "Sair", ColRed, () => Application.Quit());
 
