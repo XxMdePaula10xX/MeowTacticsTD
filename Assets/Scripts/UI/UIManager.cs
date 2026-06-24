@@ -648,14 +648,35 @@ namespace MeowTactics.UI
             stt.sizeDelta = new Vector2(40, 34);
             stt.anchoredPosition = new Vector2(-8, -8);
 
+            // Área de rolagem (caso haja muitas sinergias ativas, ela rola em vez de cortar).
+            var scrollGo = new GameObject("SynScroll", typeof(RectTransform), typeof(ScrollRect));
+            scrollGo.transform.SetParent(panel.transform, false);
+            var scrt = scrollGo.GetComponent<RectTransform>();
+            UIFactory.StretchFull(scrt, 10f);
+            scrt.offsetMax = new Vector2(scrt.offsetMax.x, -46);
+            var scroll = scrollGo.GetComponent<ScrollRect>();
+            scroll.horizontal = false; scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 24f;
+
+            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
+            viewport.transform.SetParent(scrollGo.transform, false);
+            var vprt = viewport.GetComponent<RectTransform>();
+            UIFactory.StretchFull(vprt);
+
             var content = new GameObject("Content", typeof(RectTransform));
-            content.transform.SetParent(panel.transform, false);
+            content.transform.SetParent(viewport.transform, false);
             var crt = content.GetComponent<RectTransform>();
-            UIFactory.StretchFull(crt, 12f);
-            crt.offsetMax = new Vector2(crt.offsetMax.x, -46);
+            crt.anchorMin = new Vector2(0, 1); crt.anchorMax = new Vector2(1, 1); crt.pivot = new Vector2(0.5f, 1);
+            crt.offsetMin = Vector2.zero; crt.offsetMax = Vector2.zero;
             var vlg = content.AddComponent<VerticalLayoutGroup>();
             vlg.childForceExpandHeight = false; vlg.childForceExpandWidth = true;
             vlg.spacing = 5; vlg.childAlignment = TextAnchor.UpperLeft;
+            var fitter = content.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            scroll.viewport = vprt;
+            scroll.content = crt;
             synergyContainer = content.transform;
         }
 

@@ -72,6 +72,15 @@ namespace MeowTactics.EditorTools
                 new Color(0.45f, 0.30f, 0.65f), "Muito resistente a dano mágico (precisa de penetração mágica).", false, 1.05f);
             dict["swift"] = MakeEnemy("swift", "Pesadelo Veloz", 26, 0, 0, 1.8f, 1, 1,
                 new Color(0.30f, 0.70f, 0.85f), "Fraco, mas muito rápido.", false, 0.85f);
+
+            // --- Novos inimigos com resistências distintas ---
+            dict["bulwark"] = MakeEnemy("bulwark", "Golem de Pedra", 130, 65, 0, 0.55f, 2, 3,
+                new Color(0.55f, 0.50f, 0.42f), "Armadura altíssima: só cede a penetração de armadura ou dano verdadeiro.", false, 1.25f);
+            dict["wraith"] = MakeEnemy("wraith", "Alma Penada", 78, 0, 60, 1.05f, 1, 3,
+                new Color(0.40f, 0.85f, 0.78f), "Resistência mágica altíssima: precisa de penetração mágica ou dano físico.", false, 1.0f);
+            dict["warden"] = MakeEnemy("warden", "Sentinela Maldita", 96, 32, 32, 0.8f, 2, 3,
+                new Color(0.62f, 0.45f, 0.30f), "Resistente a tudo: dano verdadeiro (Samurai/Monge) é a melhor resposta.", false, 1.1f);
+
             dict["king"] = MakeEnemy("king", "Rei dos Pesadelos", 850, 32, 32, 0.55f, 5, 25,
                 new Color(0.35f, 0.10f, 0.45f), "Boss final do MVP.", true, 2.2f);
 
@@ -94,26 +103,44 @@ namespace MeowTactics.EditorTools
         {
             // id, nome, custo, dano, [sinergias], dmgBase, atkSpeed, range, crit, cor, desc
             MakeCat("ninja", "Gato Ninja", 3, DamageType.Physical,
-                new[] { SynergyType.Ninja, SynergyType.Shadow }, 10, 1.4f, 2.5f, 5,
+                new[] { SynergyType.Ninja, SynergyType.Shadow, SynergyType.Assassin }, 10, 1.4f, 2.5f, 5,
                 new Color(0.18f, 0.18f, 0.22f), "Um gato silencioso que ataca muito rápido.",
                 atk: AttackType.Melee);
             MakeCat("archer", "Gato Arqueiro", 3, DamageType.Physical,
-                new[] { SynergyType.Hunter, SynergyType.Forest }, 15, 0.9f, 3.5f, 10,
+                new[] { SynergyType.Hunter, SynergyType.Forest, SynergyType.Adventurer }, 15, 0.9f, 3.5f, 10,
                 new Color(0.30f, 0.65f, 0.35f), "Um gato preciso que dispara flechas.");
             MakeCat("sniper", "Gato Sniper", 4, DamageType.Physical,
-                new[] { SynergyType.Sniper, SynergyType.Technology }, 34, 0.35f, 6.0f, 20,
+                new[] { SynergyType.Sniper, SynergyType.Technology, SynergyType.Assassin }, 34, 0.35f, 6.0f, 20,
                 new Color(0.30f, 0.55f, 0.80f), "Um gato paciente que acerta de muito longe.");
             MakeCat("mage", "Gato Mago", 4, DamageType.Magical,
-                new[] { SynergyType.Mystic, SynergyType.Star }, 20, 0.7f, 3.5f, 0,
-                new Color(0.60f, 0.40f, 0.90f), "Um gato encantado que lança magia.",
+                new[] { SynergyType.Mystic, SynergyType.Elemental, SynergyType.Adventurer }, 20, 0.7f, 3.5f, 0,
+                new Color(0.60f, 0.40f, 0.90f), "Um gato encantado que lança magia em área.",
                 area: true, areaRadius: 1.5f, atk: AttackType.Magic);
             MakeCat("shaman", "Gato Xamã", 3, DamageType.Magical,
-                new[] { SynergyType.Mystic, SynergyType.Support }, 8, 0.8f, 3.0f, 0,
+                new[] { SynergyType.Support, SynergyType.Elemental, SynergyType.Adventurer }, 8, 0.8f, 3.0f, 0,
                 new Color(0.30f, 0.70f, 0.60f), "Um gato espiritual que enfraquece inimigos.",
                 slow: true, slowAmount: 0.2f, slowDuration: 2f, atk: AttackType.Magic);
             MakeCat("samurai", "Gato Samurai", 5, DamageType.True,
-                new[] { SynergyType.Guardian, SynergyType.Shadow }, 17, 0.6f, 2.0f, 5,
-                new Color(0.80f, 0.30f, 0.30f), "Um gato honrado que corta qualquer defesa.",
+                new[] { SynergyType.Guardian, SynergyType.Shadow, SynergyType.Adventurer }, 17, 0.6f, 2.0f, 5,
+                new Color(0.80f, 0.30f, 0.30f), "Um gato honrado que corta qualquer defesa (dano verdadeiro).",
+                atk: AttackType.Melee);
+
+            // --- Novos gatos ---
+            MakeCat("pirate", "Gato Pirata", 3, DamageType.Physical,
+                new[] { SynergyType.Hunter, SynergyType.Technology }, 24, 0.6f, 4.0f, 8,
+                new Color(0.72f, 0.32f, 0.26f), "Dispara balas de canhão que explodem em área.",
+                area: true, areaRadius: 1.6f, atk: AttackType.Projectile);
+            MakeCat("witch", "Gata Feiticeira", 4, DamageType.Magical,
+                new[] { SynergyType.Mystic, SynergyType.Support, SynergyType.Elemental }, 14, 0.7f, 3.3f, 0,
+                new Color(0.45f, 0.25f, 0.62f), "Conjura geada que causa dano em área e deixa lento.",
+                slow: true, slowAmount: 0.25f, slowDuration: 2f, area: true, areaRadius: 1.4f, atk: AttackType.Magic);
+            MakeCat("wolf", "Gato Lobo", 3, DamageType.Physical,
+                new[] { SynergyType.Hunter, SynergyType.Shadow, SynergyType.Assassin }, 11, 1.6f, 1.9f, 28,
+                new Color(0.45f, 0.45f, 0.52f), "Fera veloz e selvagem com altíssima chance de crítico.",
+                atk: AttackType.Melee);
+            MakeCat("monk", "Gato Monge", 5, DamageType.True,
+                new[] { SynergyType.Guardian, SynergyType.Star, SynergyType.Support }, 18, 0.95f, 2.2f, 12,
+                new Color(0.92f, 0.62f, 0.26f), "Mestre do caratê felino: golpes de dano verdadeiro.",
                 atk: AttackType.Melee);
         }
 
@@ -339,6 +366,29 @@ namespace MeowTactics.EditorTools
                 (2, "+20% dano", new[] { (BonusStat.DamagePercent, 20f) }),
                 (3, "+40% dano e +20% crítico",
                     new[] { (BonusStat.DamagePercent, 40f), (BonusStat.CritChancePercent, 20f) }));
+
+            // === Sinergias de ORIGEM (combinam classes diferentes) ===
+
+            // Assassino: Ninja + Sniper + Lobo — crítico devastador.
+            MakeSynergy(SynergyType.Assassin, "Assassino", new Color(0.85f, 0.20f, 0.35f),
+                "Golpes precisos e mortais (Ninja, Sniper, Lobo).",
+                (2, "+25% crítico", new[] { (BonusStat.CritChancePercent, 25f) }),
+                (3, "+55% crítico e +20% dano",
+                    new[] { (BonusStat.CritChancePercent, 55f), (BonusStat.DamagePercent, 20f) }));
+
+            // Aventureiros: Arqueiro + Mago + Xamã + Samurai — o grupo clássico.
+            MakeSynergy(SynergyType.Adventurer, "Aventureiros", new Color(0.95f, 0.70f, 0.25f),
+                "A guilda de heróis (Arqueiro, Mago, Xamã, Samurai).",
+                (2, "+15% dano", new[] { (BonusStat.DamagePercent, 15f) }),
+                (4, "+35% dano e +25% vel. ataque",
+                    new[] { (BonusStat.DamagePercent, 35f), (BonusStat.AttackSpeedPercent, 25f) }));
+
+            // Elemental: Mago + Xamã + Feiticeira — magos que rasgam resistência mágica.
+            MakeSynergy(SynergyType.Elemental, "Elemental", new Color(0.45f, 0.85f, 0.95f),
+                "Conjuradores que dominam os elementos.",
+                (2, "+20% dano", new[] { (BonusStat.DamagePercent, 20f) }),
+                (3, "+45% dano e +35 pen. mágica",
+                    new[] { (BonusStat.DamagePercent, 45f), (BonusStat.MagicPenetrationFlat, 35f) }));
         }
 
         private static void MakeSynergy(SynergyType type, string name, Color color, string desc,
@@ -416,13 +466,13 @@ namespace MeowTactics.EditorTools
             MakeWave(1,  0.80f, false, (e["ghostling"], 12, 1f));                                   // básica
             MakeWave(2,  0.75f, false, (e["ghostling"], 12, 1f), (e["swift"], 5, 1f));              // intro rápidos
             MakeWave(3,  0.50f, false, (e["swift"], 16, 1f), (e["ghostling"], 4, 1f));              // enxame rápido
-            MakeWave(4,  0.70f, false, (e["armored"], 10, 1f), (e["ghostling"], 6, 1f));            // blindados
-            MakeWave(5,  0.70f, false, (e["shadow"], 12, 1f), (e["ghostling"], 5, 1f));             // resist. mágica
-            MakeWave(6,  0.60f, false, (e["armored"], 8, 1f), (e["shadow"], 8, 1f), (e["swift"], 6, 1f)); // mista
-            MakeWave(7,  0.50f, false, (e["swift"], 16, 1f), (e["armored"], 8, 1f));                // enxame + blindados
-            MakeWave(8,  0.70f, false, (e["king"], 1, 0.5f), (e["shadow"], 8, 1f), (e["armored"], 8, 1f)); // mini-boss
-            MakeWave(9,  0.55f, false, (e["armored"], 12, 1f), (e["shadow"], 12, 1f), (e["swift"], 10, 1f)); // pesada mista
-            MakeWave(10, 0.70f, true,  (e["king"], 1, 1f), (e["ghostling"], 12, 1f), (e["swift"], 8, 1f));   // BOSS
+            MakeWave(4,  0.70f, false, (e["armored"], 10, 1f), (e["ghostling"], 6, 1f));            // blindados (pen. armadura)
+            MakeWave(5,  0.70f, false, (e["shadow"], 10, 1f), (e["wraith"], 4, 1f));                // resist. mágica (pen. mágica)
+            MakeWave(6,  0.60f, false, (e["bulwark"], 4, 1f), (e["armored"], 6, 1f), (e["swift"], 6, 1f)); // físico pesado
+            MakeWave(7,  0.55f, false, (e["wraith"], 8, 1f), (e["shadow"], 8, 1f), (e["swift"], 6, 1f));   // mágico pesado
+            MakeWave(8,  0.70f, false, (e["king"], 1, 0.5f), (e["warden"], 6, 1f), (e["bulwark"], 3, 1f)); // mini-boss + resistentes
+            MakeWave(9,  0.55f, false, (e["warden"], 8, 1f), (e["bulwark"], 4, 1f), (e["wraith"], 8, 1f)); // tudo resistente (dano verdadeiro!)
+            MakeWave(10, 0.70f, true,  (e["king"], 1, 1f), (e["warden"], 6, 1f), (e["swift"], 10, 1f));    // BOSS
         }
 
         private static void MakeWave(int number, float interval, bool boss,

@@ -39,7 +39,10 @@ namespace MeowTactics.Core
         Forest,
         Technology,
         Support,
-        Star
+        Star,
+        Assassin,
+        Adventurer,
+        Elemental
     }
 
     /// <summary>
