@@ -510,6 +510,10 @@ namespace MeowTactics.EditorTools
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.10f, 0.08f, 0.18f);
             camGo.AddComponent<AudioListener>();
+            // Mantém o mapa inteiro visível em qualquer proporção (iPhone/iPad).
+            var camFit = camGo.AddComponent<MeowTactics.Utilities.CameraFit>();
+            camFit.mapWorldWidth = worldWidth;
+            camFit.mapWorldHeight = worldHeight;
 
             // ---- Fundo: mapa noturno ----
             var bgSprite = EnsureSprite("Assets/Art/Maps/mapa_noturno.png", mapH / worldHeight);

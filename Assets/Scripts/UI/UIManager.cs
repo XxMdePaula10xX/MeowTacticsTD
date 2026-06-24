@@ -103,6 +103,7 @@ namespace MeowTactics.UI
         };
 
         private Coroutine messageRoutine;
+        private Coroutine tooltipHideRoutine;
         private int gameSpeed = 1;
 
         private void Awake()
@@ -1830,7 +1831,12 @@ namespace MeowTactics.UI
             SynergyData data = s.data;
             var trigger = row.gameObject.AddComponent<EventTrigger>();
             AddTrigger(trigger, EventTriggerType.PointerEnter, _ => ShowSynergyTooltip(data));
-            AddTrigger(trigger, EventTriggerType.PointerClick, _ => ShowSynergyTooltip(data));
+            AddTrigger(trigger, EventTriggerType.PointerClick, _ =>
+            {
+                ShowSynergyTooltip(data);
+                if (tooltipHideRoutine != null) StopCoroutine(tooltipHideRoutine);
+                tooltipHideRoutine = StartCoroutine(HideTooltipAfter(3.5f));
+            });
             AddTrigger(trigger, EventTriggerType.PointerExit, _ => HideTooltip());
         }
 
@@ -1889,9 +1895,25 @@ namespace MeowTactics.UI
                     selected ? Color.black : ColText, TextAnchor.MiddleLeft);
 
                 var trig = chip.AddComponent<EventTrigger>();
+                // Desktop: hover mostra/esconde. Mobile: toque mostra (e some sozinho).
                 AddTrigger(trig, EventTriggerType.PointerEnter, _ => ShowTextTooltip(ItemBonusText(it)));
                 AddTrigger(trig, EventTriggerType.PointerExit, _ => HideTooltip());
+                AddTrigger(trig, EventTriggerType.PointerClick, _ => ShowItemTooltip(it));
             }
+        }
+
+        /// <summary>Mostra os bônus do item perto do toque e some sozinho (amigável a touch).</summary>
+        private void ShowItemTooltip(ItemData it)
+        {
+            ShowTextTooltip(ItemBonusText(it));
+            if (tooltipHideRoutine != null) StopCoroutine(tooltipHideRoutine);
+            tooltipHideRoutine = StartCoroutine(HideTooltipAfter(3.5f));
+        }
+
+        private IEnumerator HideTooltipAfter(float seconds)
+        {
+            yield return new WaitForSecondsRealtime(seconds);
+            HideTooltip();
         }
 
         private void ToggleItemSelection(ItemData item)
@@ -1899,12 +1921,13 @@ namespace MeowTactics.UI
             if (ItemManager.Instance.SelectedForEquip == item)
             {
                 ItemManager.Instance.ClearSelection();
-                ShowMessage("Item deselecionado.");
+                ShowMessage("Item cancelado.");
             }
             else
             {
                 ItemManager.Instance.SelectForEquip(item);
-                ShowMessage("Agora toque em um gato no mapa para equipar!");
+                // Mostra o que o item faz já na seleção (importante no mobile, sem hover).
+                ShowMessage($"{item.itemName}: {item.description}. Toque num gato para equipar!");
             }
         }
 

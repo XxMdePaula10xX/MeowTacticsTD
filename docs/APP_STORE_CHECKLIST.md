@@ -18,15 +18,13 @@ Status: 🟢 feito · 🟡 em andamento / parcial · 🔴 a fazer · ⚪ depende
 - 🔴 **Orientação travada em Landscape** — definir em *Player Settings → Resolution
   and Presentation → Default Orientation = Landscape Left/Right* (o jogo é
   horizontal). Desmarcar Portrait.
-- 🔴 **Aspecto da câmera/mapa** — o mapa é 16:9; iPhones são ~19.5:9. Hoje a câmera
-  tem `orthographicSize` fixo → em telas mais largas podem aparecer faixas da cor
-  de fundo nas laterais. Opções (decidir depois de testar): (a) arte de fundo um
-  pouco maior com margem de segurança; (b) câmera que preenche por largura
-  cortando topo/base; (c) manter faixas com uma cor/arte bonita. Recomendo (a)+(c).
-- 🟡 **Toques (touch)** — tap/colocar gato/abrir detalhe funcionam (uGUI + 
-  `Input.mousePosition` mapeia o toque). **Tooltips por "hover"** (passar o mouse)
-  não existem no touch; sinergias já têm toque, mas os itens (à esquerda) usam só
-  hover — trocar para tooltip por toque antes do lançamento.
+- 🟢 **Aspecto da câmera/mapa** — `CameraFit.cs` mantém o MAPA INTEIRO visível em
+  qualquer proporção (iPhone largo, iPad 4:3) sem cortar o caminho. As faixas que
+  sobram usam a cor de fundo do tema (noturno). Melhoria futura opcional: arte de
+  fundo maior para preencher as faixas.
+- 🟢 **Toques (touch)** — tap/colocar gato/abrir detalhe funcionam. Tooltips de
+  item e de sinergia agora aparecem por TOQUE e somem sozinhos; a seleção de item
+  já mostra o efeito no aviso (sem depender de hover).
 - 🔴 **IL2CPP + ARM64** — *Player Settings → Other → Scripting Backend = IL2CPP*,
   *Architecture = ARM64* (obrigatório pela Apple).
 - 🔴 **iOS mínimo** — definir Target minimum iOS (sugestão: iOS 13 ou 14+).
