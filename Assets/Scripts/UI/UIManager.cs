@@ -199,9 +199,9 @@ namespace MeowTactics.UI
             hlg.spacing = 28; hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
             hlg.childAlignment = TextAnchor.MiddleCenter;
 
-            MapCard(row.transform, "bosque", "Bosque Fantasma", "Fácil", "Floresta noturna com dois caminhos serpenteando.", true);
-            MapCard(row.transform, "jardim", "Jardim Místico", "Médio", "Jardim encantado de curvas amplas em dois caminhos.", true);
-            MapCard(row.transform, "ruinas", "Ruínas Lunares", "Difícil", "Ruínas antigas com caminhos em ziguezague.", true);
+            MapCard(row.transform, "bosque", "Bosque Fantasma", "Fácil", "Floresta noturna: dois caminhos espelhados.", true);
+            MapCard(row.transform, "jardim", "Jardim Místico", "Médio", "Um único caminho em grande arco pelo jardim.", true);
+            MapCard(row.transform, "ruinas", "Ruínas Lunares", "Difícil", "Três trilhas que convergem para o cristal.", true);
 
             var back = UIFactory.CreateButton(panel.transform, "Back", "Voltar", ColGreen, HideMapSelect, 26, buttonSprite);
             back.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;

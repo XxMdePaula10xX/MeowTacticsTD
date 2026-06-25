@@ -677,21 +677,26 @@ namespace MeowTactics.EditorTools
                 new RuntimeMapBuilder.MapDef {
                     id = "bosque", background = bgSprite,
                     pathA = pathParents.Count > 0 ? ParentToVec2(pathParents[0]) : new Vector2[0],
-                    pathB = pathParents.Count > 1 ? ParentToVec2(pathParents[1]) : new Vector2[0]
+                    pathB = pathParents.Count > 1 ? ParentToVec2(pathParents[1]) : new Vector2[0],
+                    pathC = new Vector2[0]
                 },
                 // Sem arte própria: fundo fica nulo (campo escuro do tema) — evita a
                 // "estrada pintada" do mapa noturno não casar com o novo traçado.
+                // JARDIM: UM caminho único em grande arco (vale suave).
                 new RuntimeMapBuilder.MapDef {
                     id = "jardim",
                     background = EnsureSprite("Assets/Art/Maps/mapa_jardim.png", mapH / worldHeight),
                     pathA = NormToVec2(JardimNorm, worldWidth, worldHeight, false),
-                    pathB = NormToVec2(JardimNorm, worldWidth, worldHeight, true)
+                    pathB = new Vector2[0],
+                    pathC = new Vector2[0]
                 },
+                // RUÍNAS: TRÊS trilhas que entram em alturas diferentes e CONVERGEM no cristal.
                 new RuntimeMapBuilder.MapDef {
                     id = "ruinas",
                     background = EnsureSprite("Assets/Art/Maps/mapa_ruinas.png", mapH / worldHeight),
-                    pathA = NormToVec2(RuinasNorm, worldWidth, worldHeight, false),
-                    pathB = NormToVec2(RuinasNorm, worldWidth, worldHeight, true)
+                    pathA = NormToVec2(RuinasTopNorm, worldWidth, worldHeight, false),
+                    pathB = NormToVec2(RuinasMidNorm, worldWidth, worldHeight, false),
+                    pathC = NormToVec2(RuinasBotNorm, worldWidth, worldHeight, false)
                 }
             };
 
@@ -785,17 +790,28 @@ namespace MeowTactics.EditorTools
         }
 
         // ---- Traçados dos mapas extras (coords normalizadas: x esq->dir, y topo->baixo) ----
-        // Jardim Místico: curvas amplas e suaves.
+        // JARDIM: um ÚNICO caminho em grande arco — entra em cima à esquerda, mergulha
+        // suavemente até o centro-baixo e sobe de novo até em cima à direita.
         private static readonly float[,] JardimNorm =
         {
-            {0.00f,0.50f},{0.14f,0.50f},{0.24f,0.70f},{0.40f,0.70f},{0.50f,0.36f},
-            {0.60f,0.36f},{0.72f,0.66f},{0.86f,0.66f},{1.00f,0.50f}
+            {0.00f,0.28f},{0.12f,0.28f},{0.20f,0.36f},{0.26f,0.50f},{0.31f,0.64f},
+            {0.40f,0.72f},{0.50f,0.74f},{0.60f,0.72f},{0.69f,0.64f},{0.74f,0.50f},
+            {0.80f,0.36f},{0.88f,0.28f},{1.00f,0.28f}
         };
-        // Ruínas Lunares: ziguezague mais fechado (mais difícil de cobrir).
-        private static readonly float[,] RuinasNorm =
+
+        // RUÍNAS: TRÊS trilhas paralelas que entram em alturas diferentes (cima/meio/baixo)
+        // e convergem para o cristal no centro-direita. Três fluxos = mais difícil.
+        private static readonly float[,] RuinasTopNorm =
         {
-            {0.00f,0.50f},{0.12f,0.50f},{0.20f,0.26f},{0.34f,0.26f},{0.42f,0.72f},
-            {0.58f,0.72f},{0.66f,0.28f},{0.80f,0.28f},{0.88f,0.50f},{1.00f,0.50f}
+            {0.00f,0.26f},{0.18f,0.26f},{0.36f,0.30f},{0.56f,0.38f},{0.78f,0.46f},{1.00f,0.50f}
+        };
+        private static readonly float[,] RuinasMidNorm =
+        {
+            {0.00f,0.50f},{0.30f,0.50f},{0.62f,0.50f},{1.00f,0.50f}
+        };
+        private static readonly float[,] RuinasBotNorm =
+        {
+            {0.00f,0.74f},{0.18f,0.74f},{0.36f,0.70f},{0.56f,0.62f},{0.78f,0.54f},{1.00f,0.50f}
         };
 
         /// <summary>Converte coords normalizadas em pontos de mundo (com espelhamento opcional em Y).</summary>
