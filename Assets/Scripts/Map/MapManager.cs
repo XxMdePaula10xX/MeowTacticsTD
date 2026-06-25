@@ -36,6 +36,9 @@ namespace MeowTactics.Map
             CachePaths();
         }
 
+        /// <summary>Recalcula o cache dos caminhos (após trocar pathParents em runtime).</summary>
+        public void RebuildPaths() => CachePaths();
+
         private void CachePaths()
         {
             cachedPaths = new List<List<Vector3>>();

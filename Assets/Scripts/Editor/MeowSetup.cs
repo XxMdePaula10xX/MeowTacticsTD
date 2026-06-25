@@ -665,6 +665,36 @@ namespace MeowTactics.EditorTools
             map.boardBottom = -orthoSize + 2.9f;  // logo acima da loja
             map.pathRadius = 0.95f;
 
+            // ---- Suporte a MÚLTIPLOS MAPAS ----
+            // A cena já vem montada com o "bosque". Em runtime, o RuntimeMapBuilder
+            // troca fundo/caminhos/marcadores se o jogador escolher outro mapa.
+            // Mapas novos sem arte própria usam o fundo noturno como fallback.
+            var mapBuilderGo = new GameObject("RuntimeMapBuilder");
+            var builder = mapBuilderGo.AddComponent<RuntimeMapBuilder>();
+            builder.bakedMapId = "bosque";
+            builder.maps = new List<RuntimeMapBuilder.MapDef>
+            {
+                new RuntimeMapBuilder.MapDef {
+                    id = "bosque", background = bgSprite,
+                    pathA = pathParents.Count > 0 ? ParentToVec2(pathParents[0]) : new Vector2[0],
+                    pathB = pathParents.Count > 1 ? ParentToVec2(pathParents[1]) : new Vector2[0]
+                },
+                // Sem arte própria: fundo fica nulo (campo escuro do tema) — evita a
+                // "estrada pintada" do mapa noturno não casar com o novo traçado.
+                new RuntimeMapBuilder.MapDef {
+                    id = "jardim",
+                    background = EnsureSprite("Assets/Art/Maps/mapa_jardim.png", mapH / worldHeight),
+                    pathA = NormToVec2(JardimNorm, worldWidth, worldHeight, false),
+                    pathB = NormToVec2(JardimNorm, worldWidth, worldHeight, true)
+                },
+                new RuntimeMapBuilder.MapDef {
+                    id = "ruinas",
+                    background = EnsureSprite("Assets/Art/Maps/mapa_ruinas.png", mapH / worldHeight),
+                    pathA = NormToVec2(RuinasNorm, worldWidth, worldHeight, false),
+                    pathB = NormToVec2(RuinasNorm, worldWidth, worldHeight, true)
+                }
+            };
+
             // ---- Colisor do tabuleiro (captura cliques para posicionar) ----
             var boardGo = new GameObject("BoardClicker");
             boardGo.transform.position = new Vector3(
@@ -752,6 +782,43 @@ namespace MeowTactics.EditorTools
             var go = new GameObject(name);
             go.transform.position = new Vector3(pos.x, pos.y, 0f);
             go.AddComponent<Marker>().kind = kind;
+        }
+
+        // ---- Traçados dos mapas extras (coords normalizadas: x esq->dir, y topo->baixo) ----
+        // Jardim Místico: curvas amplas e suaves.
+        private static readonly float[,] JardimNorm =
+        {
+            {0.00f,0.50f},{0.14f,0.50f},{0.24f,0.70f},{0.40f,0.70f},{0.50f,0.36f},
+            {0.60f,0.36f},{0.72f,0.66f},{0.86f,0.66f},{1.00f,0.50f}
+        };
+        // Ruínas Lunares: ziguezague mais fechado (mais difícil de cobrir).
+        private static readonly float[,] RuinasNorm =
+        {
+            {0.00f,0.50f},{0.12f,0.50f},{0.20f,0.26f},{0.34f,0.26f},{0.42f,0.72f},
+            {0.58f,0.72f},{0.66f,0.28f},{0.80f,0.28f},{0.88f,0.50f},{1.00f,0.50f}
+        };
+
+        /// <summary>Converte coords normalizadas em pontos de mundo (com espelhamento opcional em Y).</summary>
+        private static Vector2[] NormToVec2(float[,] norm, float worldWidth, float worldHeight, bool mirrorY)
+        {
+            int n = norm.GetLength(0);
+            var arr = new Vector2[n];
+            for (int i = 0; i < n; i++)
+            {
+                float nx = norm[i, 0];
+                float ny = mirrorY ? (1f - norm[i, 1]) : norm[i, 1];
+                arr[i] = new Vector2((nx - 0.5f) * worldWidth, (0.5f - ny) * worldHeight);
+            }
+            return arr;
+        }
+
+        /// <summary>Lê os pontos (filhos) de um caminho já montado como Vector2 de mundo.</summary>
+        private static Vector2[] ParentToVec2(Transform parent)
+        {
+            var list = new List<Vector2>();
+            if (parent != null)
+                foreach (Transform c in parent) list.Add(new Vector2(c.position.x, c.position.y));
+            return list.ToArray();
         }
 
         /// <summary>

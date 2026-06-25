@@ -77,8 +77,11 @@ Status: 🟢 feito · 🟡 em andamento / parcial · 🔴 a fazer · ⚪ depende
 - 🟢 Sem compras dentro do app, sem login, sem anúncios (menos burocracia).
 - 🟡 Áudio é todo procedural (sem direitos de terceiros) — ok. Conferir se respeita
   o botão de silencioso (opcional).
-- 🟡 Garantir que nada de "placeholder/em construção" fique visível (ex.: mapas
-  "Em breve" — tudo bem, mas deixar claro que é conteúdo futuro).
+- 🟢 **Múltiplos mapas** — 3 mapas jogáveis (Bosque, Jardim, Ruínas), cada um com
+  traçado de caminho próprio. `RuntimeMapBuilder` troca fundo/caminhos/marcadores
+  em runtime conforme o mapa escolhido. Jardim e Ruínas ficam num campo escuro até
+  receberem arte própria (`Assets/Art/Maps/mapa_jardim.png` e `mapa_ruinas.png`,
+  1672×941, 16:9) — opcional para o MVP, recomendado para o visual final.
 
 ---
 
