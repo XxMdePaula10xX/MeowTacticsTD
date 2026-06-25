@@ -144,7 +144,7 @@ namespace MeowTactics.Utilities
             rsr.sortingOrder = SortRange;
             ring.SetActive(false);
 
-            CreateShadow(go.transform, SortCat - 2, 0.62f, -0.45f);
+            // (sem sombra embaixo do gato — só a base de tabuleiro colorida)
             var padGlow = CreateCatPad(go.transform, SortCat - 1, 0.66f, -0.40f, DamageGlow(data.damageType));
 
             go.AddComponent<JuiceVisual>();

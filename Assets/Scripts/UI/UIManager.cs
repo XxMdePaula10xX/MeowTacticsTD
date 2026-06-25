@@ -1122,7 +1122,7 @@ namespace MeowTactics.UI
             UIFactory.SetAnchors(thrt, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f));
             thrt.offsetMin = new Vector2(10, 10); thrt.offsetMax = new Vector2(-10, -36);
             var tgrid = threatGo.AddComponent<GridLayoutGroup>();
-            tgrid.cellSize = new Vector2(82, 56); tgrid.spacing = new Vector2(6, 6);
+            tgrid.cellSize = new Vector2(84, 56); tgrid.spacing = new Vector2(6, 6);
             tgrid.padding = new RectOffset(2, 2, 2, 2);
             tgrid.childAlignment = TextAnchor.UpperLeft;
             threatContainer = threatGo.transform;
@@ -1708,21 +1708,21 @@ namespace MeowTactics.UI
             Color border = ThreatColor(e);
             var cell = BorderedCard(threatContainer, "Threat", border, new Color(0.10f, 0.10f, 0.16f, 0.95f), 2.5f);
             var hlg = cell.gameObject.AddComponent<HorizontalLayoutGroup>();
-            hlg.childAlignment = TextAnchor.MiddleCenter; hlg.spacing = 4;
+            hlg.childAlignment = TextAnchor.MiddleCenter; hlg.spacing = 3;
             hlg.padding = new RectOffset(4, 4, 2, 2);
             hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
 
             if (e.icon != null)
             {
-                var ic = UIFactory.CreateIcon(cell.transform, "Icon", e.icon, 40);
-                Fixed(ic, 40, 40);
+                var ic = UIFactory.CreateIcon(cell.transform, "Icon", e.icon, 34);
+                Fixed(ic, 34, 34);
             }
             else
             {
                 var sw = UIFactory.CreatePanel(cell.transform, "Sw", border);
-                Fixed(sw, 32, 32);
+                Fixed(sw, 30, 30);
             }
-            var txt = UIFactory.CreateText(cell.transform, "N", "x" + count, 18, ColText, TextAnchor.MiddleLeft);
+            var txt = UIFactory.CreateText(cell.transform, "N", "x" + count, 16, ColText, TextAnchor.MiddleLeft);
             txt.fontStyle = FontStyle.Bold; NoWrap(txt);
             if (e.isBoss) { txt.color = ColGold; txt.text = "★" + count; }
         }

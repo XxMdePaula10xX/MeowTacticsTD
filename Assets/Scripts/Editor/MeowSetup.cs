@@ -520,7 +520,48 @@ namespace MeowTactics.EditorTools
             MakeWave(7,  0.55f, false, (e["wraith"], 8, 1f), (e["shadow"], 8, 1f), (e["swift"], 6, 1f));   // mágico pesado
             MakeWave(8,  0.70f, false, (e["king"], 1, 0.5f), (e["warden"], 6, 1f), (e["bulwark"], 3, 1f)); // mini-boss + resistentes
             MakeWave(9,  0.55f, false, (e["warden"], 8, 1f), (e["bulwark"], 4, 1f), (e["wraith"], 8, 1f)); // tudo resistente (dano verdadeiro!)
-            MakeWave(10, 0.70f, true,  (e["king"], 1, 1f), (e["warden"], 6, 1f), (e["swift"], 10, 1f));    // BOSS
+            MakeWave(10, 0.70f, true,  (e["king"], 1, 1f), (e["warden"], 6, 1f), (e["swift"], 10, 1f));    // mini-boss
+
+            // Ondas 11-50: geradas em sequência. O escalonamento global (vida/armadura)
+            // já cresce a cada onda; aqui variamos a COMPOSIÇÃO e a quantidade.
+            // Mini-boss a cada 10 ondas (20/30/40) e BOSS FINAL na onda 50.
+            for (int n = 11; n <= 50; n++)
+            {
+                float interval = Mathf.Max(0.35f, 0.72f - 0.006f * (n - 11));
+                int big = 8 + n / 4;
+                int mid = 5 + n / 6;
+                int small = 3 + n / 8;
+                bool finalBoss = (n == 50);
+                bool miniBoss = (n % 10 == 0); // 20, 30, 40
+
+                var g = new List<(EnemyData enemy, int count, float scaling)>();
+                switch (n % 5)
+                {
+                    case 0: // enxame veloz
+                        g.Add((e["swift"], big + 6, 1f)); g.Add((e["ghostling"], mid, 1f)); break;
+                    case 1: // físico pesado
+                        g.Add((e["armored"], big, 1f)); g.Add((e["bulwark"], small, 1f)); g.Add((e["swift"], mid, 1f)); break;
+                    case 2: // mágico pesado
+                        g.Add((e["shadow"], big, 1f)); g.Add((e["wraith"], mid, 1f)); g.Add((e["swift"], small, 1f)); break;
+                    case 3: // resistentes mistos
+                        g.Add((e["warden"], mid, 1f)); g.Add((e["bulwark"], small, 1f)); g.Add((e["wraith"], mid, 1f)); break;
+                    default: // caos (um pouco de tudo)
+                        g.Add((e["armored"], mid, 1f)); g.Add((e["shadow"], mid, 1f));
+                        g.Add((e["swift"], mid, 1f)); g.Add((e["warden"], small, 1f)); break;
+                }
+
+                if (miniBoss) g.Insert(0, (e["king"], 1, 0.45f + 0.05f * (n / 10)));
+                if (finalBoss)
+                {
+                    g.Clear();
+                    g.Add((e["king"], 1, 1.4f));
+                    g.Add((e["warden"], 12, 1f));
+                    g.Add((e["bulwark"], 8, 1f));
+                    g.Add((e["swift"], 14, 1f));
+                }
+
+                MakeWave(n, interval, finalBoss, g.ToArray());
+            }
         }
 
         private static void MakeWave(int number, float interval, bool boss,
