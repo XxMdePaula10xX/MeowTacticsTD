@@ -799,19 +799,19 @@ namespace MeowTactics.EditorTools
             {0.50f,0.32f},{0.64f,0.50f},{0.75f,0.66f},{0.86f,0.42f},{0.94f,0.18f},{1.00f,0.18f}
         };
 
-        // RUÍNAS: TRÊS trilhas paralelas que entram em alturas diferentes (cima/meio/baixo)
-        // e convergem para o cristal no centro-direita. Três fluxos = mais difícil.
+        // RUÍNAS: TRÊS trilhas entram pela esquerda (cima/meio/baixo) e CONVERGEM no
+        // cristal (~78% da largura, recuado da borda direita) — casa com a arte das ruínas.
         private static readonly float[,] RuinasTopNorm =
         {
-            {0.00f,0.26f},{0.18f,0.26f},{0.36f,0.30f},{0.56f,0.38f},{0.78f,0.46f},{1.00f,0.50f}
+            {0.03f,0.22f},{0.22f,0.20f},{0.42f,0.21f},{0.57f,0.32f},{0.70f,0.43f},{0.79f,0.47f}
         };
         private static readonly float[,] RuinasMidNorm =
         {
-            {0.00f,0.50f},{0.30f,0.50f},{0.62f,0.50f},{1.00f,0.50f}
+            {0.03f,0.47f},{0.30f,0.47f},{0.56f,0.47f},{0.79f,0.47f}
         };
         private static readonly float[,] RuinasBotNorm =
         {
-            {0.00f,0.74f},{0.18f,0.74f},{0.36f,0.70f},{0.56f,0.62f},{0.78f,0.54f},{1.00f,0.50f}
+            {0.03f,0.78f},{0.22f,0.80f},{0.42f,0.79f},{0.57f,0.62f},{0.70f,0.52f},{0.79f,0.47f}
         };
 
         /// <summary>Converte coords normalizadas em pontos de mundo (com espelhamento opcional em Y).</summary>
