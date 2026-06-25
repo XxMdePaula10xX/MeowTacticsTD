@@ -790,13 +790,13 @@ namespace MeowTactics.EditorTools
         }
 
         // ---- Traçados dos mapas extras (coords normalizadas: x esq->dir, y topo->baixo) ----
-        // JARDIM: um ÚNICO caminho em grande arco — entra em cima à esquerda, mergulha
-        // suavemente até o centro-baixo e sobe de novo até em cima à direita.
+        // JARDIM: um ÚNICO caminho em "W" (dois vales) — casa com a arte do jardim:
+        // entra à esquerda, desce ao 1º vale, sobe ao pico central, desce ao 2º vale,
+        // sobe e sai à direita.
         private static readonly float[,] JardimNorm =
         {
-            {0.00f,0.28f},{0.12f,0.28f},{0.20f,0.36f},{0.26f,0.50f},{0.31f,0.64f},
-            {0.40f,0.72f},{0.50f,0.74f},{0.60f,0.72f},{0.69f,0.64f},{0.74f,0.50f},
-            {0.80f,0.36f},{0.88f,0.28f},{1.00f,0.28f}
+            {0.00f,0.18f},{0.06f,0.18f},{0.14f,0.42f},{0.25f,0.66f},{0.36f,0.50f},
+            {0.50f,0.32f},{0.64f,0.50f},{0.75f,0.66f},{0.86f,0.42f},{0.94f,0.18f},{1.00f,0.18f}
         };
 
         // RUÍNAS: TRÊS trilhas paralelas que entram em alturas diferentes (cima/meio/baixo)
