@@ -1787,16 +1787,16 @@ namespace MeowTactics.UI
             AddSheen(inner.transform, 0.10f);
 
             var vlg = inner.gameObject.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(6, 6, S8, S8); vlg.spacing = 4;
+            vlg.padding = new RectOffset(6, 6, S8, 6); vlg.spacing = 4;
             vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
             vlg.childAlignment = TextAnchor.UpperCenter;
 
             // Ícone grande do gato (esmaecido se não puder comprar)
             if (cat.icon != null)
             {
-                var icon = UIFactory.CreateIcon(inner.transform, "Icon", cat.icon, 96);
+                var icon = UIFactory.CreateIcon(inner.transform, "Icon", cat.icon, 84);
                 icon.color = afford ? Color.white : new Color(0.55f, 0.55f, 0.6f, 0.85f);
-                AddMinHeight(icon, 96);
+                AddMinHeight(icon, 84);
             }
 
             // Nome (alto contraste)
