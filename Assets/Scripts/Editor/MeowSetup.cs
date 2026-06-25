@@ -604,8 +604,9 @@ namespace MeowTactics.EditorTools
             camFit.mapWorldWidth = worldWidth;
             camFit.mapWorldHeight = worldHeight;
 
-            // ---- Fundo: mapa noturno ----
-            var bgSprite = EnsureSprite("Assets/Art/Maps/mapa_noturno.png", mapH / worldHeight);
+            // ---- Fundo + caminhos do mapa PADRÃO (bosque). Em runtime, o
+            //      RuntimeMapBuilder troca tudo para o mapa que o jogador escolher. ----
+            var bgSprite = MapBgSprite("bosque", mapH, worldHeight);
             if (bgSprite != null)
             {
                 var bgGo = new GameObject("Background");
@@ -615,44 +616,14 @@ namespace MeowTactics.EditorTools
                 bgSr.sortingOrder = -100; // atrás de tudo
             }
 
-            // ---- Caminho (segue a estrada PINTADA no mapa) ----
-            // Coordenadas normalizadas (x: 0..1 esq->dir, y: 0..1 topo->baixo)
-            // extraídas de docs/mapa_caminho.json para casar com a estrada do mapa.
-            float[,] pathNorm =
-            {
-                {0.009f,0.4995f},{0.2153f,0.4995f},{0.2691f,0.4835f},{0.2703f,0.2529f},
-                {0.326f,0.2232f},{0.366f,0.2338f},{0.3977f,0.2657f},{0.4456f,0.2891f},
-                {0.5054f,0.2891f},{0.5472f,0.2604f},{0.5831f,0.2508f},{0.6519f,0.2338f},
-                {0.7087f,0.2657f},{0.7386f,0.3804f},{0.7805f,0.4697f},{0.8134f,0.4995f},{1.0f,0.4995f}
-            };
-            // Caminhos: se houver MapPaths.json salvo (você arrastou e salvou os pontos),
-            // usa ele. Senão, cria o padrão (rota de cima + rota de baixo espelhada) e SALVA
-            // o json para você poder ajustar arrastando os pontos depois.
+            // Caminhos do bosque (de MapPaths_bosque.json se você ajustou, senão o padrão).
+            var bosqueLanes = MapLanesWorld("bosque", worldWidth, worldHeight);
             var pathParents = new List<Transform>();
-            Vector3 spawnPos = Vector3.zero, basePos = Vector3.zero;
-            var saved = LoadMapPaths();
-            if (saved != null && saved.paths.Count > 0)
-            {
-                for (int i = 0; i < saved.paths.Count; i++)
-                {
-                    Vector3 f, l;
-                    var go = BuildPathParentFromPoints("Path_" + (char)('A' + i), saved.paths[i].points, out f, out l);
-                    pathParents.Add(go.transform);
-                    if (i == 0) { spawnPos = f; basePos = l; }
-                }
-            }
-            else
-            {
-                var a = BuildPathParent("Path_A", pathNorm, worldWidth, worldHeight, false, out spawnPos, out basePos);
-                var b = BuildPathParent("Path_B", pathNorm, worldWidth, worldHeight, true, out _, out _);
-                pathParents.Add(a.transform);
-                pathParents.Add(b.transform);
-                // (não salva json automaticamente: só quando você usar "Salvar Caminhos")
-            }
+            for (int i = 0; i < bosqueLanes.Count; i++)
+                pathParents.Add(BuildPathParentFromVec("Path_" + (char)('A' + i), bosqueLanes[i]).transform);
 
-            // ---- Marcadores de INÍCIO (portal) e FIM (cristal) ----
-            CreateMarker(spawnPos, Marker.Kind.Spawn, "SpawnPortal");
-            CreateMarker(basePos, Marker.Kind.Base, "BaseCrystal");
+            // Marcadores de início (portal) e fim (cristal), um por trilha (deduplicados).
+            PlaceMarkersForLanes(bosqueLanes);
 
             // ---- MapManager + limites da área jogável (posicionamento livre) ----
             var mapGo = new GameObject("MapManager");
@@ -672,32 +643,16 @@ namespace MeowTactics.EditorTools
             var mapBuilderGo = new GameObject("RuntimeMapBuilder");
             var builder = mapBuilderGo.AddComponent<RuntimeMapBuilder>();
             builder.bakedMapId = "bosque";
+            // Cada mapa usa seus pontos salvos (MapPaths_<id>.json) se existirem, senão o
+            // traçado padrão por código. Mapas sem arte própria ficam com fundo nulo
+            // (campo escuro) até você adicionar a PNG em Assets/Art/Maps.
             builder.maps = new List<RuntimeMapBuilder.MapDef>
             {
-                new RuntimeMapBuilder.MapDef {
-                    id = "bosque", background = bgSprite,
-                    pathA = pathParents.Count > 0 ? ParentToVec2(pathParents[0]) : new Vector2[0],
-                    pathB = pathParents.Count > 1 ? ParentToVec2(pathParents[1]) : new Vector2[0],
-                    pathC = new Vector2[0]
-                },
-                // Sem arte própria: fundo fica nulo (campo escuro do tema) — evita a
-                // "estrada pintada" do mapa noturno não casar com o novo traçado.
-                // JARDIM: UM caminho único em grande arco (vale suave).
-                new RuntimeMapBuilder.MapDef {
-                    id = "jardim",
-                    background = EnsureSprite("Assets/Art/Maps/mapa_jardim.png", mapH / worldHeight),
-                    pathA = NormToVec2(JardimNorm, worldWidth, worldHeight, false),
-                    pathB = new Vector2[0],
-                    pathC = new Vector2[0]
-                },
-                // RUÍNAS: TRÊS trilhas que entram em alturas diferentes e CONVERGEM no cristal.
-                new RuntimeMapBuilder.MapDef {
-                    id = "ruinas",
-                    background = EnsureSprite("Assets/Art/Maps/mapa_ruinas.png", mapH / worldHeight),
-                    pathA = NormToVec2(RuinasTopNorm, worldWidth, worldHeight, false),
-                    pathB = NormToVec2(RuinasMidNorm, worldWidth, worldHeight, false),
-                    pathC = NormToVec2(RuinasBotNorm, worldWidth, worldHeight, false)
-                }
+                MakeMapDef("bosque", bgSprite, bosqueLanes),
+                MakeMapDef("jardim", MapBgSprite("jardim", mapH, worldHeight),
+                    MapLanesWorld("jardim", worldWidth, worldHeight)),
+                MakeMapDef("ruinas", MapBgSprite("ruinas", mapH, worldHeight),
+                    MapLanesWorld("ruinas", worldWidth, worldHeight))
             };
 
             // ---- Colisor do tabuleiro (captura cliques para posicionar) ----
@@ -789,7 +744,16 @@ namespace MeowTactics.EditorTools
             go.AddComponent<Marker>().kind = kind;
         }
 
-        // ---- Traçados dos mapas extras (coords normalizadas: x esq->dir, y topo->baixo) ----
+        // ---- Traçados padrão dos mapas (coords normalizadas: x esq->dir, y topo->baixo) ----
+        // BOSQUE: rota base (a de baixo é o espelho vertical desta). Casa com mapa_noturno.png.
+        private static readonly float[,] BosqueNorm =
+        {
+            {0.009f,0.4995f},{0.2153f,0.4995f},{0.2691f,0.4835f},{0.2703f,0.2529f},
+            {0.326f,0.2232f},{0.366f,0.2338f},{0.3977f,0.2657f},{0.4456f,0.2891f},
+            {0.5054f,0.2891f},{0.5472f,0.2604f},{0.5831f,0.2508f},{0.6519f,0.2338f},
+            {0.7087f,0.2657f},{0.7386f,0.3804f},{0.7805f,0.4697f},{0.8134f,0.4995f},{1.0f,0.4995f}
+        };
+
         // JARDIM: um ÚNICO caminho em "W" (dois vales) — casa com a arte do jardim:
         // entra à esquerda, desce ao 1º vale, sobe ao pico central, desce ao 2º vale,
         // sobe e sai à direita.
@@ -861,8 +825,9 @@ namespace MeowTactics.EditorTools
             return parent;
         }
 
-        // ============ Caminhos salvos em JSON (ajustáveis no editor) ============
-        private const string MapPathsFile = "Assets/MapPaths.json";
+        // ============ Caminhos salvos em JSON, POR MAPA (ajustáveis no editor) ============
+        private const string LegacyPathsFile = "Assets/MapPaths.json"; // bosque antigo
+        private static string PathsFileFor(string id) => $"Assets/MapPaths_{id}.json";
 
         [System.Serializable] private class PtData { public float x; public float y; }
         [System.Serializable] private class PathData { public List<PtData> points = new List<PtData>(); }
@@ -884,19 +849,24 @@ namespace MeowTactics.EditorTools
             return parent;
         }
 
-        private static MapPathsData LoadMapPaths()
+        private static MapPathsData LoadMapPaths(string id)
         {
-            if (!System.IO.File.Exists(MapPathsFile)) return null;
+            string file = PathsFileFor(id);
+            if (!System.IO.File.Exists(file))
+            {
+                if (id == "bosque" && System.IO.File.Exists(LegacyPathsFile)) file = LegacyPathsFile;
+                else return null;
+            }
             try
             {
-                var data = JsonUtility.FromJson<MapPathsData>(System.IO.File.ReadAllText(MapPathsFile));
+                var data = JsonUtility.FromJson<MapPathsData>(System.IO.File.ReadAllText(file));
                 if (data != null && data.paths != null && data.paths.Count > 0) return data;
             }
             catch { /* json inválido: usa o padrão */ }
             return null;
         }
 
-        private static void SavePathsFromParents(IEnumerable<Transform> parents)
+        private static void SavePathsFromParents(IEnumerable<Transform> parents, string id)
         {
             var data = new MapPathsData();
             foreach (var parent in parents)
@@ -907,13 +877,162 @@ namespace MeowTactics.EditorTools
                     pd.points.Add(new PtData { x = c.position.x, y = c.position.y });
                 data.paths.Add(pd);
             }
-            System.IO.File.WriteAllText(MapPathsFile, JsonUtility.ToJson(data, true));
+            System.IO.File.WriteAllText(PathsFileFor(id), JsonUtility.ToJson(data, true));
             AssetDatabase.Refresh();
         }
 
-        [MenuItem("MeowTactics/3. Salvar Caminhos (após arrastar os pontos)", false, 22)]
+        // =====================================================================
+        //  HELPERS DE MAPA (fundo, traçados, defs)
+        // =====================================================================
+        private static string MapBgFile(string id)
+        {
+            switch (id)
+            {
+                case "jardim": return "Assets/Art/Maps/mapa_jardim.png";
+                case "ruinas": return "Assets/Art/Maps/mapa_ruinas.png";
+                default:       return "Assets/Art/Maps/mapa_noturno.png";
+            }
+        }
+
+        private static Sprite MapBgSprite(string id, float mapH, float worldHeight)
+            => EnsureSprite(MapBgFile(id), mapH / worldHeight);
+
+        /// <summary>Trilhas do mapa em coords de mundo: do JSON salvo se existir, senão o padrão.</summary>
+        private static List<Vector2[]> MapLanesWorld(string id, float worldWidth, float worldHeight)
+        {
+            var saved = LoadMapPaths(id);
+            if (saved != null && saved.paths.Count > 0)
+            {
+                var lanes = new List<Vector2[]>();
+                foreach (var pd in saved.paths)
+                {
+                    var arr = new Vector2[pd.points.Count];
+                    for (int i = 0; i < arr.Length; i++) arr[i] = new Vector2(pd.points[i].x, pd.points[i].y);
+                    if (arr.Length > 0) lanes.Add(arr);
+                }
+                if (lanes.Count > 0) return lanes;
+            }
+            switch (id)
+            {
+                case "jardim":
+                    return new List<Vector2[]> { NormToVec2(JardimNorm, worldWidth, worldHeight, false) };
+                case "ruinas":
+                    return new List<Vector2[]> {
+                        NormToVec2(RuinasTopNorm, worldWidth, worldHeight, false),
+                        NormToVec2(RuinasMidNorm, worldWidth, worldHeight, false),
+                        NormToVec2(RuinasBotNorm, worldWidth, worldHeight, false)
+                    };
+                default: // bosque: rota base + espelho
+                    return new List<Vector2[]> {
+                        NormToVec2(BosqueNorm, worldWidth, worldHeight, false),
+                        NormToVec2(BosqueNorm, worldWidth, worldHeight, true)
+                    };
+            }
+        }
+
+        private static RuntimeMapBuilder.MapDef MakeMapDef(string id, Sprite bg, List<Vector2[]> lanes)
+        {
+            return new RuntimeMapBuilder.MapDef
+            {
+                id = id,
+                background = bg,
+                pathA = lanes.Count > 0 ? lanes[0] : new Vector2[0],
+                pathB = lanes.Count > 1 ? lanes[1] : new Vector2[0],
+                pathC = lanes.Count > 2 ? lanes[2] : new Vector2[0]
+            };
+        }
+
+        /// <summary>Cria um objeto-pai com pontos ARRASTÁVEIS a partir de pontos de mundo.</summary>
+        private static GameObject BuildPathParentFromVec(string name, Vector2[] pts)
+        {
+            var parent = new GameObject(name);
+            for (int i = 0; i < pts.Length; i++)
+            {
+                var p = new GameObject("Point_" + i);
+                p.transform.SetParent(parent.transform, false);
+                p.transform.position = new Vector3(pts[i].x, pts[i].y, 0f);
+            }
+            return parent;
+        }
+
+        private static void PlaceMarkersForLanes(List<Vector2[]> lanes)
+        {
+            var spawns = new List<Vector2>();
+            var bases = new List<Vector2>();
+            foreach (var lane in lanes)
+            {
+                if (lane.Length == 0) continue;
+                MarkDedup(lane[0], Marker.Kind.Spawn, "SpawnPortal", spawns);
+                MarkDedup(lane[lane.Length - 1], Marker.Kind.Base, "BaseCrystal", bases);
+            }
+        }
+
+        private static void MarkDedup(Vector2 pos, Marker.Kind kind, string name, List<Vector2> placed)
+        {
+            foreach (var p in placed) if (Vector2.Distance(p, pos) < 0.7f) return;
+            placed.Add(pos);
+            CreateMarker(new Vector3(pos.x, pos.y, 0f), kind, name);
+        }
+
+        // =====================================================================
+        //  EDITOR DE MAPA: arraste os pontos sobre a arte e salve (igual ao bosque)
+        // =====================================================================
+        [MenuItem("MeowTactics/Editar Mapa/1. Jardim (1 caminho)", false, 60)]
+        public static void EditJardim() => EditMap("jardim");
+        [MenuItem("MeowTactics/Editar Mapa/2. Bosque (2 caminhos)", false, 61)]
+        public static void EditBosque() => EditMap("bosque");
+        [MenuItem("MeowTactics/Editar Mapa/3. Ruinas (3 caminhos)", false, 62)]
+        public static void EditRuinas() => EditMap("ruinas");
+
+        private static void EditMap(string id)
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            const float orthoSize = 6f;
+            const float worldHeight = orthoSize * 2f;
+            const float mapW = 1672f, mapH = 941f;
+            float worldWidth = worldHeight * (mapW / mapH);
+
+            var camGo = new GameObject("Main Camera");
+            camGo.tag = "MainCamera";
+            var cam = camGo.AddComponent<Camera>();
+            cam.orthographic = true; cam.orthographicSize = orthoSize;
+            cam.transform.position = new Vector3(0, 0, -10);
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0.10f, 0.08f, 0.18f);
+
+            var bg = MapBgSprite(id, mapH, worldHeight);
+            if (bg != null)
+            {
+                var go = new GameObject("Background");
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = bg; sr.sortingOrder = -100;
+            }
+
+            var lanes = MapLanesWorld(id, worldWidth, worldHeight);
+            var parents = new List<Transform>();
+            for (int i = 0; i < lanes.Count; i++)
+                parents.Add(BuildPathParentFromVec("Path_" + (char)('A' + i), lanes[i]).transform);
+
+            // MapManager só para DESENHAR as linhas dos caminhos (gizmos) no editor.
+            var mapGo = new GameObject("MapManager");
+            mapGo.AddComponent<MapManager>().pathParents = parents;
+
+            PlaceMarkersForLanes(lanes);
+
+            EditorPrefs.SetString("meow_editing_map", id);
+            if (!AssetDatabase.IsValidFolder("Assets/Scenes"))
+                AssetDatabase.CreateFolder("Assets", "Scenes");
+            EditorSceneManager.SaveScene(scene, "Assets/Scenes/MapEdit.unity");
+            EditorUtility.DisplayDialog("Editar Mapa — " + id,
+                "Mapa aberto para edição!\n\n1) Na Hierarquia, abra Path_A / Path_B / Path_C e arraste os Point_* sobre a estrada do fundo.\n2) Depois use: MeowTactics > Salvar Caminhos do Mapa.\n3) Por fim, MeowTactics > Fazer Tudo para aplicar.",
+                "Ok");
+        }
+
+        [MenuItem("MeowTactics/Salvar Caminhos do Mapa (após arrastar)", false, 63)]
         public static void SaveCurrentPaths()
         {
+            string id = EditorPrefs.GetString("meow_editing_map", "bosque");
             var parents = new List<Transform>();
             foreach (var go in Object.FindObjectsOfType<GameObject>())
                 if (go.transform.parent == null && go.name.StartsWith("Path_"))
@@ -922,12 +1041,12 @@ namespace MeowTactics.EditorTools
 
             if (parents.Count == 0)
             {
-                EditorUtility.DisplayDialog("Meow Tactics", "Não achei caminhos (Path_A, Path_B...) na cena aberta.", "Ok");
+                EditorUtility.DisplayDialog("Meow Tactics", "Não achei caminhos (Path_A, Path_B...) na cena aberta.\nAbra um mapa em MeowTactics > Editar Mapa.", "Ok");
                 return;
             }
-            SavePathsFromParents(parents);
+            SavePathsFromParents(parents, id);
             EditorUtility.DisplayDialog("Meow Tactics",
-                $"Caminhos salvos ({parents.Count})! 🎉\nAgora 'Fazer Tudo' vai usar esses pontos ajustados.", "Eba!");
+                $"Caminhos do mapa '{id}' salvos ({parents.Count} trilha(s))! 🎉\nAgora rode 'Fazer Tudo' para aplicar.", "Eba!");
         }
 
         private static void AddSceneToBuild(string scenePath)
