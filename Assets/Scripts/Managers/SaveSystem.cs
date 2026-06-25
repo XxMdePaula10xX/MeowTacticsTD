@@ -36,7 +36,7 @@ namespace MeowTactics.Managers
 
         public static string CurrentMapId
         {
-            get { return PlayerPrefs.GetString("currentMap", "bosque"); }
+            get { return PlayerPrefs.GetString("currentMap", "jardim"); }
             set { PlayerPrefs.SetString("currentMap", value); }
         }
 
