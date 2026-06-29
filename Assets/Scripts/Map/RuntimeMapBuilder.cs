@@ -72,7 +72,7 @@ namespace MeowTactics.Map
             foreach (var lane in lanes)
                 parents.Add(MakePath("Path_" + (letter++), lane));
 
-            var map = FindObjectOfType<MapManager>();
+            var map = FindAnyObjectByType<MapManager>();
             if (map != null)
             {
                 map.pathParents = parents;
@@ -102,7 +102,7 @@ namespace MeowTactics.Map
 
         private static void DestroyRoot(string objName)
         {
-            foreach (var go in FindObjectsOfType<GameObject>())
+            foreach (var go in FindObjectsByType<GameObject>(FindObjectsSortMode.None))
                 if (go != null && go.transform.parent == null && go.name == objName)
                     Destroy(go);
         }

@@ -72,6 +72,9 @@ namespace MeowTactics.EditorTools
             var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(AppIconPath);
             if (tex == null) { Debug.LogWarning("[MeowTactics] Falha ao carregar o ícone em " + AppIconPath); return; }
 
+            // A API antiga de ícones ainda funciona; silenciamos o aviso de "obsoleto"
+            // (a nova API NamedBuildTarget varia entre versões da Unity).
+#pragma warning disable 0618
             // Ícone padrão (vale para plataformas sem ícone específico).
             PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.Unknown, new[] { tex });
 
@@ -83,6 +86,7 @@ namespace MeowTactics.EditorTools
                 for (int i = 0; i < icons.Length; i++) icons[i] = tex;
                 PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.iOS, icons);
             }
+#pragma warning restore 0618
 
             Debug.Log("[MeowTactics] Ícone do app definido a partir de " + AppIconPath);
         }
@@ -1034,7 +1038,7 @@ namespace MeowTactics.EditorTools
         {
             string id = EditorPrefs.GetString("meow_editing_map", "bosque");
             var parents = new List<Transform>();
-            foreach (var go in Object.FindObjectsOfType<GameObject>())
+            foreach (var go in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
                 if (go.transform.parent == null && go.name.StartsWith("Path_"))
                     parents.Add(go.transform);
             parents.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.Ordinal));
