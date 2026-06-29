@@ -215,7 +215,7 @@ namespace MeowTactics.Utilities
             var hb = bar.AddComponent<HealthBar>();
             hb.SetFillTransform(fill.transform);
 
-            CreateShadow(go.transform, SortEnemy - 1, 0.85f * data.visualScale, -0.5f * data.visualScale);
+            // (sem sombra embaixo do inimigo)
             CreateEnemyTrait(go.transform, data);
 
             go.AddComponent<EnemyUnit>();
