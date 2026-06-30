@@ -36,6 +36,11 @@ namespace MeowTactics.Managers
 
         public void StartGame()
         {
+            // Cada run começa LIMPA (sem relíquias da run anterior). O Desafio Diário
+            // reaplica o modificador do dia; o Infinito não mexe em RunMods.
+            RunMods.Reset();
+            if (DailyMode) DailyChallenge.Apply();
+
             Lives = Mathf.Max(1, GameBalance.StartingLives + RunMods.startingLivesBonus);
             EnemiesDefeated = 0;
             Time.timeScale = 1f;
@@ -61,6 +66,8 @@ namespace MeowTactics.Managers
                 return;
             }
 
+            // Cancela qualquer posicionamento pendente (reabre a loja na próxima prep).
+            PlacementManager.Instance?.ClearSelection();
             SetState(GameState.WaveInProgress);
             WaveManager.Instance.StartCurrentWave();
             SFXManager.Play(SfxType.StartWave);

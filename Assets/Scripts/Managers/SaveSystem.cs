@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using MeowTactics.Core;
 using MeowTactics.Data;
 using MeowTactics.Cats;
 using MeowTactics.Utilities;
@@ -25,6 +26,14 @@ namespace MeowTactics.Managers
         public List<CatSave> placed = new List<CatSave>();
         public List<CatSave> bench = new List<CatSave>();
         public List<string> inventory = new List<string>(); // itens ganhos e ainda não equipados
+
+        // Estado das RELÍQUIAS (para o Continuar não perder os bônus da run).
+        public float rmCoinMult = 1f;
+        public float rmEnemyHp = 1f;
+        public float rmCatDmg, rmCatRange, rmCatAtkSpd, rmCatCrit, rmCatArmorPen, rmCatMagicPen;
+        public int rmExtraSlots, rmCoinsPerWave;
+        public bool rmSellFull;
+        public List<string> takenRelics = new List<string>();
     }
 
     /// <summary>
@@ -87,6 +96,15 @@ namespace MeowTactics.Managers
                 foreach (var it in ItemManager.Instance.inventory)
                     if (it != null) d.inventory.Add(it.itemId);
 
+            // Relíquias da run.
+            d.rmCoinMult = RunMods.coinMultiplier; d.rmEnemyHp = RunMods.enemyHpMult;
+            d.rmCatDmg = RunMods.catDamagePct; d.rmCatRange = RunMods.catRangePct;
+            d.rmCatAtkSpd = RunMods.catAtkSpeedPct; d.rmCatCrit = RunMods.catCritFlat;
+            d.rmCatArmorPen = RunMods.catArmorPen; d.rmCatMagicPen = RunMods.catMagicPen;
+            d.rmExtraSlots = RunMods.extraItemSlots; d.rmCoinsPerWave = RunMods.coinsPerWaveBonus;
+            d.rmSellFull = RunMods.sellFull;
+            d.takenRelics = new List<string>(RunMods.takenRelics);
+
             PlayerPrefs.SetString(Key, JsonUtility.ToJson(d));
             PlayerPrefs.Save();
         }
@@ -106,6 +124,17 @@ namespace MeowTactics.Managers
             try { d = JsonUtility.FromJson<SaveData>(PlayerPrefs.GetString(Key)); }
             catch { return; }
             if (d == null) return;
+
+            // Restaura as relíquias da run ANTES dos gatos (para os buffs aplicarem).
+            RunMods.coinMultiplier = d.rmCoinMult > 0f ? d.rmCoinMult : 1f;
+            RunMods.enemyHpMult = d.rmEnemyHp > 0f ? d.rmEnemyHp : 1f;
+            RunMods.catDamagePct = d.rmCatDmg; RunMods.catRangePct = d.rmCatRange;
+            RunMods.catAtkSpeedPct = d.rmCatAtkSpd; RunMods.catCritFlat = d.rmCatCrit;
+            RunMods.catArmorPen = d.rmCatArmorPen; RunMods.catMagicPen = d.rmCatMagicPen;
+            RunMods.extraItemSlots = d.rmExtraSlots; RunMods.coinsPerWaveBonus = d.rmCoinsPerWave;
+            RunMods.sellFull = d.rmSellFull;
+            RunMods.takenRelics.Clear();
+            if (d.takenRelics != null) foreach (var id in d.takenRelics) RunMods.takenRelics.Add(id);
 
             if (EconomyManager.Instance != null) EconomyManager.Instance.SetCoins(d.coins);
             if (GameManager.Instance != null) GameManager.Instance.SetLives(d.lives);
