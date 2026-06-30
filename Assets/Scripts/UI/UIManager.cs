@@ -87,6 +87,8 @@ namespace MeowTactics.UI
 
         private GameObject mainMenuPanel, pausePanel, settingsPanel;
         private float musicVolume = 0.6f;
+        private bool resetArmed;
+        private Button resetBtn;
 
         private GameObject tutorialPanel, mapSelectPanel;
         private GameObject collectionPanel;
@@ -95,12 +97,13 @@ namespace MeowTactics.UI
         private int tutorialStep;
         private static readonly string[] TutorialSteps =
         {
-            "1/6 — Compre um gato na LOJA (embaixo). Ele vai para o BANCO.",
-            "2/6 — Clique num gato do BANCO e toque no gramado para posicioná-lo.",
-            "3/6 — Clique em INICIAR ONDA (canto direito) para começar a luta.",
-            "4/6 — Derrote inimigos para ganhar moedas e comprar mais gatos.",
-            "5/6 — Junte gatos do mesmo tipo para ativar SINERGIAS (painel à direita).",
-            "6/6 — A cada 3 ondas você escolhe um ITEM — equipe-o tocando num gato!"
+            "1/7 — Compre um gato na LOJA (embaixo). Ele vai para o BANCO.",
+            "2/7 — Clique num gato do BANCO e toque no gramado para posicioná-lo.",
+            "3/7 — Clique em INICIAR ONDA (canto direito) para começar a luta.",
+            "4/7 — Derrote inimigos para ganhar moedas e comprar mais gatos.",
+            "5/7 — TIPOS DE DANO importam: Físico sofre com armadura, Mágico com resist. mágica, e Verdadeiro (Samurai/Monge) ignora as duas. Veja a fraqueza de cada inimigo na COLEÇÃO.",
+            "6/7 — Junte gatos do mesmo tipo para ativar SINERGIAS (painel à direita).",
+            "7/7 — A cada 3 ondas você escolhe um ITEM — equipe-o tocando num gato!"
         };
 
         private Coroutine messageRoutine;
@@ -207,7 +210,7 @@ namespace MeowTactics.UI
             back.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
             var brt = UIFactory.AsRect(back);
             UIFactory.SetAnchors(brt, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0));
-            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 60);
+            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 110);
 
             mapSelectPanel.SetActive(false);
         }
@@ -249,8 +252,7 @@ namespace MeowTactics.UI
 
         private void ContinueGame()
         {
-            GameManager.LoadOnStart = true;
-            GameManager.Instance?.NewGame();
+            GameManager.Instance?.ContinueSavedGame();
         }
 
         // =========================================================
@@ -303,8 +305,9 @@ namespace MeowTactics.UI
             if (ShopManager.Instance != null)
             {
                 var cats = new List<CatData>(ShopManager.Instance.availableCats);
+                cats.RemoveAll(c => c == null);
                 cats.Sort((a, b) => a.cost.CompareTo(b.cost));
-                foreach (var c in cats) if (c != null) CatCodexRow(content.transform, c);
+                foreach (var c in cats) CatCodexRow(content.transform, c);
             }
 
             CollectionHeader(content.transform, "INIMIGOS");
@@ -320,7 +323,7 @@ namespace MeowTactics.UI
             AddShadow(back.image, 4f, 0.35f);
             var brt = UIFactory.AsRect(back);
             UIFactory.SetAnchors(brt, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0));
-            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 40);
+            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 110);
 
             collectionPanel.SetActive(false);
         }
@@ -546,7 +549,7 @@ namespace MeowTactics.UI
             AddShadow(back.image, 4f, 0.35f);
             var brt = UIFactory.AsRect(back);
             UIFactory.SetAnchors(brt, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0));
-            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 40);
+            brt.sizeDelta = new Vector2(260, 64); brt.anchoredPosition = new Vector2(0, 110);
 
             achievementsPanel.SetActive(false);
         }
@@ -784,7 +787,25 @@ namespace MeowTactics.UI
             float sfx = SFXManager.Instance != null ? SFXManager.Instance.volume : 0.55f;
             SliderRow(col, "Volume dos Efeitos", sfx, v => { if (SFXManager.Instance != null) SFXManager.Instance.volume = v; });
 
-            MenuButton(col, "Resetar Progresso", ColRed, () => { PlayerPrefs.DeleteAll(); ShowMessage("Progresso resetado."); });
+            // Reset com confirmação em 2 toques (evita apagar tudo por engano).
+            resetArmed = false;
+            resetBtn = MenuButton(col, "Resetar Progresso", ColRed, () =>
+            {
+                var lbl = resetBtn.GetComponentInChildren<Text>();
+                if (!resetArmed)
+                {
+                    resetArmed = true;
+                    if (lbl != null) lbl.text = "Confirmar reset? (toque de novo)";
+                }
+                else
+                {
+                    PlayerPrefs.DeleteAll();
+                    PlayerPrefs.Save();
+                    resetArmed = false;
+                    if (lbl != null) lbl.text = "Resetar Progresso";
+                    ShowMessage("Progresso resetado.");
+                }
+            });
             MenuButton(col, "Voltar", ColGreen, HideSettings);
 
             settingsPanel.SetActive(false);
@@ -847,7 +868,18 @@ namespace MeowTactics.UI
         }
 
         public void ShowMainMenu() { if (mainMenuPanel != null) mainMenuPanel.SetActive(true); }
-        public void ShowSettings() { if (settingsPanel != null) settingsPanel.SetActive(true); SFXManager.Play(SfxType.Click); }
+        public void ShowSettings()
+        {
+            if (settingsPanel != null) settingsPanel.SetActive(true);
+            // Reseta o "armar" do reset ao reabrir as configurações.
+            resetArmed = false;
+            if (resetBtn != null)
+            {
+                var lbl = resetBtn.GetComponentInChildren<Text>();
+                if (lbl != null) lbl.text = "Resetar Progresso";
+            }
+            SFXManager.Play(SfxType.Click);
+        }
         public void HideSettings() { if (settingsPanel != null) settingsPanel.SetActive(false); SFXManager.Play(SfxType.Click); }
 
         public void OpenPause()
@@ -1560,6 +1592,8 @@ namespace MeowTactics.UI
             UpdateCoins(); UpdateLives(); UpdateWave();
             UpdateShop(); UpdateBench(); UpdateSynergies(); UpdateItems();
             UpdateSpeedButtons(); UpdateNextWavePreview();
+            // Garante que a HUD reflita o estado atual (defensivo contra ordem de Start).
+            if (GameManager.Instance != null) OnStateChanged(GameManager.Instance.State);
         }
 
         private void OnStateChanged(GameState state)
@@ -2117,7 +2151,7 @@ namespace MeowTactics.UI
             }
 
             DetailHeader("ATRIBUTOS");
-            StatRow("Dano", $"{cat.CurrentDamage:0.#}", ColText);
+            StatRow("Dano", $"{cat.CurrentDamageDisplay:0.#}", ColText);
             StatRow("Tipo de dano", DamageName(cat.Data.damageType), DamageColor(cat.Data.damageType));
             StatRow("Vel. ataque", $"{cat.CurrentAttackSpeed:0.##}/s", ColText);
             StatRow("Alcance", $"{cat.CurrentRange:0.#}", ColText);
@@ -2349,7 +2383,18 @@ namespace MeowTactics.UI
         {
             if (tooltipPanel == null) return;
             tooltipText.text = text;
-            tooltipPanel.transform.position = Input.mousePosition;
+
+            // Mantém o tooltip dentro da área segura (não vaza da tela nem entra no notch).
+            var rt = (RectTransform)tooltipPanel.transform;
+            var canvas = tooltipPanel.GetComponentInParent<Canvas>();
+            float sf = canvas != null ? canvas.scaleFactor : 1f;
+            Vector2 size = rt.rect.size * sf; // pixels (pivot 1,0 = canto inferior direito)
+            Rect sa = Screen.safeArea;
+            const float m = 8f;
+            Vector3 p = Input.mousePosition;
+            p.x = Mathf.Clamp(p.x, sa.xMin + size.x + m, sa.xMax - m);
+            p.y = Mathf.Clamp(p.y, sa.yMin + m, sa.yMax - size.y - m);
+            rt.position = p;
             tooltipPanel.SetActive(true);
         }
 

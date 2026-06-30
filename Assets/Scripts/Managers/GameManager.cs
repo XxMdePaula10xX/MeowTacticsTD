@@ -53,6 +53,14 @@ namespace MeowTactics.Managers
             if (State != GameState.Preparation) return;
             if (WaveManager.Instance == null) return;
 
+            // Evita o jogador iniciar sem defesa nenhuma (e perder vidas sem entender).
+            if (PlacementManager.Instance != null && PlacementManager.Instance.PlacedCats.Count == 0)
+            {
+                UIManager.Instance?.ShowMessage("Posicione pelo menos um gato antes de iniciar a onda!");
+                SFXManager.Play(SfxType.Error);
+                return;
+            }
+
             SetState(GameState.WaveInProgress);
             WaveManager.Instance.StartCurrentWave();
             SFXManager.Play(SfxType.StartWave);
@@ -159,7 +167,17 @@ namespace MeowTactics.Managers
         public void NewGame()
         {
             StartInGame = true;
+            LoadOnStart = false; // garante que não tente restaurar um save antigo
             AchievementManager.Instance?.Report("games", 1);
+            Restart();
+        }
+
+        /// <summary>Continuar: carrega o save NO MAPA CERTO e não conta como nova partida.</summary>
+        public void ContinueSavedGame()
+        {
+            SaveSystem.CurrentMapId = SaveSystem.SavedMapId(); // restaura no mapa salvo
+            StartInGame = true;
+            LoadOnStart = true;
             Restart();
         }
 

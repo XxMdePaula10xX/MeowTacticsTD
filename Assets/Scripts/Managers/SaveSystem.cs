@@ -21,9 +21,10 @@ namespace MeowTactics.Managers
         public int wave;
         public int coins;
         public int lives;
-        public string mapId = "bosque";
+        public string mapId = "jardim";
         public List<CatSave> placed = new List<CatSave>();
         public List<CatSave> bench = new List<CatSave>();
+        public List<string> inventory = new List<string>(); // itens ganhos e ainda não equipados
     }
 
     /// <summary>
@@ -42,6 +43,18 @@ namespace MeowTactics.Managers
 
         public static bool HasSave() => PlayerPrefs.HasKey(Key);
         public static void Clear() { PlayerPrefs.DeleteKey(Key); PlayerPrefs.Save(); }
+
+        /// <summary>Mapa gravado no save (para o Continuar carregar no mapa certo).</summary>
+        public static string SavedMapId()
+        {
+            if (!HasSave()) return CurrentMapId;
+            try
+            {
+                var d = JsonUtility.FromJson<SaveData>(PlayerPrefs.GetString(Key));
+                return (d != null && !string.IsNullOrEmpty(d.mapId)) ? d.mapId : CurrentMapId;
+            }
+            catch { return CurrentMapId; }
+        }
 
         public static int BestWave(string mapId) => PlayerPrefs.GetInt("best_" + mapId, 0);
 
@@ -64,6 +77,9 @@ namespace MeowTactics.Managers
             if (BenchManager.Instance != null)
                 foreach (var c in BenchManager.Instance.benchCats)
                     if (c != null) d.bench.Add(ToSave(c, false));
+            if (ItemManager.Instance != null)
+                foreach (var it in ItemManager.Instance.inventory)
+                    if (it != null) d.inventory.Add(it.itemId);
 
             PlayerPrefs.SetString(Key, JsonUtility.ToJson(d));
             PlayerPrefs.Save();
@@ -101,6 +117,14 @@ namespace MeowTactics.Managers
                     var cat = Build(cs);
                     if (cat != null && PlacementManager.Instance != null)
                         PlacementManager.Instance.PlaceRestoredCat(cat, new Vector3(cs.x, cs.y, 0f));
+                }
+
+            // Itens do inventário (ganhos e não equipados) voltam pra você equipar.
+            if (d.inventory != null && ItemManager.Instance != null)
+                foreach (var id in d.inventory)
+                {
+                    var it = FindItem(id);
+                    if (it != null) ItemManager.Instance.AddToInventory(it);
                 }
 
             SynergyManager.Instance?.RecalculateSynergies();

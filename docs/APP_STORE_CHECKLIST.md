@@ -11,13 +11,13 @@ Status: 🟢 feito · 🟡 em andamento / parcial · 🔴 a fazer · ⚪ depende
   Dynamic Island / indicador de home não cobrem mais botões.
 - 🟢 **Sem botão "Sair"** no iOS — a Apple não permite o app se encerrar sozinho
   (o "Sair" só aparece em PC/editor via `#if UNITY_STANDALONE`).
-- 🟡 **Overlays de tela cheia** (menu, pausa, config, coleção, seleção de mapa) —
-  ficam full-bleed (cobrem o notch, fica bonito) e o conteúdo é centralizado. Em
-  landscape isso é seguro; **conferir no aparelho** se os botões de baixo (ex.:
-  "Voltar") não encostam no indicador de home. Ajuste fácil depois do teste.
-- 🔴 **Orientação travada em Landscape** — definir em *Player Settings → Resolution
-  and Presentation → Default Orientation = Landscape Left/Right* (o jogo é
-  horizontal). Desmarcar Portrait.
+- 🟢 **Overlays de tela cheia** (menu/pausa/config/coleção/mapa/conquistas) —
+  botões "Voltar" subidos para fora da zona do indicador de home (y=110). Em
+  landscape o notch fica na lateral e o conteúdo é centralizado. **Confirmar no
+  aparelho** (TestFlight) que tudo fica tocável.
+- 🟢 **Orientação travada em Landscape** — feito no `ProjectSettings.asset`
+  (autorrotação de portrait desativada; só LandscapeLeft/Right). Conferir em
+  *Player Settings → Resolution and Presentation* se quiser.
 - 🟢 **Aspecto da câmera/mapa** — `CameraFit.cs` mantém o MAPA INTEIRO visível em
   qualquer proporção (iPhone largo, iPad 4:3) sem cortar o caminho. As faixas que
   sobram usam a cor de fundo do tema (noturno). Melhoria futura opcional: arte de
@@ -25,9 +25,10 @@ Status: 🟢 feito · 🟡 em andamento / parcial · 🔴 a fazer · ⚪ depende
 - 🟢 **Toques (touch)** — tap/colocar gato/abrir detalhe funcionam. Tooltips de
   item e de sinergia agora aparecem por TOQUE e somem sozinhos; a seleção de item
   já mostra o efeito no aviso (sem depender de hover).
-- 🔴 **IL2CPP + ARM64** — *Player Settings → Other → Scripting Backend = IL2CPP*,
-  *Architecture = ARM64* (obrigatório pela Apple).
-- 🔴 **iOS mínimo** — definir Target minimum iOS (sugestão: iOS 13 ou 14+).
+- 🟡 **IL2CPP + ARM64** — o iOS **já usa IL2CPP/ARM64 por padrão** na Unity 6
+  (Mono não é suportado no device), então deve estar ok; confirmar em
+  *Player Settings → Other → Scripting Backend = IL2CPP, Architecture = ARM64*.
+- 🟢 **iOS mínimo** — já definido como **15.0** no projeto.
 - 🔴 **Graphics API = Metal** (padrão no iOS; confirmar que OpenGLES não está forçado).
 - 🟡 **Performance** — jogo leve; gerar texturas procedurais 1x no início (ok).
   Travar em 60 FPS (`Application.targetFrameRate = 60`) e testar em device antigo.
@@ -85,10 +86,36 @@ Status: 🟢 feito · 🟡 em andamento / parcial · 🔴 a fazer · ⚪ depende
 
 ---
 
+## Revisão geral do MVP (3 frentes: corretude, iOS, UX) — correções aplicadas
+- 🟢 **Orientação travada em landscape** (era o P0: o app girava pra portrait).
+- 🟢 **Continuar carregava no mapa errado** → agora restaura no mapa salvo.
+- 🟢 **Itens do inventário (não equipados) eram perdidos no save** → agora persistem.
+- 🟢 **Mapa "assado" na cena desalinhado do default** (bosque vs jardim) → alinhado
+  (cena vem montada com o Jardim; sem troca forçada no boot).
+- 🟢 **Painel de detalhe mostrava dano-base ignorando buffs** → mostra o dano efetivo.
+- 🟢 **Continuar contava como "nova partida"** (inflava conquista) → corrigido.
+- 🟢 **Iniciar onda sem nenhum gato** dava perda de vidas sem aviso → agora avisa.
+- 🟢 **Tutorial não ensinava o triângulo de dano** → novo passo (Físico/Mágico/Verdadeiro).
+- 🟢 **Tooltip podia vazar da tela/notch** → preso à área segura.
+- 🟢 **"Resetar Progresso" apagava tudo num toque** → confirmação em 2 toques.
+- 🟢 **Botões "Voltar" perto do indicador de home** → subidos.
+- 🟢 Defensivos: ranking de dano não infla com dano verdadeiro em inimigo morto;
+  guarda de null na Coleção; HUD reflete o estado no load.
+
+### Decisões de BALANCEAMENTO para você testar (não mexi sem seu ok)
+- O **mini-boss (Rei) na onda 8** é um pico forte cedo. Se achar punitivo, dá pra
+  suavizar (reduzir o `scaling` dele) — me avise.
+- **Segunda metade (ondas 30–50)**: a vida cresce linear (+18%/onda) e itens só a
+  cada 3 ondas (~16 itens em 50 ondas). Pode ficar "faminto de item". Posso ajustar
+  a curva ou a frequência de itens quando você testar até lá.
+
+---
+
 ## Próximos passos sugeridos (ordem)
-1. ✅ Safe Area (feito) → testar no **Device Simulator** do Unity.
-2. Travar orientação Landscape + IL2CPP/ARM64 + Metal + targetFrameRate.
-3. Resolver o aspecto câmera/mapa (faixas laterais).
-4. Tooltips de item por toque.
-5. Ícone + launch screen + screenshots.
-6. Conta Apple Developer → Bundle ID → App Store Connect → TestFlight.
+1. Confirmar no Unity: **IL2CPP/ARM64**, **Metal** (Auto), e o **ícone** aplicado.
+2. **Launch Screen** + **screenshots** (landscape, 6.7" e 6.5").
+3. Instalar pacote **Mobile Notifications** antes do build iOS.
+4. Conta **Apple Developer** → **Bundle ID** → **App Store Connect** → **TestFlight**.
+5. **Política de Privacidade (URL)** + App Privacy = "Data Not Collected" + Export
+   Compliance (`ITSAppUsesNonExemptEncryption=false`).
+6. Teste em device (TestFlight): safe area, botões, e o balanceamento das ondas.

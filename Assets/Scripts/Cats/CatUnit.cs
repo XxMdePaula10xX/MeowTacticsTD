@@ -119,7 +119,10 @@ namespace MeowTactics.Cats
         }
 
         // ---------- Status calculados ----------
+        // Base usado pelo cálculo de dano (o bônus % é aplicado no DamageCalculator).
         public float CurrentDamage => Data.baseDamage;
+        // Valor EFETIVO (com bônus de sinergias/itens) — só para exibir no painel.
+        public float CurrentDamageDisplay => Data.baseDamage * (1f + bonusDamagePct);
         public float CurrentAttackSpeed => Data.attackSpeed * (1f + bonusAttackSpeedPct);
         public float CurrentRange => Data.range * (1f + bonusRangePct);
         public float CurrentCritChance => Data.critChance + bonusCritChance;
@@ -249,6 +252,10 @@ namespace MeowTactics.Cats
             enemy.TakeDamage(result.amount, ctx.damageType, ctx);
             DamageDealt += result.amount;
             ShowDamageNumber(enemy, result);
+
+            // Se o golpe principal já matou, não soma o dano verdadeiro extra (evita
+            // inflar o ranking de dano do fim com hits em inimigos mortos).
+            if (!enemy.IsAlive) return;
 
             // Dano verdadeiro extra concedido por itens (ignora defesas).
             if (itemTrueDamageFlat > 0f)

@@ -608,9 +608,11 @@ namespace MeowTactics.EditorTools
             camFit.mapWorldWidth = worldWidth;
             camFit.mapWorldHeight = worldHeight;
 
-            // ---- Fundo + caminhos do mapa PADRÃO (bosque). Em runtime, o
-            //      RuntimeMapBuilder troca tudo para o mapa que o jogador escolher. ----
-            var bgSprite = MapBgSprite("bosque", mapH, worldHeight);
+            // ---- Fundo + caminhos do mapa PADRÃO. Em runtime, o RuntimeMapBuilder
+            //      troca tudo para o mapa que o jogador escolher. ----
+            // O mapa "assado" na cena deve casar com o default de SaveSystem.CurrentMapId.
+            const string DefaultMapId = "jardim";
+            var bgSprite = MapBgSprite(DefaultMapId, mapH, worldHeight);
             if (bgSprite != null)
             {
                 var bgGo = new GameObject("Background");
@@ -620,14 +622,14 @@ namespace MeowTactics.EditorTools
                 bgSr.sortingOrder = -100; // atrás de tudo
             }
 
-            // Caminhos do bosque (de MapPaths_bosque.json se você ajustou, senão o padrão).
-            var bosqueLanes = MapLanesWorld("bosque", worldWidth, worldHeight);
+            // Caminhos do mapa padrão (de MapPaths_<id>.json se você ajustou, senão o padrão).
+            var defaultLanes = MapLanesWorld(DefaultMapId, worldWidth, worldHeight);
             var pathParents = new List<Transform>();
-            for (int i = 0; i < bosqueLanes.Count; i++)
-                pathParents.Add(BuildPathParentFromVec("Path_" + (char)('A' + i), bosqueLanes[i]).transform);
+            for (int i = 0; i < defaultLanes.Count; i++)
+                pathParents.Add(BuildPathParentFromVec("Path_" + (char)('A' + i), defaultLanes[i]).transform);
 
             // Marcadores de início (portal) e fim (cristal), um por trilha (deduplicados).
-            PlaceMarkersForLanes(bosqueLanes);
+            PlaceMarkersForLanes(defaultLanes);
 
             // ---- MapManager + limites da área jogável (posicionamento livre) ----
             var mapGo = new GameObject("MapManager");
@@ -641,20 +643,19 @@ namespace MeowTactics.EditorTools
             map.pathRadius = 0.95f;
 
             // ---- Suporte a MÚLTIPLOS MAPAS ----
-            // A cena já vem montada com o "bosque". Em runtime, o RuntimeMapBuilder
+            // A cena já vem montada com o mapa padrão. Em runtime, o RuntimeMapBuilder
             // troca fundo/caminhos/marcadores se o jogador escolher outro mapa.
-            // Mapas novos sem arte própria usam o fundo noturno como fallback.
+            // Cada mapa usa seus pontos salvos (MapPaths_<id>.json) se existirem, senão o
+            // traçado padrão por código. Mapas sem arte própria ficam com fundo nulo.
             var mapBuilderGo = new GameObject("RuntimeMapBuilder");
             var builder = mapBuilderGo.AddComponent<RuntimeMapBuilder>();
-            builder.bakedMapId = "bosque";
-            // Cada mapa usa seus pontos salvos (MapPaths_<id>.json) se existirem, senão o
-            // traçado padrão por código. Mapas sem arte própria ficam com fundo nulo
-            // (campo escuro) até você adicionar a PNG em Assets/Art/Maps.
+            builder.bakedMapId = DefaultMapId;
             builder.maps = new List<RuntimeMapBuilder.MapDef>
             {
-                MakeMapDef("bosque", bgSprite, bosqueLanes),
                 MakeMapDef("jardim", MapBgSprite("jardim", mapH, worldHeight),
                     MapLanesWorld("jardim", worldWidth, worldHeight)),
+                MakeMapDef("bosque", MapBgSprite("bosque", mapH, worldHeight),
+                    MapLanesWorld("bosque", worldWidth, worldHeight)),
                 MakeMapDef("ruinas", MapBgSprite("ruinas", mapH, worldHeight),
                     MapLanesWorld("ruinas", worldWidth, worldHeight))
             };
