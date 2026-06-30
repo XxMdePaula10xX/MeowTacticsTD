@@ -77,11 +77,12 @@ namespace MeowTactics.Enemies
             pathIndex = 0;
             PathProgress = 0f;
 
-            // Escalonamento por onda (0-based): vida +18%/onda; armadura/RM +5%/onda
-            // a partir da onda 4; velocidade +3%/onda (limite 1.3x).
+            // Escalonamento por onda (0-based): curva suavizada para 50 ondas.
+            // Vida +14%/onda; armadura/RM +4%/onda a partir da onda 4;
+            // velocidade +3%/onda (limite 1.3x).
             int w = WaveManager.Instance != null ? WaveManager.Instance.CurrentWaveIndex : 0;
-            float hpScale  = scalingMultiplier * (1f + 0.18f * w);
-            float defScale = scalingMultiplier * (w >= 3 ? 1f + 0.05f * (w - 2) : 1f);
+            float hpScale  = scalingMultiplier * (1f + 0.14f * w);
+            float defScale = scalingMultiplier * (w >= 3 ? 1f + 0.04f * (w - 2) : 1f);
             float spdScale = Mathf.Min(1.3f, 1f + 0.03f * w);
 
             MaxHealth = data.maxHealth * hpScale;

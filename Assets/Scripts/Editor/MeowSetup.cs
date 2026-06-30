@@ -522,7 +522,7 @@ namespace MeowTactics.EditorTools
             MakeWave(5,  0.70f, false, (e["shadow"], 10, 1f), (e["wraith"], 4, 1f));                // resist. mágica (pen. mágica)
             MakeWave(6,  0.60f, false, (e["bulwark"], 4, 1f), (e["armored"], 6, 1f), (e["swift"], 6, 1f)); // físico pesado
             MakeWave(7,  0.55f, false, (e["wraith"], 8, 1f), (e["shadow"], 8, 1f), (e["swift"], 6, 1f));   // mágico pesado
-            MakeWave(8,  0.70f, false, (e["king"], 1, 0.5f), (e["warden"], 6, 1f), (e["bulwark"], 3, 1f)); // mini-boss + resistentes
+            MakeWave(8,  0.70f, false, (e["king"], 1, 0.3f), (e["warden"], 6, 1f), (e["bulwark"], 3, 1f)); // mini-boss (suavizado) + resistentes
             MakeWave(9,  0.55f, false, (e["warden"], 8, 1f), (e["bulwark"], 4, 1f), (e["wraith"], 8, 1f)); // tudo resistente (dano verdadeiro!)
             MakeWave(10, 0.70f, true,  (e["king"], 1, 1f), (e["warden"], 6, 1f), (e["swift"], 10, 1f));    // mini-boss
 
@@ -554,11 +554,11 @@ namespace MeowTactics.EditorTools
                         g.Add((e["swift"], mid, 1f)); g.Add((e["warden"], small, 1f)); break;
                 }
 
-                if (miniBoss) g.Insert(0, (e["king"], 1, 0.45f + 0.05f * (n / 10)));
+                if (miniBoss) g.Insert(0, (e["king"], 1, 0.38f + 0.05f * (n / 10)));
                 if (finalBoss)
                 {
                     g.Clear();
-                    g.Add((e["king"], 1, 1.4f));
+                    g.Add((e["king"], 1, 1.15f));
                     g.Add((e["warden"], 12, 1f));
                     g.Add((e["bulwark"], 8, 1f));
                     g.Add((e["swift"], 14, 1f));

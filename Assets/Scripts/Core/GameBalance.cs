@@ -25,7 +25,7 @@ namespace MeowTactics.Core
         public const float CritMultiplierDefault = 1.5f;
 
         // ---- Itens ----
-        public const int ItemDropEveryNWaves = 3; // escolha de item nas ondas 3, 6, 9...
+        public const int ItemDropEveryNWaves = 2; // item a cada 2 ondas (mais itens ao longo das 50)
         public const int ItemDraftChoices = 3;    // quantos itens aparecem para escolher
         public const int MaxItemsPerCat = 3;      // quantos itens um gato pode equipar
 
