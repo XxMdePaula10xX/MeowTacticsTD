@@ -81,6 +81,7 @@ namespace MeowTactics.UI
 
         private GameObject draftPanel;
         private Transform draftContainer;
+        private Text draftTitle;
 
         private GameObject endPanel;
         private Text endText;
@@ -412,7 +413,7 @@ namespace MeowTactics.UI
             if (c.areaDamage) mech += "   •   Área";
             if (c.appliesSlow) mech += "   •   Lentidão";
             var stats = UIFactory.CreateText(colGo, "Stats",
-                $"<color=#{ToHex(DamageColor(c.damageType))}><b>{DamageName(c.damageType)}</b></color>   •   Dano {c.baseDamage:0}   •   Vel {c.attackSpeed:0.##}/s   •   Alcance {c.range:0.#}   •   Crít {c.critChance:0}%{mech}",
+                $"<color=#{ToHex(DamageColor(c.damageType))}><b>{DamageTag(c.damageType)}</b></color>   •   Dano {c.baseDamage:0}   •   Vel {c.attackSpeed:0.##}/s   •   Alcance {c.range:0.#}   •   Crít {c.critChance:0}%{mech}",
                 15, ColText, TextAnchor.UpperLeft);
             NoWrap(stats); AddMinHeight(stats, 22);
 
@@ -842,6 +843,16 @@ namespace MeowTactics.UI
             float sfx = SFXManager.Instance != null ? SFXManager.Instance.volume : 0.55f;
             SliderRow(col, "Volume dos Efeitos", sfx, v => { if (SFXManager.Instance != null) SFXManager.Instance.volume = v; });
 
+            // Toggle de vibração (mobile).
+            Button hapticBtn = null;
+            hapticBtn = MenuButton(col, HapticLabel(), ColBlue, () =>
+            {
+                MeowTactics.Utilities.Haptics.Enabled = !MeowTactics.Utilities.Haptics.Enabled;
+                var hl = hapticBtn.GetComponentInChildren<Text>();
+                if (hl != null) hl.text = HapticLabel();
+                MeowTactics.Utilities.Haptics.Buzz();
+            });
+
             // Reset com confirmação em 2 toques (evita apagar tudo por engano).
             resetArmed = false;
             resetBtn = MenuButton(col, "Resetar Progresso", ColRed, () =>
@@ -879,6 +890,9 @@ namespace MeowTactics.UI
             vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
             return col.transform;
         }
+
+        private static string HapticLabel() =>
+            "Vibração: " + (MeowTactics.Utilities.Haptics.Enabled ? "LIGADA" : "DESLIGADA");
 
         private Button MenuButton(Transform parent, string label, Color color, UnityAction onClick)
         {
@@ -1417,6 +1431,7 @@ namespace MeowTactics.UI
 
             var t = UIFactory.CreateText(draftPanel.transform, "Title", "ESCOLHA UM ITEM!", 44, ColGold, TextAnchor.MiddleCenter);
             t.fontStyle = FontStyle.Bold; NoWrap(t); AddOutline(t);
+            draftTitle = t;
             var trt = t.rectTransform;
             UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
             trt.sizeDelta = new Vector2(900, 70);
@@ -2217,7 +2232,7 @@ namespace MeowTactics.UI
             var name = DetailText(cat.Data.catName, 30, ColGold, TextAnchor.MiddleCenter, 40);
             name.fontStyle = FontStyle.Bold; NoWrap(name); AddOutline(name);
 
-            DetailText($"{DamageName(cat.Data.damageType)}  •  {SynergyNames(new List<SynergyType>(cat.GetEffectiveSynergies()))}",
+            DetailText($"{DamageTag(cat.Data.damageType)}  •  {SynergyNames(new List<SynergyType>(cat.GetEffectiveSynergies()))}",
                 15, ColDim, TextAnchor.MiddleCenter, 22);
 
             if (cat.Data.icon != null)
@@ -2228,7 +2243,7 @@ namespace MeowTactics.UI
 
             DetailHeader("ATRIBUTOS");
             StatRow("Dano", $"{cat.CurrentDamageDisplay:0.#}", ColText);
-            StatRow("Tipo de dano", DamageName(cat.Data.damageType), DamageColor(cat.Data.damageType));
+            StatRow("Tipo de dano", DamageTag(cat.Data.damageType), DamageColor(cat.Data.damageType));
             StatRow("Vel. ataque", $"{cat.CurrentAttackSpeed:0.##}/s", ColText);
             StatRow("Alcance", $"{cat.CurrentRange:0.#}", ColText);
             StatRow("Crítico", $"{cat.CurrentCritChance:0}%", ColText);
@@ -2301,6 +2316,7 @@ namespace MeowTactics.UI
         {
             if (draftPanel == null) return;
             ClearDynamic(draftContainer, "DraftBtn");
+            if (draftTitle != null) draftTitle.text = "ESCOLHA UM ITEM!";
 
             foreach (var item in choices)
             {
@@ -2308,6 +2324,58 @@ namespace MeowTactics.UI
                 BuildItemDraftCard(draftContainer, it, () => PickDraftItem(it));
             }
             draftPanel.SetActive(true);
+        }
+
+        // =========================================================
+        //  DRAFT DE RELÍQUIA (a cada 5 ondas)
+        // =========================================================
+        public void ShowRelicDraft(List<Relic> choices)
+        {
+            if (draftPanel == null) return;
+            ClearDynamic(draftContainer, "DraftBtn");
+            if (draftTitle != null) draftTitle.text = "ESCOLHA UMA RELÍQUIA!";
+
+            foreach (var relic in choices)
+            {
+                Relic r = relic;
+                BuildRelicCard(draftContainer, r, () => PickRelic(r));
+            }
+            draftPanel.SetActive(true);
+        }
+
+        private void BuildRelicCard(Transform parent, Relic r, UnityAction onClick)
+        {
+            // Moldura dourada (relíquia = especial), interior roxo escuro.
+            var card = new GameObject("DraftBtn", typeof(RectTransform), typeof(Image), typeof(Button));
+            card.transform.SetParent(parent, false);
+            var outer = card.GetComponent<Image>();
+            outer.sprite = UISprites.Rounded; outer.type = Image.Type.Sliced; outer.color = ColGold;
+            AddShadow(outer, 7f, 0.45f);
+            card.GetComponent<Button>().onClick.AddListener(onClick);
+
+            var inner = UIFactory.CreatePanel(card.transform, "Fill", new Color(0.18f, 0.14f, 0.30f, 1f));
+            UIFactory.StretchFull(inner.rectTransform, 4f); inner.raycastTarget = false;
+            AddSheen(inner.transform, 0.12f);
+            var vlg = inner.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(16, 16, 18, 18); vlg.spacing = 10;
+            vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+            vlg.childAlignment = TextAnchor.UpperCenter;
+
+            var gem = UIFactory.CreateText(inner.transform, "Gem", "★", 60, ColGold, TextAnchor.MiddleCenter);
+            gem.fontStyle = FontStyle.Bold; AddMinHeight(gem, 84);
+
+            var nm = UIFactory.CreateText(inner.transform, "Name", r.name, 24, ColGold, TextAnchor.MiddleCenter);
+            nm.fontStyle = FontStyle.Bold; NoWrap(nm); AddMinHeight(nm, 32);
+
+            var ds = UIFactory.CreateText(inner.transform, "Desc", r.desc, 17, ColText, TextAnchor.UpperCenter);
+            var dle = ds.gameObject.AddComponent<LayoutElement>(); dle.minHeight = 70; dle.flexibleHeight = 1;
+        }
+
+        private void PickRelic(Relic r)
+        {
+            Relics.Take(r);
+            draftPanel.SetActive(false);
+            ShowMessage($"Relíquia obtida: {r.name}!");
         }
 
         private void BuildItemDraftCard(Transform parent, ItemData it, UnityAction onClick)
@@ -2596,6 +2664,21 @@ namespace MeowTactics.UI
                 default: return "?";
             }
         }
+
+        // Símbolo por tipo de dano (forma além da cor — ajuda daltônicos).
+        // ▲ Físico  •  ★ Mágico  •  ◆ Verdadeiro
+        private static string DamageSymbol(DamageType type)
+        {
+            switch (type)
+            {
+                case DamageType.Physical: return "▲";
+                case DamageType.Magical:  return "★";
+                case DamageType.True:     return "◆";
+                default: return "";
+            }
+        }
+
+        private static string DamageTag(DamageType type) => DamageSymbol(type) + " " + DamageName(type);
 
         private static string SynergyNames(List<SynergyType> synergies)
         {

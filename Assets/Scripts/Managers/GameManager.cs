@@ -83,8 +83,18 @@ namespace MeowTactics.Managers
             // Auto-save só no modo normal (Infinito/Diário não são "continuáveis").
             if (!EndlessMode && !DailyMode) SaveSystem.Save();
 
-            // A cada N ondas, oferece a roleta de itens (ex: ondas 3, 6, 9).
-            if (GameBalance.ItemDropEveryNWaves > 0 &&
+            // Ondas 5, 15, 25, 35, 45...: escolha de RELÍQUIA (não colide com o item,
+            // que cai em ondas pares). Tem prioridade visual sobre o item nessa onda.
+            bool relicOffered = false;
+            if (completedWaveNumber % 10 == 5 && UIManager.Instance != null)
+            {
+                var relics = Relics.GetRandomChoices(3);
+                if (relics.Count > 0) { UIManager.Instance.ShowRelicDraft(relics); relicOffered = true; }
+            }
+
+            // A cada N ondas, oferece a roleta de itens (ondas pares: 2, 4, 6...).
+            if (!relicOffered &&
+                GameBalance.ItemDropEveryNWaves > 0 &&
                 completedWaveNumber % GameBalance.ItemDropEveryNWaves == 0 &&
                 ItemManager.Instance != null && UIManager.Instance != null)
             {
@@ -101,6 +111,7 @@ namespace MeowTactics.Managers
             Lives -= damage;
             if (Lives < 0) Lives = 0;
             OnLivesChanged?.Invoke(Lives);
+            MeowTactics.Utilities.CameraShake.Shake(0.12f, 0.18f); // tremor leve ao perder vida
 
             if (Lives <= 0)
                 LoseGame();
@@ -119,6 +130,8 @@ namespace MeowTactics.Managers
             SetState(GameState.Defeat);
             WaveManager.Instance?.StopWave();
             SFXManager.Play(SfxType.Defeat);
+            MeowTactics.Utilities.CameraShake.Shake(0.45f, 0.5f);
+            MeowTactics.Utilities.Haptics.Buzz();
             SaveSystem.RecordBest(WaveManager.Instance != null ? WaveManager.Instance.CurrentWaveIndex + 1 : 0);
             SaveSystem.Clear();
         }
@@ -159,6 +172,9 @@ namespace MeowTactics.Managers
             Lives = Mathf.Max(0, value);
             OnLivesChanged?.Invoke(Lives);
         }
+
+        /// <summary>Soma vidas (ex.: relíquia "Coração Valente").</summary>
+        public void AddLives(int amount) => SetLives(Lives + amount);
 
         /// <summary>Recomeça a fase do zero (recarrega a cena atual).</summary>
         public void Restart()

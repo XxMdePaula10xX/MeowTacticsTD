@@ -107,6 +107,11 @@ namespace MeowTactics.Managers
                     : (MapManager.Instance != null ? MapManager.Instance.SpawnPoint : Vector3.zero);
 
                 UnitFactory.CreateEnemy(info.enemy, info.scalingMultiplier, spawnPos, path);
+                if (info.enemy != null && info.enemy.isBoss)
+                {
+                    MeowTactics.Utilities.CameraShake.Shake(0.3f, 0.45f); // entrada do boss
+                    SFXManager.Play(SfxType.StartWave);
+                }
                 aliveCount++;
                 spawnIndex++;
                 yield return new WaitForSeconds(wave.spawnInterval);
@@ -143,7 +148,7 @@ namespace MeowTactics.Managers
             // Recompensa de onda: base + número da onda + bônus específico.
             int waveNumber = CurrentWaveIndex + 1;
             // Recompensa de onda = 3 + floor(onda/2) (+ bônus específico da onda)
-            int reward = GameBalance.CoinsPerWaveBase + (waveNumber / 2) + (wave != null ? wave.bonusReward : 0);
+            int reward = GameBalance.CoinsPerWaveBase + (waveNumber / 2) + (wave != null ? wave.bonusReward : 0) + RunMods.coinsPerWaveBonus;
             EconomyManager.Instance?.AddCoins(reward);
 
             int completedWaveNumber = CurrentWaveIndex + 1;

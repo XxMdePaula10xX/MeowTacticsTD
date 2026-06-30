@@ -47,11 +47,12 @@ namespace MeowTactics.Managers
         {
             List<CatUnit> placed = GatherPlacedCats();
 
-            // 1) Zera buffs e reaplica itens (itens valem sempre que o gato está em campo).
+            // 1) Zera buffs, reaplica itens e os bônus de RELÍQUIAS (valem sempre em campo).
             foreach (var cat in placed)
             {
                 cat.ResetBuffs();
                 cat.ApplyItems();
+                ApplyRelicBuffs(cat);
             }
 
             // 2) Conta cada sinergia (cada gato posicionado conta para cada tag efetiva).
@@ -85,6 +86,17 @@ namespace MeowTactics.Managers
             }
 
             OnSynergiesChanged?.Invoke(currentStatuses);
+        }
+
+        /// <summary>Aplica os bônus das relíquias (RunMods) a um gato em campo.</summary>
+        private static void ApplyRelicBuffs(CatUnit cat)
+        {
+            if (RunMods.catDamagePct != 0f)   cat.AddBuff(BonusStat.DamagePercent, RunMods.catDamagePct);
+            if (RunMods.catRangePct != 0f)    cat.AddBuff(BonusStat.RangePercent, RunMods.catRangePct);
+            if (RunMods.catAtkSpeedPct != 0f) cat.AddBuff(BonusStat.AttackSpeedPercent, RunMods.catAtkSpeedPct);
+            if (RunMods.catCritFlat != 0f)    cat.AddBuff(BonusStat.CritChancePercent, RunMods.catCritFlat);
+            if (RunMods.catArmorPen != 0f)    cat.AddBuff(BonusStat.ArmorPenetrationFlat, RunMods.catArmorPen);
+            if (RunMods.catMagicPen != 0f)    cat.AddBuff(BonusStat.MagicPenetrationFlat, RunMods.catMagicPen);
         }
 
         private static bool HasSynergy(CatUnit cat, SynergyType type)

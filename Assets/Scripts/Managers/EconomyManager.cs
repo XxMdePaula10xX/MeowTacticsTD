@@ -63,7 +63,8 @@ namespace MeowTactics.Managers
         /// <summary>Devolve parte do investimento ao vender um gato.</summary>
         public int SellCat(CatUnit cat)
         {
-            int value = Mathf.FloorToInt(cat.TotalInvested * GameBalance.SellRatio);
+            float ratio = RunMods.sellFull ? 1f : GameBalance.SellRatio; // relíquia "Bom Negócio"
+            int value = Mathf.FloorToInt(cat.TotalInvested * ratio);
             AddCoins(value);
             return value;
         }

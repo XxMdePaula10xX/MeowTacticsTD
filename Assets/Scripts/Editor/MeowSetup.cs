@@ -607,6 +607,7 @@ namespace MeowTactics.EditorTools
             var camFit = camGo.AddComponent<MeowTactics.Utilities.CameraFit>();
             camFit.mapWorldWidth = worldWidth;
             camFit.mapWorldHeight = worldHeight;
+            camGo.AddComponent<MeowTactics.Utilities.CameraShake>(); // tremor nos momentos fortes
 
             // ---- Fundo + caminhos do mapa PADRÃO. Em runtime, o RuntimeMapBuilder
             //      troca tudo para o mapa que o jogador escolher. ----

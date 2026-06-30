@@ -94,7 +94,7 @@ namespace MeowTactics.Cats
         }
 
         // ---------- Itens ----------
-        public bool CanEquipMore => Items.Count < GameBalance.MaxItemsPerCat;
+        public bool CanEquipMore => Items.Count < GameBalance.MaxItemsPerCat + RunMods.extraItemSlots;
 
         public void EquipItem(ItemData item)
         {
