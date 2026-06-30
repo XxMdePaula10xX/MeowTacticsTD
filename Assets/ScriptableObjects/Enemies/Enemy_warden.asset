@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d613f9f67e9a7542aaaa8b9c02ca4a2, type: 3}
+  m_Name: Enemy_warden
+  m_EditorClassIdentifier: Assembly-CSharp::MeowTactics.Data.EnemyData
+  enemyId: warden
+  enemyName: Sentinela Maldita
+  description: "Resistente a tudo: dano verdadeiro (Samurai/Monge) \xE9 a melhor
+    resposta."
+  isBoss: 0
+  maxHealth: 96
+  armor: 32
+  magicResistance: 32
+  moveSpeed: 0.8
+  baseDamage: 2
+  coinReward: 3
+  icon: {fileID: 21300000, guid: c54faa7c4e7a29848a307f5ca4252f1d, type: 3}
+  enemyPrefab: {fileID: 0}
+  placeholderColor: {r: 0.62, g: 0.45, b: 0.3, a: 1}
+  visualScale: 1.1

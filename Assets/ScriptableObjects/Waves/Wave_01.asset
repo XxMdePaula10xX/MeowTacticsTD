@@ -15,7 +15,7 @@ MonoBehaviour:
   waveNumber: 1
   enemies:
   - enemy: {fileID: 11400000, guid: e95a73d53ca06e24cb68c746cf6ee874, type: 2}
-    count: 10
+    count: 12
     scalingMultiplier: 1
   spawnInterval: 0.8
   bonusReward: 0

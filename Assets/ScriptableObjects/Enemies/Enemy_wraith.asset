@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d613f9f67e9a7542aaaa8b9c02ca4a2, type: 3}
+  m_Name: Enemy_wraith
+  m_EditorClassIdentifier: Assembly-CSharp::MeowTactics.Data.EnemyData
+  enemyId: wraith
+  enemyName: Alma Penada
+  description: "Resist\xEAncia m\xE1gica alt\xEDssima: precisa de penetra\xE7\xE3o
+    m\xE1gica ou dano f\xEDsico."
+  isBoss: 0
+  maxHealth: 78
+  armor: 0
+  magicResistance: 60
+  moveSpeed: 1.05
+  baseDamage: 1
+  coinReward: 3
+  icon: {fileID: 21300000, guid: 5c27385d0ffe3c3429fe688fe8860eb8, type: 3}
+  enemyPrefab: {fileID: 0}
+  placeholderColor: {r: 0.4, g: 0.85, b: 0.78, a: 1}
+  visualScale: 1

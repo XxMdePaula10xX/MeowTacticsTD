@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d6d3fa6d04a655408e84b2d33a00f25, type: 3}
+  m_Name: Synergy_Hunter
+  m_EditorClassIdentifier: Assembly-CSharp::MeowTactics.Data.SynergyData
+  synergyType: 4
+  displayName: "Ca\xE7ador"
+  description: "Gatos \xE1geis que atacam sem parar."
+  uiColor: {r: 0.45, g: 0.8, b: 0.4, a: 1}
+  tiers:
+  - requiredCount: 2
+    effects:
+    - stat: 0
+      value: 18
+    description: +18% vel. ataque
+  - requiredCount: 3
+    effects:
+    - stat: 0
+      value: 35
+    - stat: 4
+      value: 10
+    description: +35% vel. e +10% dano

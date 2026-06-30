@@ -23,7 +23,7 @@ MonoBehaviour:
   range: 3.5
   critChance: 10
   critMultiplier: 1.5
-  synergies: 0400000006000000
+  synergies: 04000000060000000b000000
   appliesSlow: 0
   slowAmount: 0
   slowDuration: 0

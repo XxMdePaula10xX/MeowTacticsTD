@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeowTactics.Data.CatData
   catId: mage
   catName: Gato Mago
-  description: "Um gato encantado que lan\xE7a magia."
+  description: "Um gato encantado que lan\xE7a magia em \xE1rea."
   cost: 4
   damageType: 1
   attackType: 2
@@ -23,7 +23,7 @@ MonoBehaviour:
   range: 3.5
   critChance: 0
   critMultiplier: 1.5
-  synergies: 0200000009000000
+  synergies: 020000000c0000000b000000
   appliesSlow: 0
   slowAmount: 0
   slowDuration: 0

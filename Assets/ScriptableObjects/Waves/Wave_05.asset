@@ -16,7 +16,10 @@ MonoBehaviour:
   enemies:
   - enemy: {fileID: 11400000, guid: 1bae33fd58baaa94aa828aabc0071aad, type: 2}
     count: 10
-    scalingMultiplier: 1.25
+    scalingMultiplier: 1
+  - enemy: {fileID: 11400000, guid: 01080d3c9b68e804893fcb76629943db, type: 2}
+    count: 4
+    scalingMultiplier: 1
   spawnInterval: 0.7
   bonusReward: 0
   isBossWave: 0

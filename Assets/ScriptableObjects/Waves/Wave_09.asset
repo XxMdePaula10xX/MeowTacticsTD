@@ -14,15 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeowTactics.Data.WaveData
   waveNumber: 9
   enemies:
-  - enemy: {fileID: 11400000, guid: 7c55e9243dfd93d41873997b071f404c, type: 2}
-    count: 10
-    scalingMultiplier: 1.5
-  - enemy: {fileID: 11400000, guid: 1bae33fd58baaa94aa828aabc0071aad, type: 2}
-    count: 10
-    scalingMultiplier: 1.5
-  - enemy: {fileID: 11400000, guid: 5d603d33480b5104c8c81e076fa3807e, type: 2}
-    count: 10
-    scalingMultiplier: 1.5
+  - enemy: {fileID: 11400000, guid: a70b17a538e44044e8f16f8953e47efd, type: 2}
+    count: 8
+    scalingMultiplier: 1
+  - enemy: {fileID: 11400000, guid: d75f19b3fc805524aa7729e5c1cfc82b, type: 2}
+    count: 4
+    scalingMultiplier: 1
+  - enemy: {fileID: 11400000, guid: 01080d3c9b68e804893fcb76629943db, type: 2}
+    count: 8
+    scalingMultiplier: 1
   spawnInterval: 0.55
   bonusReward: 0
   isBossWave: 0

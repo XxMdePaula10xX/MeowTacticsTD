@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeowTactics.Data.CatData
   catId: samurai
   catName: Gato Samurai
-  description: Um gato honrado que corta qualquer defesa.
+  description: Um gato honrado que corta qualquer defesa (dano verdadeiro).
   cost: 5
   damageType: 2
   attackType: 0
@@ -23,7 +23,7 @@ MonoBehaviour:
   range: 2
   critChance: 5
   critMultiplier: 1.5
-  synergies: 0300000005000000
+  synergies: 03000000050000000b000000
   appliesSlow: 0
   slowAmount: 0
   slowDuration: 0
