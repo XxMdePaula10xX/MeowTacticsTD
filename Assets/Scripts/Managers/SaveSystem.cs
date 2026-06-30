@@ -57,10 +57,16 @@ namespace MeowTactics.Managers
         }
 
         public static int BestWave(string mapId) => PlayerPrefs.GetInt("best_" + mapId, 0);
+        public static int BestEndless(string mapId) => PlayerPrefs.GetInt("bestE_" + mapId, 0);
+        public static int BestDaily() => PlayerPrefs.GetInt("bestDaily_" + DailyChallenge.TodayKey(), 0);
 
+        /// <summary>Grava o recorde no slot do modo atual (normal / infinito / diário).</summary>
         public static void RecordBest(int wave)
         {
-            string k = "best_" + CurrentMapId;
+            string k;
+            if (GameManager.DailyMode) k = "bestDaily_" + DailyChallenge.TodayKey();
+            else if (GameManager.EndlessMode) k = "bestE_" + CurrentMapId;
+            else k = "best_" + CurrentMapId;
             if (wave > PlayerPrefs.GetInt(k, 0)) { PlayerPrefs.SetInt(k, wave); PlayerPrefs.Save(); }
         }
 

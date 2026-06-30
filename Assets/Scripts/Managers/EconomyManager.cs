@@ -26,7 +26,7 @@ namespace MeowTactics.Managers
 
         public void ResetEconomy()
         {
-            Coins = GameBalance.StartingCoins;
+            Coins = Mathf.Max(0, GameBalance.StartingCoins + RunMods.startingCoinsBonus);
             TotalEarned = 0;
             OnCoinsChanged?.Invoke(Coins);
         }
@@ -43,6 +43,9 @@ namespace MeowTactics.Managers
         public void AddCoins(int amount)
         {
             if (amount == 0) return;
+            // Modificador de "moedas x" (Desafio Diário) — só nos ganhos.
+            if (amount > 0 && RunMods.coinMultiplier != 1f)
+                amount = Mathf.Max(1, Mathf.RoundToInt(amount * RunMods.coinMultiplier));
             Coins += amount;
             if (amount > 0) { TotalEarned += amount; AchievementManager.Instance?.Report("coins", amount); }
             OnCoinsChanged?.Invoke(Coins);

@@ -85,11 +85,12 @@ namespace MeowTactics.Enemies
             float defScale = scalingMultiplier * (w >= 3 ? 1f + 0.04f * (w - 2) : 1f);
             float spdScale = Mathf.Min(1.3f, 1f + 0.03f * w);
 
-            MaxHealth = data.maxHealth * hpScale;
+            // Modificadores de run (Desafio Diário): vida/velocidade extra.
+            MaxHealth = data.maxHealth * hpScale * RunMods.enemyHpMult;
             CurrentHealth = MaxHealth;
             CurrentArmor = data.armor * defScale;
             CurrentMagicResistance = data.magicResistance * defScale;
-            CurrentMoveSpeed = data.moveSpeed * spdScale;
+            CurrentMoveSpeed = data.moveSpeed * spdScale * RunMods.enemySpeedMult;
 
             slowFactor = 1f;
             slowTimer = 0f;

@@ -93,6 +93,8 @@ namespace MeowTactics.UI
         private GameObject tutorialPanel, mapSelectPanel;
         private GameObject collectionPanel;
         private GameObject achievementsPanel;
+        private bool mapSelectEndless;       // toggle Normal/Infinito na seleção de mapa
+        private Button mapModeBtn;
         private Text tutorialText;
         private int tutorialStep;
         private static readonly string[] TutorialSteps =
@@ -127,6 +129,11 @@ namespace MeowTactics.UI
             {
                 MusicManager.Play(MusicTrack.Game);
                 if (PlayerPrefs.GetInt("tutorialDone", 0) == 0) ShowTutorial();
+                // Avisa o modificador do dia ao começar o Desafio Diário.
+                if (GameManager.DailyMode && !string.IsNullOrEmpty(RunMods.label))
+                    ShowMessage($"Desafio de hoje: {RunMods.label} — {DailyChallenge.TodayDesc()}");
+                else if (GameManager.EndlessMode)
+                    ShowMessage("Modo Infinito: sobreviva o máximo de ondas que conseguir!");
             }
         }
 
@@ -190,7 +197,14 @@ namespace MeowTactics.UI
             title.fontStyle = FontStyle.Bold; NoWrap(title); AddOutline(title);
             var trt = title.rectTransform;
             UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
-            trt.sizeDelta = new Vector2(900, 80); trt.anchoredPosition = new Vector2(0, -110);
+            trt.sizeDelta = new Vector2(900, 80); trt.anchoredPosition = new Vector2(0, -84);
+
+            // Toggle de modo: Normal x Infinito.
+            mapModeBtn = UIFactory.CreateButton(panel.transform, "Mode", "MODO: NORMAL", ColBlue, ToggleMapMode, 22, buttonSprite);
+            mapModeBtn.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
+            var mrt = UIFactory.AsRect(mapModeBtn);
+            UIFactory.SetAnchors(mrt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
+            mrt.sizeDelta = new Vector2(360, 52); mrt.anchoredPosition = new Vector2(0, -150);
 
             var row = new GameObject("Cards", typeof(RectTransform));
             row.transform.SetParent(panel.transform, false);
@@ -230,13 +244,22 @@ namespace MeowTactics.UI
             AddMinHeight(diff, 24);
             var ds = UIFactory.CreateText(card.transform, "Desc", desc, 15, ColDim, TextAnchor.UpperCenter);
             var dle = ds.gameObject.AddComponent<LayoutElement>(); dle.minHeight = 120; dle.flexibleHeight = 1;
-            var rec = UIFactory.CreateText(card.transform, "Rec", $"Recorde: onda {SaveSystem.BestWave(mapId)}", 15, ColGold, TextAnchor.MiddleCenter);
+            var rec = UIFactory.CreateText(card.transform, "Rec",
+                $"Recorde: onda {SaveSystem.BestWave(mapId)}   •   ∞: onda {SaveSystem.BestEndless(mapId)}",
+                15, ColGold, TextAnchor.MiddleCenter);
             AddMinHeight(rec, 24);
 
             if (playable)
             {
                 var play = UIFactory.CreateButton(card.transform, "Play", "Jogar", ColGreen,
-                    () => { SaveSystem.CurrentMapId = mapId; GameManager.Instance?.NewGame(); }, 22, buttonSprite);
+                    () =>
+                    {
+                        SaveSystem.CurrentMapId = mapId;
+                        RunMods.Reset();
+                        GameManager.DailyMode = false;
+                        GameManager.EndlessMode = mapSelectEndless;
+                        GameManager.Instance?.NewGame();
+                    }, 22, buttonSprite);
                 play.GetComponentInChildren<Text>().fontStyle = FontStyle.Bold;
                 var le = play.gameObject.AddComponent<LayoutElement>(); le.minHeight = 54;
             }
@@ -247,8 +270,39 @@ namespace MeowTactics.UI
             }
         }
 
-        public void ShowMapSelect() { if (mapSelectPanel != null) mapSelectPanel.SetActive(true); SFXManager.Play(SfxType.Click); }
+        public void ShowMapSelect()
+        {
+            mapSelectEndless = false;
+            UpdateMapModeLabel();
+            if (mapSelectPanel != null) mapSelectPanel.SetActive(true);
+            SFXManager.Play(SfxType.Click);
+        }
         public void HideMapSelect() { if (mapSelectPanel != null) mapSelectPanel.SetActive(false); SFXManager.Play(SfxType.Click); }
+
+        private void ToggleMapMode()
+        {
+            mapSelectEndless = !mapSelectEndless;
+            UpdateMapModeLabel();
+            SFXManager.Play(SfxType.Click);
+        }
+
+        private void UpdateMapModeLabel()
+        {
+            if (mapModeBtn == null) return;
+            var lbl = mapModeBtn.GetComponentInChildren<Text>();
+            if (lbl != null) lbl.text = mapSelectEndless ? "MODO: INFINITO  ∞" : "MODO: NORMAL";
+            var img = mapModeBtn.GetComponent<Image>();
+            if (img != null) img.color = mapSelectEndless ? new Color(0.75f, 0.45f, 1f) : ColBlue;
+        }
+
+        private void StartDailyChallenge()
+        {
+            DailyChallenge.Apply(); // configura os modificadores do dia em RunMods
+            GameManager.DailyMode = true;
+            GameManager.EndlessMode = false;
+            SaveSystem.CurrentMapId = DailyChallenge.TodayMapId();
+            GameManager.Instance?.NewGame();
+        }
 
         private void ContinueGame()
         {
@@ -728,11 +782,12 @@ namespace MeowTactics.UI
             UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
             trt.sizeDelta = new Vector2(1200, 100); trt.anchoredPosition = new Vector2(0, -170);
 
-            var col = MenuColumn(panel.transform, 540);
+            var col = MenuColumn(panel.transform, 660);
             MenuButton(col, "Novo Jogo", ColGreen, ShowMapSelect);
             bool hasSave = SaveSystem.HasSave();
             var cont = MenuButton(col, "Continuar", hasSave ? ColGreen : ColCard, ContinueGame);
             cont.interactable = hasSave;
+            MenuButton(col, "Desafio Diário", new Color(0.95f, 0.7f, 0.25f), StartDailyChallenge);
             MenuButton(col, "Coleção", ColBlue, ShowCollection);
             MenuButton(col, "Conquistas", ColBlue, ShowAchievements);
             MenuButton(col, "Configurações", ColBlue, ShowSettings);
@@ -1583,6 +1638,8 @@ namespace MeowTactics.UI
                 ItemManager.Instance.OnInventoryChanged += UpdateItems;
                 ItemManager.Instance.OnSelectionChanged += UpdateItems;
             }
+            if (PlacementManager.Instance != null)
+                PlacementManager.Instance.OnSelectionChanged += OnPlacementSelectionChanged;
         }
 
         private void RefreshAll()
@@ -1651,12 +1708,28 @@ namespace MeowTactics.UI
             SFXManager.Play(SfxType.Click);
         }
 
+        private bool placingHide; // esconde a loja temporariamente enquanto posiciona um gato
+
         private void SetBottomCollapsed(bool v)
         {
             collapsed = v;
-            if (bottomPanel != null) bottomPanel.SetActive(!v);
             var lbl = collapseBtn != null ? collapseBtn.GetComponentInChildren<Text>() : null;
             if (lbl != null) lbl.text = v ? "LOJA  ▲" : "LOJA  ▼";
+            ApplyBottomVisibility();
+        }
+
+        private void ApplyBottomVisibility()
+        {
+            if (bottomPanel != null) bottomPanel.SetActive(!collapsed && !placingHide);
+        }
+
+        /// <summary>Esconde a loja enquanto o jogador está posicionando um gato; reabre depois.</summary>
+        private void OnPlacementSelectionChanged()
+        {
+            bool placing = PlacementManager.Instance != null && PlacementManager.Instance.SelectedBenchCat != null;
+            bool prep = GameManager.Instance == null || GameManager.Instance.State == GameState.Preparation;
+            placingHide = placing && prep;
+            ApplyBottomVisibility();
         }
 
         private void ToggleSynergy()
@@ -1691,8 +1764,11 @@ namespace MeowTactics.UI
 
         public void UpdateWave()
         {
-            if (waveText != null && WaveManager.Instance != null)
-                waveText.text = "ONDA " + (WaveManager.Instance.CurrentWaveIndex + 1) + " / " + WaveManager.Instance.waves.Count;
+            if (waveText == null || WaveManager.Instance == null) return;
+            int n = WaveManager.Instance.CurrentWaveIndex + 1;
+            waveText.text = GameManager.EndlessMode
+                ? "ONDA " + n + "  ∞"
+                : "ONDA " + n + " / " + WaveManager.Instance.waves.Count;
         }
 
         public void UpdateWaveProgress()
@@ -2305,12 +2381,29 @@ namespace MeowTactics.UI
             int wave = WaveManager.Instance != null ? WaveManager.Instance.CurrentWaveIndex + 1 : 1;
             int total = WaveManager.Instance != null ? WaveManager.Instance.waves.Count : 10;
             int defeated = GameManager.Instance != null ? GameManager.Instance.EnemiesDefeated : 0;
+
+            string head, line;
+            if (GameManager.EndlessMode)
+            {
+                head = "FIM DA JORNADA";
+                line = $"Você sobreviveu até a onda {wave}!\nRecorde: onda {SaveSystem.BestEndless(SaveSystem.CurrentMapId)}";
+            }
+            else if (GameManager.DailyMode)
+            {
+                head = "DERROTA";
+                line = $"Desafio Diário: chegou à onda {wave}\nRecorde de hoje: onda {SaveSystem.BestDaily()}";
+            }
+            else
+            {
+                head = "DERROTA";
+                line = $"Você chegou até a onda {wave}/{total}";
+            }
             endText.text =
-                $"<size=78><b>DERROTA</b></size>\n\n" +
-                $"Você chegou até a onda {wave}/{total}\n" +
+                $"<size=78><b>{head}</b></size>\n\n" +
+                line + "\n" +
                 $"Inimigos derrotados: {defeated}" +
                 RankingText();
-            endText.color = ColRed;
+            endText.color = GameManager.EndlessMode ? ColGold : ColRed;
             endPanel.SetActive(true);
         }
 

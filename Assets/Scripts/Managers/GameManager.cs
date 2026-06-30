@@ -36,7 +36,7 @@ namespace MeowTactics.Managers
 
         public void StartGame()
         {
-            Lives = GameBalance.StartingLives;
+            Lives = Mathf.Max(1, GameBalance.StartingLives + RunMods.startingLivesBonus);
             EnemiesDefeated = 0;
             Time.timeScale = 1f;
             SetState(GameState.Preparation);
@@ -80,7 +80,8 @@ namespace MeowTactics.Managers
             SetState(GameState.Preparation);
             ShopManager.Instance?.GenerateShop();
             UIManager.Instance?.ShowWaveSummary(completedWaveNumber, reward, Lives);
-            SaveSystem.Save(); // auto-save no início de cada preparação
+            // Auto-save só no modo normal (Infinito/Diário não são "continuáveis").
+            if (!EndlessMode && !DailyMode) SaveSystem.Save();
 
             // A cada N ondas, oferece a roleta de itens (ex: ondas 3, 6, 9).
             if (GameBalance.ItemDropEveryNWaves > 0 &&
@@ -147,6 +148,10 @@ namespace MeowTactics.Managers
         public static bool StartInGame = false;
         /// <summary>Se true ao carregar, restaura o jogo salvo (botão Continuar).</summary>
         public static bool LoadOnStart = false;
+        /// <summary>Modo Infinito: não há vitória; joga até perder (pontuação = onda alcançada).</summary>
+        public static bool EndlessMode = false;
+        /// <summary>Desafio Diário: run com modificador do dia (para recorde separado).</summary>
+        public static bool DailyMode = false;
 
         /// <summary>Define as vidas diretamente (usado pelo carregamento de save).</summary>
         public void SetLives(int value)
@@ -175,6 +180,10 @@ namespace MeowTactics.Managers
         /// <summary>Continuar: carrega o save NO MAPA CERTO e não conta como nova partida.</summary>
         public void ContinueSavedGame()
         {
+            // O save é sempre de uma run NORMAL — limpa modos/modificadores de runs anteriores.
+            EndlessMode = false;
+            DailyMode = false;
+            RunMods.Reset();
             SaveSystem.CurrentMapId = SaveSystem.SavedMapId(); // restaura no mapa salvo
             StartInGame = true;
             LoadOnStart = true;

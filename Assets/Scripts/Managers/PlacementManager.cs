@@ -36,7 +36,7 @@ namespace MeowTactics.Managers
 
         // Prévia de posicionamento (segue o cursor).
         private GameObject previewGo;
-        private SpriteRenderer previewRing, previewDot;
+        private SpriteRenderer previewRing, previewDot, previewFill;
 
         private void Awake()
         {
@@ -236,9 +236,13 @@ namespace MeowTactics.Managers
             Color tint = valid ? new Color(0.4f, 1f, 0.45f) : new Color(1f, 0.4f, 0.4f);
 
             float range = SelectedBenchCat != null ? SelectedBenchCat.CurrentRange : 2.5f;
-            previewRing.transform.localScale = Vector3.one * (range * 2f);
-            previewRing.color = new Color(tint.r, tint.g, tint.b, 0.18f); // alcance: dica discreta
-            previewDot.color = new Color(tint.r, tint.g, tint.b, 0.55f);  // pad: indicador claro do lugar
+            float d = range * 2f;
+            // Área de alcance: disco translúcido + contorno bem visível.
+            previewFill.transform.localScale = Vector3.one * d;
+            previewFill.color = new Color(tint.r, tint.g, tint.b, 0.16f);
+            previewRing.transform.localScale = Vector3.one * d;
+            previewRing.color = new Color(tint.r, tint.g, tint.b, 0.75f);
+            previewDot.color = new Color(tint.r, tint.g, tint.b, 0.6f);
         }
 
         private void HidePreview()
@@ -250,6 +254,13 @@ namespace MeowTactics.Managers
         {
             if (previewGo != null) return;
             previewGo = new GameObject("PlacementPreview");
+
+            // Disco translúcido preenchendo a área de alcance.
+            var fill = new GameObject("RangeFill");
+            fill.transform.SetParent(previewGo.transform, false);
+            previewFill = fill.AddComponent<SpriteRenderer>();
+            previewFill.sprite = SpriteFactory.Circle;
+            previewFill.sortingOrder = 5;
 
             var ring = new GameObject("Range");
             ring.transform.SetParent(previewGo.transform, false);

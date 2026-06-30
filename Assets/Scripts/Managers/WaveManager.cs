@@ -54,8 +54,22 @@ namespace MeowTactics.Managers
             NotifyWaveChanged();
         }
 
-        public WaveData CurrentWave =>
-            (CurrentWaveIndex >= 0 && CurrentWaveIndex < waves.Count) ? waves[CurrentWaveIndex] : null;
+        public WaveData CurrentWave
+        {
+            get
+            {
+                if (CurrentWaveIndex >= 0 && CurrentWaveIndex < waves.Count) return waves[CurrentWaveIndex];
+                // Modo Infinito: além da última onda, cicla as ondas finais (a vida/armadura
+                // continua subindo pelo índice global, então fica cada vez mais difícil).
+                if (GameManager.EndlessMode && waves.Count > 0)
+                {
+                    int span = Mathf.Min(10, waves.Count);
+                    int idx = waves.Count - span + (CurrentWaveIndex % span);
+                    return waves[Mathf.Clamp(idx, 0, waves.Count - 1)];
+                }
+                return null;
+            }
+        }
 
         public void StartCurrentWave()
         {
@@ -135,7 +149,8 @@ namespace MeowTactics.Managers
             int completedWaveNumber = CurrentWaveIndex + 1;
             AchievementManager.Instance?.Report("waves", 1);
             AchievementManager.Instance?.ReportMax("bestWave", completedWaveNumber);
-            bool wasLastWave = CurrentWaveIndex >= waves.Count - 1;
+            // No Modo Infinito nunca há "última onda" — continua sempre.
+            bool wasLastWave = !GameManager.EndlessMode && CurrentWaveIndex >= waves.Count - 1;
             if (!wasLastWave)
             {
                 CurrentWaveIndex++;
