@@ -835,13 +835,22 @@ namespace MeowTactics.UI
             UIFactory.SetAnchors(trt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1));
             trt.sizeDelta = new Vector2(900, 80); trt.anchoredPosition = new Vector2(0, -170);
 
-            var col = MenuColumn(panel.transform, 560);
+            var col = MenuColumn(panel.transform, 620);
 
             float music = MusicManager.Instance != null ? MusicManager.Instance.volume : musicVolume;
             SliderRow(col, "Volume da Música", music,
                 v => { if (MusicManager.Instance != null) MusicManager.Instance.SetVolume(v); });
             float sfx = SFXManager.Instance != null ? SFXManager.Instance.volume : 0.55f;
             SliderRow(col, "Volume dos Efeitos", sfx, v => { if (SFXManager.Instance != null) SFXManager.Instance.volume = v; });
+
+            // Toggle de notificações (lembretes locais + badge).
+            Button notifBtn = null;
+            notifBtn = MenuButton(col, NotifLabel(), ColBlue, () =>
+            {
+                NotificationManager.SetEnabled(!NotificationManager.Enabled);
+                var nl = notifBtn.GetComponentInChildren<Text>();
+                if (nl != null) nl.text = NotifLabel();
+            });
 
             // Toggle de vibração (mobile).
             Button hapticBtn = null;
@@ -893,6 +902,9 @@ namespace MeowTactics.UI
 
         private static string HapticLabel() =>
             "Vibração: " + (MeowTactics.Utilities.Haptics.Enabled ? "LIGADA" : "DESLIGADA");
+
+        private static string NotifLabel() =>
+            "Notificações: " + (NotificationManager.Enabled ? "LIGADAS" : "DESLIGADAS");
 
         private Button MenuButton(Transform parent, string label, Color color, UnityAction onClick)
         {

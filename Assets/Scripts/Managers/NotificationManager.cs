@@ -7,22 +7,28 @@ using Unity.Notifications.iOS;
 namespace MeowTactics.Managers
 {
     /// <summary>
-    /// Lembretes locais para o jogador voltar (retenção) + badge no ícone do app
-    /// que SOME quando o jogo é aberto.
+    /// Notificações LOCAIS de retenção (lembretes "volte a jogar") + badge no ícone do
+    /// app que SOME quando o jogo é aberto. Tudo no aparelho — sem servidor.
     ///
     /// iOS: usa o pacote "Mobile Notifications" (com.unity.mobile.notifications).
     ///   -> Instale em Window > Package Manager > Unity Registry > Mobile Notifications.
-    ///   O código de iOS só é compilado no BUILD do device (não no editor/PC), então
-    ///   o pacote só é necessário na hora de gerar o build iOS.
+    ///   O código de iOS só compila no BUILD do device (não no editor/PC).
     ///
     /// Fluxo:
     ///   - Ao abrir/voltar ao app: limpa o badge e cancela lembretes pendentes.
-    ///   - Ao mandar pro background: agenda lembretes (1, 3 e 7 dias depois).
+    ///   - Ao ir pro background (se ativado): agenda lembretes (1, 3 e 7 dias).
     /// Auto-instancia sozinho (não precisa estar na cena).
     /// </summary>
     public class NotificationManager : MonoBehaviour
     {
         public static NotificationManager Instance { get; private set; }
+
+        /// <summary>Ligar/desligar notificações (Configurações). Persistente.</summary>
+        public static bool Enabled
+        {
+            get => PlayerPrefs.GetInt("notifs", 1) == 1;
+            set { PlayerPrefs.SetInt("notifs", value ? 1 : 0); PlayerPrefs.Save(); }
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
@@ -41,14 +47,14 @@ namespace MeowTactics.Managers
 
         private void Start()
         {
-            RequestAuthorization();
-            OnEnterApp();
+            if (Enabled) RequestAuthorization();
+            OnEnterApp(); // limpa o badge ao abrir (sempre)
         }
 
         private void OnApplicationPause(bool paused)
         {
-            if (paused) ScheduleReminders(); // foi pro background
-            else OnEnterApp();               // voltou ao app
+            if (paused) { if (Enabled) ScheduleReminders(); } // foi pro background
+            else OnEnterApp();                                // voltou ao app
         }
 
         // Chamado quando o jogador (re)entra no app.
@@ -56,6 +62,15 @@ namespace MeowTactics.Managers
         {
             ClearBadge();
             CancelScheduled();
+        }
+
+        /// <summary>Aplica a escolha do jogador no toggle das Configurações.</summary>
+        public static void SetEnabled(bool on)
+        {
+            Enabled = on;
+            if (Instance == null) return;
+            if (on) Instance.RequestAuthorization();
+            else { Instance.CancelScheduled(); Instance.ClearBadge(); }
         }
 
         /// <summary>Zera o badge do ícone e remove notificações já entregues.</summary>
@@ -74,24 +89,25 @@ namespace MeowTactics.Managers
 #endif
         }
 
-        private void RequestAuthorization()
+        public void RequestAuthorization()
         {
 #if UNITY_IOS && !UNITY_EDITOR
             StartCoroutine(RequestAuthRoutine());
 #endif
         }
 
-        /// <summary>Agenda os lembretes "volte a jogar" (com badge no ícone).</summary>
+        /// <summary>Agenda os lembretes "volte a jogar" (com badge crescente no ícone).</summary>
         public void ScheduleReminders()
         {
+            if (!Enabled) return;
 #if UNITY_IOS && !UNITY_EDITOR
             iOSNotificationCenter.RemoveAllScheduledNotifications();
             ScheduleOne("rem1", "Seus gatos sentem sua falta! 🐱",
-                "Volte e defenda o reino contra os pesadelos.", 1 * 24 * 60);
+                "Volte e defenda o reino contra os pesadelos.", 1 * 24 * 60, 1);
             ScheduleOne("rem2", "Os pesadelos estão voltando… 👻",
-                "Suas torres-gato precisam de você!", 3 * 24 * 60);
+                "Suas torres-gato precisam de você!", 3 * 24 * 60, 2);
             ScheduleOne("rem3", "Que tal uma partida rápida? ⚔️",
-                "Novas ondas esperam por você em Meow Tactics.", 7 * 24 * 60);
+                "Novas ondas e o Desafio Diário esperam por você!", 7 * 24 * 60, 3);
 #endif
         }
 
@@ -105,7 +121,7 @@ namespace MeowTactics.Managers
             }
         }
 
-        private void ScheduleOne(string id, string title, string body, int minutes)
+        private void ScheduleOne(string id, string title, string body, int minutes, int badge)
         {
             var n = new iOSNotification
             {
@@ -113,7 +129,7 @@ namespace MeowTactics.Managers
                 Title = title,
                 Body = body,
                 ShowInForeground = false,
-                Badge = 1,
+                Badge = badge,
                 Trigger = new iOSNotificationTimeIntervalTrigger
                 {
                     TimeInterval = new System.TimeSpan(0, minutes, 0),
