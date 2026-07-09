@@ -38,6 +38,10 @@
         <button id="zoomOut" aria-label="Afastar">－</button>
         <button id="zoomReset" aria-label="Centralizar">⤢</button>
       </div>
+      <div class="danger-vignette" id="dangerVignette"></div>
+      <div class="boss-intro" id="bossIntro">
+        <div class="bi-card"><span class="bi-emoji">👑</span><span class="bi-sub">CHEFE</span><span class="bi-name" id="bossName"></span></div>
+      </div>
     </div>
 
     <div class="dock">
@@ -140,6 +144,13 @@
 
   <!-- TOOLTIP -->
   <div class="tip hide" id="tip"></div>
+
+  <!-- TUTORIAL (coach marks) -->
+  <div class="coach-ring hide" id="coachRing"></div>
+  <div class="coach hide" id="coach">
+    <div class="coach-bubble"><span id="coachText"></span><button class="coach-skip" id="coachSkip">pular tutorial</button></div>
+    <span class="coach-hand">👇</span>
+  </div>
 
   <!-- AVISO GIRAR (retrato) -->
   <div class="rotate-hint" id="rotateHint">

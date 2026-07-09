@@ -177,7 +177,11 @@
     game.enemies.push({ ...st, hp: st.hpMax, laneIdx: lane, d: -U.rand() * 0.6, x: p.x, y: p.y, ang: p.ang,
       hit: 0, slowT: 0, slowAmt: 0 });
     game.aliveCount++;
-    if (st.boss) { shakeCam(0.25, 0.4); MT.sfx && MT.sfx.play('boss'); }
+    if (st.boss) {
+      shakeCam(0.32, 0.5); MT.sfx && MT.sfx.play('boss');
+      game.slowmoT = 1.1; // slow-mo cinematográfico
+      MT.ui && MT.ui.showBossIntro && MT.ui.showBossIntro(st.data.name);
+    }
   }
   function endWave() {
     game.waveRunning = false;

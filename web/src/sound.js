@@ -25,6 +25,7 @@
     win: () => { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'sine', 0.06), i * 110)); },
     error: () => tone(150, 0.14, 'square', 0.05),
     ach: () => { [659, 988].forEach((f, i) => setTimeout(() => tone(f, 0.16, 'triangle', 0.06), i * 120)); },
+    heart: () => { tone(70, 0.14, 'sine', 0.09); setTimeout(() => tone(58, 0.18, 'sine', 0.07), 140); },
   };
   MT.sfx = { play(t) { if (S[t]) S[t](); }, enabled, resume() { const a = ac(); if (a && a.state === 'suspended') { try { a.resume(); } catch (e) {} } } };
 })(window.MT);

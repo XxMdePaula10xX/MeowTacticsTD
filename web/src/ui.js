@@ -60,6 +60,7 @@
     $('btnAgain').addEventListener('click', () => { hide('endScreen'); showMenu(); });
     $('btnReplay').addEventListener('click', () => { hide('endScreen'); MT.api.newRun(MT.game.mode, MT.game.mapId); refresh(); });
     $('btnMaps').addEventListener('click', () => { hide('endScreen'); showMapSelect(MT.game.mode === 'daily' ? 'normal' : MT.game.mode); });
+    $('coachSkip').addEventListener('click', () => tutorial.finish());
     updateSoundLabel();
     // tooltips (hover no desktop; toque fixa por alguns segundos)
     document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { unpinTip(); const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
@@ -101,6 +102,7 @@
   function startRun(mode, mapId) {
     hide('menu'); hide('mapSelect'); hide('endScreen');
     MT.api.newRun(mode, mapId);
+    tutorial.maybeStart();
     if (mode === 'daily') MT.game.speed = MT.game.speed || 1;
     refresh();
   }
@@ -178,12 +180,15 @@
       if (c.cost > g.coins) card.classList.add('cant');
       card.dataset.tip = 'cat'; card.dataset.arg = c.id;
       const tags = c.tags.slice(0, 2).map(t => '<span title="' + t + '">' + (TAG_ICON[t] || '•') + '</span>').join('');
+      const hint = synHintFor(c);
       card.innerHTML =
         '<div class="dmg-badge ' + c.type + '">' + SYM[c.type] + '</div>' +
         '<div class="cat-art"><img src="' + asset(c.sprite) + '" alt="" draggable="false"></div>' +
         '<div class="cat-name">' + shortName(c.name) + '</div>' +
         '<div class="cat-cost">🪙 ' + c.cost + '</div>' +
-        '<div class="cat-tags">' + tags + '</div>';
+        '<div class="cat-tags">' + tags + '</div>' +
+        (hint ? '<div class="syn-hint' + (hint.activates ? '' : ' dim') + '">' + hint.text + '</div>' : '');
+      if (hint && hint.activates) card.classList.add('syn-boost');
       card.addEventListener('click', () => {
         if (MT.game.phase !== 'prep') return; // loja travada durante a onda
         if (c.cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
@@ -194,6 +199,20 @@
   }
   function shakeEl(node) { node.classList.remove('shake'); void node.offsetWidth; node.classList.add('shake'); }
   function shortName(n) { return n.replace(/^Gat[oa] /, '').replace(/^Gata /, ''); }
+  // Dica: comprar este gato avança/ativa alguma sinergia? Retorna o melhor avanço.
+  function synHintFor(c) {
+    let best = null;
+    for (const tag of c.tags) {
+      const def = R.SYN_BY_TAG[tag]; if (!def) continue;
+      const cur = MT.game.synergies.find(s => s.tag === tag);
+      const count = cur ? cur.count : 0;
+      const nextNeed = def.tiers.map(t => t.need).find(n => n > count);
+      const activates = nextNeed != null && (count + 1) >= nextNeed;
+      const score = activates ? 2 : (count > 0 ? 1 : 0);
+      if (score > 0 && (!best || score > best.score)) best = { text: activates ? '⬆ ativa ' + def.name : '+1 ' + def.name, activates, score };
+    }
+    return best;
+  }
 
   let lastBench = 0;
   function buildBench() {
@@ -447,16 +466,51 @@
     item('Barra de Vida', '<div style="background:rgba(0,0,0,.5);border-radius:4px;height:8px;width:100%"><div style="background:var(--green);height:8px;width:65%;border-radius:4px"></div></div>');
   }
 
+  // ---------- Entrada do chefe / última defesa / tutorial ----------
+  let bossIntroTimer = null, heartAccum = 0;
+  function showBossIntro(name) {
+    const el = $('bossIntro'); $('bossName').textContent = (name || 'CHEFE').toUpperCase();
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(bossIntroTimer); bossIntroTimer = setTimeout(() => el.classList.remove('show'), 1700);
+  }
+  const tutorial = {
+    active: false, step: 0,
+    maybeStart() { try { if (localStorage.getItem('mt_tut_done')) return; } catch (e) { return; } if (MT.game.mode !== 'normal') return; this.active = true; this.step = 1; },
+    finish() { this.active = false; try { localStorage.setItem('mt_tut_done', '1'); } catch (e) {} $('coach').classList.add('hide'); $('coachRing').classList.add('hide'); },
+    tick() {
+      if (!this.active) return;
+      const g = MT.game;
+      if (g.phase !== 'prep' && g.phase !== 'wave') { $('coach').classList.add('hide'); $('coachRing').classList.add('hide'); return; }
+      if (this.step === 1 && g.bench.length > 0) this.step = 2;
+      if (this.step === 2 && g.board.length > 0) this.step = 3;
+      if (this.step === 3 && g.phase === 'wave') { this.finish(); return; }
+      const STEPS = { 1: ['#shop', 'Toque numa carta 🐱 para comprar um gato'], 2: ['#bench', 'Toque no gato do banco, depois no gramado 🌿 para posicioná-lo'], 3: ['#startBtn', 'Tudo pronto! Inicie a onda ⚔️'] };
+      const s = STEPS[this.step]; if (!s) return;
+      const target = document.querySelector(s[0]); if (!target) return;
+      const r = target.getBoundingClientRect();
+      const ring = $('coachRing'); ring.classList.remove('hide');
+      ring.style.left = (r.left - 6) + 'px'; ring.style.top = (r.top - 6) + 'px'; ring.style.width = (r.width + 12) + 'px'; ring.style.height = (r.height + 12) + 'px';
+      const coach = $('coach'); coach.classList.remove('hide'); $('coachText').textContent = s[1];
+      const cw = 240; let cx = r.left + r.width / 2 - cw / 2; cx = Math.max(8, Math.min(window.innerWidth - cw - 8, cx));
+      coach.style.left = cx + 'px'; coach.style.width = cw + 'px'; coach.style.top = Math.max(8, r.top - 104) + 'px';
+    }
+  };
+
   // ---------- overlays por frame ----------
   function frameUI() {
     const g = MT.game;
     // HUD ao vivo durante a partida (vidas/moedas mudam no combate sem passar por refresh)
     if ((g.phase === 'wave' || g.phase === 'prep') && refs.lives) { refs.lives.textContent = g.lives; refs.coins.textContent = g.coins; }
+    // última defesa (vinheta + batimento)
+    const danger = g.lives > 0 && g.lives <= 3 && (g.phase === 'wave' || g.phase === 'prep');
+    const dv = $('dangerVignette'); if (dv) dv.classList.toggle('show', danger);
+    if (danger && g.phase === 'wave') { if (++heartAccum >= 48) { heartAccum = 0; MT.sfx && MT.sfx.play('heart'); } } else heartAccum = 0;
+    tutorial.tick();
     if (g.bannerT > 0 && g.banner) { refs.banner.querySelector('.b1').textContent = g.banner.t1; refs.banner.querySelector('.b2').textContent = g.banner.t2 || ''; refs.banner.classList.add('show'); }
     else refs.banner.classList.remove('show');
     if (g.toastT > 0) { refs.toast.textContent = g.toast; refs.toast.classList.add('show'); }
     else refs.toast.classList.remove('show');
   }
 
-  MT.ui = { build, refresh, showMenu, showEnd, frameUI, showDraft, showCollection };
+  MT.ui = { build, refresh, showMenu, showEnd, frameUI, showDraft, showCollection, showBossIntro };
 })(window.MT);
