@@ -1,0 +1,67 @@
+/* Meow Tactics TD — Design tokens
+   Portado da paleta do jogo Unity (dark-fantasy-cute): índigo/roxo + dourado.
+   Fonte de verdade única para cores, espaçamento, raios, sombras e tipografia. */
+
+:root {
+  /* ---- Grounds (índigo profundo) ---- */
+  --bg:        #0f1020;
+  --bg-deep:   #0a0a16;
+  --panel:     #1a1a30;
+  --panel-2:   #20203c;
+  --card:      #2b2856;
+  --card-2:    #332f66;
+  --line:      #3a3763;
+  --glass:     rgba(26, 26, 48, .72);
+
+  /* ---- Ink ---- */
+  --ink:       #eef0ff;
+  --ink-dim:   #a9adde;
+  --ink-mut:   #7b7fb5;
+
+  /* ---- Accent (dourado — o herói) ---- */
+  --gold:      #ffd24f;
+  --gold-deep: #e0a930;
+
+  /* ---- Semânticas (separadas do accent) ---- */
+  --green:     #4fc76e;   /* sucesso / vida cheia */
+  --red:       #ee6b6e;   /* perigo / vidas */
+  --azure:     #5ba3f2;   /* info / alcance / onda */
+
+  /* ---- Tipos de dano (triângulo) ---- */
+  --dmg-phys:  #ff9a4d;   /* Físico  ▲ */
+  --dmg-magic: #b98cff;   /* Mágico  ★ */
+  --dmg-true:  #ffe8b0;   /* Verdadeiro ◆ */
+
+  /* ---- Espaçamento (escala 4) ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* ---- Raios ---- */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+
+  /* ---- Sombras ---- */
+  --shadow:    0 10px 30px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.35);
+  --shadow-sm: 0 4px 12px rgba(0,0,0,.35);
+
+  /* ---- Tipografia ---- */
+  --font-body: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+  --font-num:  var(--font-body);
+
+  /* ---- Escala de tipo ---- */
+  --t-xs: 11px;
+  --t-sm: 13px;
+  --t-md: 15px;
+  --t-lg: 19px;
+  --t-xl: 24px;
+  --t-2xl: 30px;
+}
+
+/* Símbolos de tipo de dano (constantes de conteúdo):
+   Físico = ▲   Mágico = ★   Verdadeiro = ◆ */
