@@ -9,6 +9,12 @@
     purse: '💰', merchant: '🤝', luck: '🍀', heart: '❤️', treasure: '💎', ward: '🛡️' };
   const TAG_ICON = { Ninja: '🥷', Shadow: '🌑', Assassin: '🗡️', Hunter: '🏹', Forest: '🌲', Adventurer: '🧭',
     Sniper: '🎯', Technology: '⚙️', Mystic: '🔮', Elemental: '✨', Support: '💗', Guardian: '🛡️', Star: '⭐' };
+  const PRIO = {
+    first: { label: 'Primeiro', icon: '⏩', desc: 'o mais à frente (perto da base)' },
+    last: { label: 'Último', icon: '⏪', desc: 'o mais atrás (recém-chegado)' },
+    strong: { label: 'Mais forte', icon: '💪', desc: 'o de maior vida' },
+    near: { label: 'Mais próximo', icon: '📍', desc: 'o mais perto do gato' },
+  };
   const ITEM = {}; MT.DATA.items.forEach(i => ITEM[i.id] = i);
   const RELIC = {}; MT.DATA.relics.forEach(r => RELIC[r.id] = r);
   const SYND = {}; MT.DATA.synergies.forEach(s => SYND[s.id] = s);
@@ -307,11 +313,15 @@
       '<div class="sel-items">' + slotsHtml + '</div>' +
       invHtml +
       '<div class="sel-sep"></div>' +
+      '<button class="sel-prio" id="selPrio" title="' + PRIO[cat.priority || 'first'].desc + '">' +
+        '🎯 Alvo: <b>' + PRIO[cat.priority || 'first'].icon + ' ' + PRIO[cat.priority || 'first'].label + '</b> <span class="prio-cyc">▸</span></button>' +
+      '<div class="sel-sep"></div>' +
       '<div class="sel-actions">' +
         '<button class="btn-sell" id="selSell">Vender 🪙' + sellVal + '</button>' +
         '<button class="mini-btn" id="selMove">Mover</button>' +
         '<button class="mini-btn" id="selCloseB">Fechar</button>' +
       '</div>';
+    $('selPrio').onclick = () => MT.api.cyclePriority(cat);
     $('selClose').onclick = () => MT.api.deselect();
     $('selCloseB').onclick = () => MT.api.deselect();
     $('selMove').onclick = () => { MT.game.toast = 'Toque no gramado para reposicionar'; MT.game.toastT = 1.6; };
@@ -323,6 +333,11 @@
   }
   function st(l, v) { return '<div class="ss"><span>' + l + '</span><b>' + v + '</b></div>'; }
   function typeName(t) { return t === 'phys' ? 'Físico' : t === 'magic' ? 'Mágico' : 'Verdadeiro'; }
+  function priorityToast(cat, mode) {
+    const p = PRIO[mode] || PRIO.first;
+    MT.game.toast = p.icon + ' ' + shortName(cat.data.name) + ' → ' + p.label;
+    MT.game.toastT = 1.4;
+  }
 
   // ---------- DRAFT (itens / relíquias) ----------
   const DMGCOL = { phys: 'var(--dmg-phys)', magic: 'var(--dmg-magic)', 'true': 'var(--dmg-true)' };
@@ -512,5 +527,5 @@
     else refs.toast.classList.remove('show');
   }
 
-  MT.ui = { build, refresh, showMenu, showEnd, frameUI, showDraft, showCollection, showBossIntro };
+  MT.ui = { build, refresh, showMenu, showEnd, frameUI, showDraft, showCollection, showBossIntro, priorityToast };
 })(window.MT);

@@ -32,7 +32,7 @@
     write() {
       const g = MT.game;
       if (g.mode !== 'normal') return;
-      const enc = (c) => ({ id: c.data.id, x: c.x, y: c.y, items: c.items.slice(), invested: c.invested });
+      const enc = (c) => ({ id: c.data.id, x: c.x, y: c.y, items: c.items.slice(), invested: c.invested, priority: c.priority });
       const d = { mapId: g.mapId, coins: g.coins, lives: g.lives, waveIndex: g.waveIndex,
         board: g.board.map(enc), bench: g.bench.map(enc), inventory: g.inventory.slice(), run: g.run };
       set(SKEY, JSON.stringify(d));
@@ -47,7 +47,7 @@
       g.bench = []; g.board = [];
       const build = (s, onBoard) => {
         const c = MT.game && MT.rules.CAT[s.id] ? { uid: MT.util.uid(), data: MT.rules.CAT[s.id], items: s.items || [],
-          x: s.x, y: s.y, cd: 0, ang: -Math.PI / 2, target: null, pop: 1, cur: null, invested: s.invested || MT.rules.CAT[s.id].cost } : null;
+          x: s.x, y: s.y, cd: 0, ang: -Math.PI / 2, target: null, pop: 1, cur: null, invested: s.invested || MT.rules.CAT[s.id].cost, priority: s.priority || 'first' } : null;
         if (!c) return; if (onBoard) g.board.push(c); else g.bench.push(c);
       };
       (d.bench || []).forEach(s => build(s, false));

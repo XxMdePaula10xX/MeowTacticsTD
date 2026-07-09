@@ -96,6 +96,14 @@
   font-weight: 800; font-size: 11px; padding: 8px 9px; cursor: pointer; font-family: inherit; }
 .sel-actions .mini-btn:active { transform: translateY(1px); }
 
+/* ---------- Prioridade de alvo (painel do gato) ---------- */
+.sel-prio { width: 100%; background: linear-gradient(180deg, var(--card-2), var(--card)); border: 1px solid var(--line); color: var(--ink);
+  border-radius: 10px; font-weight: 800; font-size: 12px; padding: 9px 10px; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 6px; }
+.sel-prio b { color: var(--gold); }
+.sel-prio .prio-cyc { margin-left: auto; color: var(--ink-mut); font-size: 14px; }
+.sel-prio:active { transform: translateY(1px); }
+
 /* ---------- Zoom em pílulas ---------- */
 .zoom-ctl button { border-radius: 11px; border: 1px solid rgba(255,255,255,.10); opacity: .82; transition: opacity .15s, transform .1s; }
 .zoom-ctl button:hover { opacity: 1; }

@@ -21,6 +21,7 @@
   };
   const SYM = { phys: '▲', magic: '★', 'true': '◆' };
   const DMGCOL = { phys: '#ff9a4d', magic: '#b98cff', 'true': '#ffe8b0' };
+  const PRIO_ICON = { first: '⏩', last: '⏪', strong: '💪', near: '📍' };
 
   let ctx = null;
   function setCtx(c) { ctx = c; }
@@ -158,10 +159,13 @@
       ctx.restore();
       // sprite
       drawUnitSprite(cat.data.sprite, cat.x, cat.y - 0.04, 0.58 * sc, cat.data);
-      // símbolo de tipo
+      // símbolo de tipo (canto superior direito)
       ctx.font = '900 ' + (0.22 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = DMGCOL[cat.data.type];
       ctx.fillText(SYM[cat.data.type], x + 0.26 * cam.U, y - 0.26 * cam.U);
+      // indicador de prioridade de alvo (canto superior esquerdo)
+      ctx.font = (0.17 * cam.U) + 'px serif';
+      ctx.globalAlpha = 0.9; ctx.fillText(PRIO_ICON[cat.priority || 'first'], x - 0.25 * cam.U, y - 0.25 * cam.U); ctx.globalAlpha = 1;
     }
   }
 

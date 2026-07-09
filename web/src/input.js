@@ -79,8 +79,14 @@
     canvas.addEventListener('pointercancel', up);
 
     function tap(sx, sy) {
-      const g = MT.game; if (g.phase !== 'prep') return;
+      const g = MT.game;
       const p = toWorld(sx, sy);
+      if (g.phase === 'wave') { // durante a onda: tocar num gato cicla a prioridade de alvo
+        const hit = pickCat(p.wx, p.wy);
+        if (hit) { const mode = MT.api.cyclePriority(hit); MT.ui && MT.ui.priorityToast && MT.ui.priorityToast(hit, mode); }
+        return;
+      }
+      if (g.phase !== 'prep') return;
       if (g.selected && g.selected.kind === 'bench') { input.hover = p; MT.api.placeAt(p.wx, p.wy); input.hover = null; return; }
       const hit = pickCat(p.wx, p.wy);
       if (g.selected && g.selected.kind === 'board') {

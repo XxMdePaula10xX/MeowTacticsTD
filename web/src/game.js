@@ -66,7 +66,16 @@
   function makeCat(catId) {
     const data = R.CAT[catId];
     return { uid: U.uid(), data, items: [], x: 0, y: 0, cd: 0, ang: -Math.PI / 2,
-      target: null, pop: 1, cur: null, invested: data.cost };
+      target: null, pop: 1, cur: null, invested: data.cost, priority: 'first' };
+  }
+  const PRIORITY_ORDER = ['first', 'last', 'strong', 'near'];
+  function cyclePriority(cat) {
+    if (!cat) return null;
+    cat.priority = PRIORITY_ORDER[(PRIORITY_ORDER.indexOf(cat.priority) + 1) % PRIORITY_ORDER.length];
+    MT.sfx && MT.sfx.play('place');
+    saveNow();
+    MT.ui && MT.ui.refresh && MT.ui.refresh();
+    return cat.priority;
   }
 
   function recompute() {
@@ -369,10 +378,20 @@
     for (const cat of game.board) {
       if (cat.pop < 1) cat.pop = Math.min(1, cat.pop + dt * 4);
       cat.cd -= dt;
-      let best = null, bestD = -1;
+      // Seleção de alvo conforme a PRIORIDADE do gato.
+      let best = null, metric = 0;
       for (const en of game.enemies) {
         if (en.d < 0) continue;
-        if (U.dist(cat.x, cat.y, en.x, en.y) <= cat.cur.range && en.d > bestD) { best = en; bestD = en.d; }
+        const dd = U.dist(cat.x, cat.y, en.x, en.y);
+        if (dd > cat.cur.range) continue;
+        let m;
+        switch (cat.priority) {
+          case 'last': m = -en.d; break;          // mais atrás (recém-chegado)
+          case 'strong': m = en.hp; break;         // maior vida
+          case 'near': m = -dd; break;             // mais próximo do gato
+          default: m = en.d;                       // 'first': mais à frente (perto da base)
+        }
+        if (best === null || m > metric) { best = en; metric = m; }
       }
       cat.target = best;
       if (best) {
@@ -442,5 +461,6 @@
     newRun, update, buy, reroll, sell, pick, deselect, placeAt, selectBoard,
     startWave, recompute, resolveMap, distToPaths, placeValid, posAlong, addCoins,
     takeItem, takeRelic, equipItem, canEquip, maxSlots, getItemChoices, getRelicChoices,
+    cyclePriority,
   };
 })(window.MT);
