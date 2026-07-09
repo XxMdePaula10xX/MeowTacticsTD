@@ -33,7 +33,8 @@ for f, (sz, ismap) in UI_SIZE.items():
     if os.path.exists(fp): assets['assets/ui/' + f] = data_uri_png(fp, sz, is_map=ismap)
 
 # ---- css ----
-css = open(p('styles', 'tokens.css')).read() + '\n' + open(p('styles', 'ui.css')).read()
+css = (open(p('styles', 'tokens.css')).read() + '\n' + open(p('styles', 'ui.css')).read()
+       + '\n' + open(p('styles', 'polish.css')).read())
 
 # ---- js (ordem) ----
 JS_ORDER = ['src/data/gamedata.js', 'src/util.js', 'src/rules.js', 'src/game.js',

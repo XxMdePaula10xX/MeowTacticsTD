@@ -278,9 +278,10 @@
   function damageEnemy(en, cat) {
     const h = R.computeHit(cat, en);
     en.hp -= h.dmg; en.hit = 0.14;
+    cat.dmgDealt = (cat.dmgDealt || 0) + h.dmg;
     addFloat(en.x, en.y - 0.35, Math.round(h.dmg), cat.cur.type, h.crit);
     if (en.hp > 0 && cat.cur.truePerHit > 0) {
-      en.hp -= cat.cur.truePerHit; addFloat(en.x + 0.15, en.y - 0.15, cat.cur.truePerHit, 'true', false);
+      en.hp -= cat.cur.truePerHit; cat.dmgDealt += cat.cur.truePerHit; addFloat(en.x + 0.15, en.y - 0.15, cat.cur.truePerHit, 'true', false);
     }
     if (cat.cur.slow > 0) { en.slowT = cat.cur.slowDur; en.slowAmt = cat.cur.slow; }
     if (en.hp <= 0) killEnemy(en);

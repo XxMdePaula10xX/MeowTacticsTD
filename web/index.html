@@ -8,14 +8,21 @@
   <title>Meow Tactics TD</title>
   <link rel="stylesheet" href="styles/tokens.css">
   <link rel="stylesheet" href="styles/ui.css">
+  <link rel="stylesheet" href="styles/polish.css">
 </head>
 <body>
   <div id="app">
     <header class="hud">
       <div class="title">🐾 <span>Meow Tactics</span> <small>TD</small></div>
-      <div class="chip lives"><img class="ico-img" id="icoLife" alt="vidas"><span id="lives">20</span></div>
-      <div class="chip coins"><img class="ico-img" id="icoCoin" alt="moedas"><span id="coins">7</span></div>
-      <div class="chip wave"><span class="ico">🌊</span><span id="wave">1/50</span></div>
+      <div class="hud-group">
+        <div class="chip lives" data-tip="lives"><img class="ico-img" id="icoLife" alt="vidas"><span id="lives">20</span></div>
+        <div class="chip coins" data-tip="coins"><img class="ico-img" id="icoCoin" alt="moedas"><span id="coins">7</span></div>
+      </div>
+      <div class="hud-group right">
+        <div class="chip wave" data-tip="wave"><span class="ico">🌊</span><span id="wave">1/50</span></div>
+        <button class="chip speed" id="speedBtn" data-tip="speed">⏩ 1×</button>
+      </div>
+      <div class="coin-float" id="coinFloat"></div>
     </header>
 
     <div class="board-wrap">
@@ -34,11 +41,16 @@
     </div>
 
     <div class="dock">
-      <div class="bench-rail" id="bench"></div>
-      <div class="shop-rail" id="shop"></div>
+      <div class="dock-section bench-sec">
+        <span class="dock-label">BANCO</span>
+        <div class="bench-rail" id="bench"></div>
+      </div>
+      <div class="dock-section shop-sec">
+        <span class="dock-label">LOJA <em id="shopHint"></em></span>
+        <div class="shop-rail" id="shop"></div>
+      </div>
       <div class="controls">
-        <button class="btn ghost" id="rerollBtn">🎲 2</button>
-        <button class="btn ghost" id="speedBtn">1×</button>
+        <button class="btn ghost reroll" id="rerollBtn" data-tip="reroll">🎲 2</button>
         <button class="btn start" id="startBtn">⚔️ INICIAR ONDA</button>
       </div>
     </div>
@@ -70,6 +82,7 @@
         </div>
       </div>
       <div class="menu-records" id="menuRecords"></div>
+      <button class="ui-guide-link" id="btnStyle">🎨 UI Style Guide</button>
     </div>
   </div>
 
@@ -108,8 +121,25 @@
     <div class="big" id="endTitle">VITÓRIA!</div>
     <div class="sub" id="endSub"></div>
     <div class="end-stats" id="endStats"></div>
-    <div class="menu-btns"><button class="btn primary" id="btnAgain">▸ MENU PRINCIPAL</button></div>
+    <div class="end-extra" id="endExtra"></div>
+    <div class="menu-btns">
+      <button class="btn primary" id="btnReplay">🔁 JOGAR NOVAMENTE</button>
+      <div class="menu-row">
+        <button class="btn alt" id="btnMaps">🗺️ MAPAS</button>
+        <button class="btn ghost" id="btnAgain">☰ MENU</button>
+      </div>
+    </div>
   </div>
+
+  <!-- STYLE GUIDE -->
+  <div class="screen hide" id="styleguide">
+    <div class="screen-title">🎨 UI STYLE GUIDE</div>
+    <div class="sg-body" id="sgBody"></div>
+    <button class="link-back" id="sgBack">◂ Voltar</button>
+  </div>
+
+  <!-- TOOLTIP -->
+  <div class="tip hide" id="tip"></div>
 
   <script src="src/data/gamedata.js"></script>
   <script src="src/util.js"></script>

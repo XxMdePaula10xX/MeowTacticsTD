@@ -168,20 +168,39 @@
   function drawEnemies() {
     for (const en of MT.game.enemies) {
       if (en.d < 0) continue;
-      const x = W(en.x), y = H(en.y), big = en.boss ? 1.5 : 1;
-      ctx.save(); ctx.translate(x, y);
-      ctx.fillStyle = 'rgba(0,0,0,.3)';
-      ctx.beginPath(); ctx.ellipse(0, 0.16 * cam.U * big, 0.26 * cam.U * big, 0.13 * cam.U * big, 0, 0, 7); ctx.fill();
-      if (en.hit > 0) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 18; }
-      if (en.slowT > 0) { ctx.shadowColor = '#7fd0ff'; ctx.shadowBlur = 14; }
+      const x = W(en.x), y = H(en.y), big = en.boss ? 1.5 : 1, Sz = 0.56 * big;
+      // rastro nos velozes
+      if (en.data.speed >= 1.5 && en.slowT <= 0) {
+        for (let k = 1; k <= 2; k++) {
+          const p = MT.api.posAlong(en.laneIdx, Math.max(0, en.d - k * 0.3));
+          ctx.globalAlpha = 0.18 / k; drawUnitSprite(en.data.sprite, p.x, p.y, Sz, en.data); ctx.globalAlpha = 1;
+        }
+      }
+      // sombra sob o personagem
+      ctx.fillStyle = 'rgba(0,0,0,.34)';
+      ctx.beginPath(); ctx.ellipse(x, y + 0.17 * cam.U * big, 0.26 * cam.U * big, 0.12 * cam.U * big, 0, 0, 7); ctx.fill();
+      // aura por tipo (boss dourado, mágico roxo, blindado aço)
+      let aura = null, ring = false;
+      if (en.boss) aura = 'rgba(255,210,79,.9)';
+      else if (en.data.mr >= 30) aura = 'rgba(185,140,255,.9)';
+      else if (en.data.armor >= 30) { aura = 'rgba(170,190,220,.9)'; ring = true; }
+      if (aura) {
+        if (ring) { ctx.strokeStyle = aura; ctx.lineWidth = 2; ctx.globalAlpha = .8; ctx.beginPath(); ctx.arc(x, y, 0.32 * big * cam.U, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+        else { ctx.globalAlpha = 0.16; ctx.fillStyle = aura; ctx.beginPath(); ctx.arc(x, y, 0.42 * big * cam.U, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+      }
+      // sprite com glow de estado
+      ctx.save();
+      if (en.hit > 0) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 20; }
+      else if (en.slowT > 0) { ctx.shadowColor = '#7fd0ff'; ctx.shadowBlur = 14; }
+      else if (aura && !ring) { ctx.shadowColor = aura; ctx.shadowBlur = 12 * big; }
+      drawUnitSprite(en.data.sprite, en.x, en.y, Sz, en.data);
       ctx.restore();
-      drawUnitSprite(en.data.sprite, en.x, en.y, 0.56 * big, en.data);
-      // barra de vida
-      if (en.hp < en.hpMax) {
-        const w = 0.56 * cam.U * big, hp = Math.max(0, en.hp / en.hpMax);
-        const bx = x - w / 2, by = y - 0.34 * cam.U * big;
-        ctx.fillStyle = 'rgba(0,0,0,.55)'; rr(bx - 1, by - 1, w + 2, 6, 3); ctx.fill();
-        ctx.fillStyle = hp > 0.5 ? '#4fc76e' : hp > 0.25 ? '#ffd24f' : '#ee6b6e'; rr(bx, by, w * hp, 4, 2); ctx.fill();
+      // barra de vida (boss mais destacada)
+      if (en.hp < en.hpMax || en.boss) {
+        const w = (en.boss ? 0.9 : 0.56) * cam.U * big, hp = Math.max(0, en.hp / en.hpMax);
+        const bx = x - w / 2, by = y - (en.boss ? 0.44 : 0.34) * cam.U * big, h = en.boss ? 6 : 4;
+        ctx.fillStyle = 'rgba(0,0,0,.6)'; rr(bx - 1, by - 1, w + 2, h + 2, 3); ctx.fill();
+        ctx.fillStyle = hp > 0.5 ? '#4fc76e' : hp > 0.25 ? '#ffd24f' : '#ee6b6e'; rr(bx, by, w * hp, h, 2); ctx.fill();
       }
     }
   }
@@ -200,12 +219,14 @@
     for (const f of MT.game.floats) {
       const a = Math.max(0, f.life / 0.8), x = W(f.x), y = H(f.y);
       ctx.globalAlpha = a;
-      const sz = (f.crit ? 0.34 : 0.26) * cam.U;
+      const sz = (f.crit ? 0.40 : 0.26) * cam.U;
       ctx.font = '900 ' + sz + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = DMGCOL[f.type] || '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3;
-      const txt = (f.crit ? '' : '') + f.val;
+      ctx.fillStyle = f.crit ? '#ffd24f' : (DMGCOL[f.type] || '#fff');
+      ctx.strokeStyle = f.crit ? 'rgba(120,20,20,.9)' : 'rgba(0,0,0,.6)'; ctx.lineWidth = f.crit ? 4 : 3;
+      const txt = (f.crit ? '✦' : '') + f.val;
+      if (f.crit) { ctx.shadowColor = 'rgba(255,210,79,.8)'; ctx.shadowBlur = 10; }
       ctx.strokeText(txt, x, y); ctx.fillText(txt, x, y);
-      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
   }
   function drawParts() {
