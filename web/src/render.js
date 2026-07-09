@@ -150,8 +150,11 @@
       ctx.save(); ctx.translate(x, y);
       ctx.fillStyle = 'rgba(0,0,0,.28)';
       ctx.beginPath(); ctx.ellipse(0, 0.16 * cam.U, 0.32 * cam.U, 0.16 * cam.U, 0, 0, 7); ctx.fill();
+      const dragging = MT.input && MT.input.dragging === cat;
+      const dok = !dragging || MT.api.placeValid(cat.x, cat.y, cat);
       ctx.fillStyle = 'rgba(43,40,86,.95)';
-      ctx.strokeStyle = sel ? '#ffd24f' : 'rgba(255,210,79,.5)'; ctx.lineWidth = sel ? 3 : 2;
+      ctx.strokeStyle = sel ? '#ffd24f' : dragging ? (dok ? '#4fc76e' : '#ee6b6e') : 'rgba(255,210,79,.5)';
+      ctx.lineWidth = (sel || dragging) ? 3 : 2;
       ctx.beginPath(); ctx.arc(0, 0, 0.34 * cam.U, 0, 7); ctx.fill(); ctx.stroke();
       // seta de direção
       ctx.rotate(cat.ang); ctx.fillStyle = '#ffd24f';

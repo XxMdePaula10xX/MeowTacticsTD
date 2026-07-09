@@ -136,12 +136,14 @@
   // ---------- COLOCAÇÃO ----------
   function pick(cat, from) { game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
   function deselect() { game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
-  function placeValid(wx, wy) {
+  function placeValid(wx, wy, except) {
+    except = except || (game.selected && game.selected.cat) || null;
     if (wx < -11.6 || wx > 11.6 || wy < -6.2 || wy > 6.2) return false;
     if (distToPaths(wx, wy) < 0.75) return false;
-    for (const c of game.board) if (game.selected && c !== game.selected.cat && U.dist(c.x, c.y, wx, wy) < 0.85) return false;
+    for (const c of game.board) if (c !== except && U.dist(c.x, c.y, wx, wy) < 0.85) return false;
     return true;
   }
+  function repositionCat(cat, wx, wy) { cat.x = wx; cat.y = wy; cat.pop = 0.7; recompute(); saveNow(); }
   function placeAt(wx, wy) {
     if (game.phase !== 'prep' || !game.selected) return;
     if (!placeValid(wx, wy)) { toast('Local inválido (perto do caminho/gato)'); SFXerr(); return; }
@@ -461,6 +463,6 @@
     newRun, update, buy, reroll, sell, pick, deselect, placeAt, selectBoard,
     startWave, recompute, resolveMap, distToPaths, placeValid, posAlong, addCoins,
     takeItem, takeRelic, equipItem, canEquip, maxSlots, getItemChoices, getRelicChoices,
-    cyclePriority,
+    cyclePriority, repositionCat,
   };
 })(window.MT);

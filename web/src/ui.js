@@ -232,7 +232,7 @@
       if (grew && i === count - 1) slot.classList.add('lit');
       slot.innerHTML = '<img src="' + asset(cat.data.sprite) + '" alt="" draggable="false">' +
         '<span class="mini-badge ' + cat.data.type + '">' + SYM[cat.data.type] + '</span>';
-      slot.addEventListener('click', () => { if (MT.game.phase !== 'prep') return; if (g.selected && g.selected.cat === cat) MT.api.deselect(); else MT.api.pick(cat, 'bench'); });
+      slot.addEventListener('pointerdown', (e) => { if (MT.game.phase !== 'prep') return; e.preventDefault(); MT.input.beginBenchDrag(cat, e); });
       wrap.appendChild(slot);
     }
     lastBench = count;
