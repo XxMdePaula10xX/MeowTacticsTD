@@ -1,0 +1,6 @@
+# Artefatos gerados no build (Capacitor / npm / CI)
+node_modules/
+www/
+ios/
+android/
+package-lock.json

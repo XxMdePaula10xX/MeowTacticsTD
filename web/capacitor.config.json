@@ -1,7 +1,7 @@
 {
   "appId": "com.meowtactics.td",
   "appName": "Meow Tactics",
-  "webDir": ".",
+  "webDir": "www",
   "server": { "iosScheme": "meowtactics" },
   "ios": { "contentInset": "always", "backgroundColor": "#0f1020" },
   "backgroundColor": "#0f1020"

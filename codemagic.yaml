@@ -1,0 +1,73 @@
+# Codemagic CI/CD — build iOS do Meow Tactics (Capacitor) e envio ao TestFlight.
+# Requisitos (feitos no painel do Codemagic / App Store Connect):
+#   1. Integração App Store Connect API key com o nome "quantum_asc" (Key 4UQMCZZJ95).
+#   2. Um app criado no App Store Connect com o Bundle ID com.meowtactics.td.
+#   3. A API key com papel "App Manager" (para subir ao TestFlight).
+# Team ID: 249VTHN4GQ
+workflows:
+  ios-testflight:
+    name: Meow Tactics — iOS (TestFlight)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: quantum_asc
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.meowtactics.td
+      vars:
+        BUNDLE_ID: "com.meowtactics.td"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Instalar dependências (Capacitor)
+        script: |
+          cd web
+          npm install
+      - name: Montar a pasta web (www) sem node_modules
+        script: |
+          cd web
+          rm -rf www && mkdir www
+          cp -R index.html src styles assets www/
+      - name: Adicionar/sincronizar plataforma iOS
+        script: |
+          cd web
+          npx cap add ios
+          npx cap sync ios
+      - name: Gerar ícone e splash a partir de resources/
+        script: |
+          cd web
+          npx @capacitor/assets generate --assetPath resources --ios \
+            --iconBackgroundColor '#0f1020' --splashBackgroundColor '#0f1020' || true
+      - name: Travar orientação em paisagem (landscape)
+        script: |
+          cd web/ios/App/App
+          plutil -replace UISupportedInterfaceOrientations -json \
+            '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist
+          plutil -replace "UISupportedInterfaceOrientations~ipad" -json \
+            '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist || true
+      - name: Aplicar perfis de assinatura (da API key)
+        script: |
+          cd web
+          xcode-project use-profiles
+      - name: Definir número do build
+        script: |
+          cd web/ios/App
+          agvtool new-version -all "${BUILD_NUMBER:-1}"
+      - name: Compilar o .ipa
+        script: |
+          cd web
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - web/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - web/ios/App/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
