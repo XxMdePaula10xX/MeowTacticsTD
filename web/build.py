@@ -24,7 +24,13 @@ for f in os.listdir(p('assets', 'cats')):
 for f in os.listdir(p('assets', 'enemies')):
     if f.endswith('.png'): assets['assets/enemies/' + f] = data_uri_png(p('assets', 'enemies', f), 140)
 for f in os.listdir(p('assets', 'maps')):
-    if f.endswith('.png'): assets['assets/maps/' + f] = data_uri_png(p('assets', 'maps', f), 440, is_map=True)
+    if f.endswith('.png'): assets['assets/maps/' + f] = data_uri_png(p('assets', 'maps', f), 640, is_map=True)
+# UI: fundo do menu (grande) + ícones (pequenos)
+UI_SIZE = {'menu_bg.png': (720, True), 'ui_moeda.png': (72, False), 'ui_vida.png': (72, False),
+           'ui_painel.png': (300, True), 'ui_botao.png': (300, True), 'app_icon.png': (256, False)}
+for f, (sz, ismap) in UI_SIZE.items():
+    fp = p('assets', 'ui', f)
+    if os.path.exists(fp): assets['assets/ui/' + f] = data_uri_png(fp, sz, is_map=ismap)
 
 # ---- css ----
 css = open(p('styles', 'tokens.css')).read() + '\n' + open(p('styles', 'ui.css')).read()

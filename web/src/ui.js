@@ -20,6 +20,17 @@
     refs.reroll.addEventListener('click', () => MT.api.reroll());
     refs.speed.addEventListener('click', () => { const g = MT.game; g.speed = g.speed === 1 ? 2 : g.speed === 2 ? 3 : 1; refs.speed.textContent = g.speed + '×'; });
 
+    // ícones de HUD (arte real)
+    const life = $('icoLife'), coin = $('icoCoin');
+    if (life) life.src = asset('assets/ui/ui_vida.png');
+    if (coin) coin.src = asset('assets/ui/ui_moeda.png');
+    // controles de zoom
+    const zc = MT.cam;
+    const bz = (id, fn) => { const b = $(id); if (b) b.addEventListener('click', fn); };
+    bz('zoomIn', () => zc.zoomBy(1.25));
+    bz('zoomOut', () => zc.zoomBy(0.8));
+    bz('zoomReset', () => zc.reset());
+
     // menu
     $('btnNormal').addEventListener('click', () => showMapSelect('normal'));
     $('btnEndless').addEventListener('click', () => showMapSelect('endless'));
@@ -35,6 +46,8 @@
   function show(id) { $(id).classList.remove('hide'); }
   function showMenu() {
     MT.game.phase = 'menu';
+    const m = $('menu');
+    m.style.backgroundImage = 'url(' + asset('assets/ui/menu_bg.png') + ')';
     show('menu'); hide('mapSelect'); hide('endScreen');
     const c = $('btnContinue'); c.style.display = MT.save.has() ? '' : 'none';
     // recordes no menu

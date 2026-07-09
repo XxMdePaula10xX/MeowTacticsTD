@@ -20,9 +20,17 @@ img { max-width: 100%; }
   border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); box-shadow: var(--shadow-sm);
   backdrop-filter: blur(8px); font-weight: 800; font-size: var(--t-md); font-variant-numeric: tabular-nums; line-height: 1; }
 .chip .ico { font-size: 16px; }
+.chip .ico-img { width: 18px; height: 18px; object-fit: contain; display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 .chip.lives { color: var(--red); }
 .chip.coins { color: var(--gold); }
 .chip.wave { color: var(--azure); margin-left: auto; }
+
+/* controles de zoom */
+.zoom-ctl { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
+.zoom-ctl button { width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass);
+  color: var(--ink); font-size: 20px; font-weight: 900; cursor: pointer; backdrop-filter: blur(8px); box-shadow: var(--shadow-sm); display: grid; place-items: center; line-height: 1; }
+.zoom-ctl button:active { transform: translateY(1px); }
+.zoom-ctl #zoomReset { font-size: 16px; }
 
 /* ---------- BOARD ---------- */
 .board-wrap { position: relative; flex: 1; min-height: 0; }
@@ -123,6 +131,20 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .logo { font-size: 60px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
 .big { font-weight: 900; font-size: var(--t-2xl); letter-spacing: .5px; text-wrap: balance; }
 .big .g { color: var(--gold); }
+
+/* ---------- MENU com key art ---------- */
+.menu-art { background-size: cover; background-position: center; justify-content: space-between; padding: 0; }
+.menu-scrim { position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(180deg, rgba(9,9,20,.78) 0%, rgba(9,9,20,.15) 30%, rgba(9,9,20,.12) 55%, rgba(9,9,20,.85) 82%, rgba(9,9,20,.96) 100%); }
+.menu-top { position: relative; z-index: 1; text-align: center; padding: calc(28px + env(safe-area-inset-top,0)) 20px 0; }
+.menu-top .big { font-size: clamp(26px, 7vw, 40px); text-shadow: 0 3px 18px rgba(0,0,0,.7); }
+.menu-top .sub { margin: 6px auto 0; text-shadow: 0 2px 8px rgba(0,0,0,.8); }
+.menu-bottom { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  width: 100%; padding: 0 20px calc(24px + env(safe-area-inset-bottom,0)); }
+.menu-bottom .legend { text-shadow: 0 2px 6px rgba(0,0,0,.9); }
+.menu-btns { width: min(340px, 86vw); }
+.menu-row { display: flex; gap: 10px; }
+.menu-row .btn { flex: 1; }
 .sub { color: var(--ink-dim); font-weight: 600; font-size: var(--t-sm); max-width: 34ch; line-height: 1.5; }
 .menu-btns { display: flex; flex-direction: column; gap: 10px; width: min(320px, 84vw); margin-top: 6px; }
 .menu-btns .btn { width: 100%; }

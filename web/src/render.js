@@ -11,7 +11,7 @@
     const im = imgs[path];
     return (im.complete && im.naturalWidth) ? im : null;
   }
-  MT.preload = function () { MT.DATA.cats.forEach(c => img(c.sprite)); MT.DATA.enemies.forEach(e => img(e.sprite)); };
+  MT.preload = function () { MT.DATA.cats.forEach(c => img(c.sprite)); MT.DATA.enemies.forEach(e => img(e.sprite)); MT.DATA.maps.forEach(m => img(m.bg)); };
 
   // temas de chão por mapa
   const THEME = {
@@ -50,18 +50,33 @@
   function H(wy) { return cam.sy(wy); }
 
   function drawField() {
-    const th = THEME[MT.game.mapId] || THEME.jardim;
-    // fundo geral
-    ctx.fillStyle = th.b; ctx.fillRect(0, 0, cam.w, cam.h);
-    // xadrez sutil dentro da vista de mundo
-    const step = 1; // 1 unidade
-    for (let gx = -12; gx < 12; gx += step) {
-      for (let gy = -6; gy < 7; gy += step) {
-        const on = (((gx + 24) + (gy + 12)) & 1) === 0;
-        ctx.fillStyle = on ? th.a : th.b;
-        ctx.fillRect(W(gx), H(gy + step), cam.U * step + 1, cam.U * step + 1);
-      }
+    const g = MT.game, A = cam.ART;
+    const bg = g.map ? img(g.map.bg) : null;
+    // fundo ambiente (cobre o tabuleiro inteiro, escurecido — preenche as bordas)
+    if (bg) {
+      coverDraw(bg, 0, 0, cam.w, cam.h);
+      ctx.fillStyle = 'rgba(9,9,20,.62)'; ctx.fillRect(0, 0, cam.w, cam.h);
+    } else {
+      const th = THEME[g.mapId] || THEME.jardim;
+      ctx.fillStyle = th.b; ctx.fillRect(0, 0, cam.w, cam.h);
     }
+    // arte principal, alinhada ao mundo (segue zoom/pan). Aqui os caminhos batem.
+    if (bg) {
+      const x = W(-A.hw), y = H(A.hh), w = 2 * A.hw * cam.U, h = 2 * A.hh * cam.U;
+      // moldura suave
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 18;
+      ctx.drawImage(bg, x, y, w, h);
+      ctx.restore();
+    }
+  }
+  // desenha uma imagem cobrindo (dx,dy,dw,dh) preservando proporção (cover)
+  function coverDraw(im, dx, dy, dw, dh) {
+    const ir = im.width / im.height, dr = dw / dh;
+    let sw = im.width, sh = im.height, sx = 0, sy = 0;
+    if (ir > dr) { sw = im.height * dr; sx = (im.width - sw) / 2; }
+    else { sh = im.width / dr; sy = (im.height - sh) / 2; }
+    ctx.drawImage(im, sx, sy, sw, sh, dx, dy, dw, dh);
   }
 
   function tracePath(lane) {
@@ -71,25 +86,28 @@
   }
   function drawPaths(t) {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    for (const lane of MT.game.lanes) {
-      ctx.strokeStyle = '#4a4368'; ctx.lineWidth = 0.66 * cam.U; tracePath(lane); ctx.stroke();
-      ctx.strokeStyle = '#3b3550'; ctx.lineWidth = 0.52 * cam.U; tracePath(lane); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,.10)'; ctx.lineWidth = 0.5 * cam.U;
-      ctx.setLineDash([6, 20]); ctx.lineDashOffset = -(t * 46) % 26; tracePath(lane); ctx.stroke(); ctx.setLineDash([]);
+    if (MT.DEBUG_PATH) {
+      for (const lane of MT.game.lanes) { ctx.strokeStyle = '#ff3b6b'; ctx.lineWidth = 3; tracePath(lane); ctx.stroke(); }
     }
-    // marcadores de entrada/saída
-    for (const lane of MT.game.lanes) {
-      marker(lane[0].x, lane[0].y, '#b98cff', '🕳️', t);
-      marker(lane[lane.length - 1].x, lane[lane.length - 1].y, '#ee6b6e', '🏰', t);
+    // trilha de fluxo sutil (pontos que correm no sentido do movimento) sobre a arte
+    for (let li = 0; li < MT.game.lanes.length; li++) {
+      const lane = MT.game.lanes[li], L = MT.game.laneLen[li];
+      const spacing = 1.1, speed = 1.6;
+      const off = (t * speed) % spacing;
+      for (let d = off; d < L; d += spacing) {
+        const p = MT.api.posAlong(li, d);
+        const x = W(p.x), y = H(p.y);
+        ctx.fillStyle = 'rgba(255,225,150,.35)';
+        ctx.beginPath(); ctx.arc(x, y, 0.07 * cam.U, 0, 7); ctx.fill();
+      }
     }
-  }
-  function marker(wx, wy, color, glyph, t) {
-    const x = W(wx), y = H(wy), pulse = 0.5 + 0.5 * Math.sin(t * 3);
-    ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 12 + pulse * 10;
-    ctx.globalAlpha = 0.25; ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(x, y, 0.42 * cam.U, 0, 7); ctx.fill(); ctx.restore();
-    ctx.font = (0.6 * cam.U) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(glyph, x, y);
+    // brilho suave na entrada de cada caminho
+    for (const lane of MT.game.lanes) {
+      const x = W(lane[0].x), y = H(lane[0].y), pulse = 0.5 + 0.5 * Math.sin(t * 3);
+      ctx.save(); ctx.shadowColor = '#b98cff'; ctx.shadowBlur = 10 + pulse * 12;
+      ctx.globalAlpha = 0.3; ctx.fillStyle = '#b98cff';
+      ctx.beginPath(); ctx.arc(x, y, 0.22 * cam.U, 0, 7); ctx.fill(); ctx.restore();
+    }
   }
 
   function drawRange(cat) {

@@ -341,6 +341,7 @@
     game.bench = []; game.board = []; game.inventory = [];
     game.enemies = []; game.shots = []; game.floats = []; game.parts = [];
     game.selected = null; game.phase = 'prep';
+    if (MT.cam) MT.cam.reset();
     generateShop(); recompute();
     banner('DEFENDA O REINO 🏰', 'Compre um gato e posicione no gramado');
   }
