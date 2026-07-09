@@ -122,6 +122,22 @@
 .sg-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
 .sg-sw { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); }
 
+/* ---------- Loja/banco travados durante a onda ---------- */
+.dock.wave-lock .shop-rail, .dock.wave-lock .bench-rail { opacity: .5; filter: saturate(.6); pointer-events: none; }
+
+/* ---------- Aviso: gire o dispositivo (retrato) ---------- */
+.rotate-hint { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; text-align: center; padding: 24px; background: radial-gradient(80% 60% at 50% 45%, #191a35, var(--bg-deep)); color: var(--ink); }
+.rotate-hint .rot-emoji { font-size: 62px; animation: rotateWiggle 2.4s ease-in-out infinite; }
+.rotate-hint .rot-title { font-weight: 900; font-size: 22px; letter-spacing: .5px; }
+@keyframes rotateWiggle { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(78deg); } }
+@media (orientation: portrait) and (max-width: 860px) { .rotate-hint { display: flex; } }
+/* segurança: encolhe painéis em landscape muito estreito para não sobreporem */
+@media (max-width: 620px) {
+  .synergy-panel { width: 150px; max-width: 150px; padding: 6px 8px; }
+  .sel-panel { width: 188px; }
+}
+
 /* ---------- Resultado ---------- */
 .end-extra { display: flex; flex-direction: column; gap: 6px; align-items: center; margin-top: 4px; }
 .end-best { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--gold); border-radius: 12px; padding: 8px 12px; }

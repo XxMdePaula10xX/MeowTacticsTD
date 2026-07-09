@@ -101,14 +101,14 @@
     game.shop[slot] = null;
     MT.stats && MT.stats.add('catsBought', 1);
     MT.sfx && MT.sfx.play('place');
-    recompute();
+    recompute(); saveNow();
   }
   function reroll() {
     if (game.phase !== 'prep') return;
     if (!canAfford(B.rerollCost)) { toast('Moedas insuficientes'); SFXerr(); return; }
     game.coins -= B.rerollCost; generateShop();
     MT.sfx && MT.sfx.play('coin'); MT.stats && MT.stats.add('rerolls', 1);
-    recompute();
+    recompute(); saveNow();
   }
   function SFXerr() { MT.sfx && MT.sfx.play('error'); }
   function sell(cat) {
@@ -117,7 +117,7 @@
     for (const it of cat.items) game.inventory.push(it); // itens voltam ao inventário
     removeCat(cat);
     if (game.selected && game.selected.cat === cat) game.selected = null;
-    recompute();
+    recompute(); saveNow();
   }
   function removeCat(cat) {
     let i = game.board.indexOf(cat); if (i >= 0) game.board.splice(i, 1);
@@ -227,10 +227,10 @@
     game.inventory.splice(idx, 1);
     cat.items.push(itemId);
     MT.stats && MT.stats.add('itemsEquipped', 1);
-    recompute();
+    recompute(); saveNow();
     return true;
   }
-  function takeItem(itemId) { game.inventory.push(itemId); game.pendingDraft = null; recompute(); }
+  function takeItem(itemId) { game.inventory.push(itemId); game.pendingDraft = null; recompute(); saveNow(); }
 
   const RELIC_FX = {
     claws: r => r.catDmg += 25, eagle: r => r.catRange += 25, reflex: r => r.catAtkSpd += 25,
@@ -249,7 +249,7 @@
     if (fx) fx(game.run);
     game.run.takenRelics.push(relicId);
     game.pendingDraft = null;
-    recompute();
+    recompute(); saveNow();
   }
 
   // ---------- COMBATE ----------
@@ -316,6 +316,7 @@
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(true);
   }
   function lose() {
+    if (game.phase === 'over' || game.phase === 'win') return; // evita disparo múltiplo no mesmo frame
     game.phase = 'over'; game.waveRunning = false; shakeCam(0.4, 0.5);
     recordBest(); MT.save && MT.save.clear && MT.save.clear();
     MT.sfx && MT.sfx.play('lose'); checkAch();
@@ -406,9 +407,11 @@
   }
 
   // ---------- NOVA RUN ----------
-  function newRun(mode, mapId) {
+  function newRun(mode, mapId, opts) {
+    opts = opts || {};
     game.mode = mode || 'normal';
-    MT.stats && MT.stats.add('games', 1); MT.sfx && MT.sfx.resume();
+    if (!opts.restoring) MT.stats && MT.stats.add('games', 1);
+    MT.sfx && MT.sfx.resume();
     game.run = defaultRun();
     if (game.mode === 'daily') MT.daily && MT.daily.apply && MT.daily.apply(game.run);
     resolveMap(game.mode === 'daily' && MT.daily ? MT.daily.mapId() : (mapId || 'jardim'));
@@ -418,11 +421,17 @@
     game.bench = []; game.board = []; game.inventory = [];
     game.enemies = []; game.shots = []; game.floats = []; game.parts = [];
     game.selected = null; game.phase = 'prep'; game.pendingDraft = null;
+    // zera TODO o estado de onda (senão startWave pode ficar travado por waveRunning obsoleto)
+    game.waveRunning = false; game.finishedSpawning = false; game.spawnQueue = [];
+    game.aliveCount = 0; game.removedThisWave = 0; game.enemiesTotal = 0; game.spawnTimer = 0; game.curWave = null;
+    game.freshRun = true; // faz o HUD ignorar o delta de moedas da run anterior
     if (MT.cam) MT.cam.reset();
     generateShop(); recompute();
+    if (opts.restoring) return; // Continuar restaura o estado real depois; sem banner nova-run
     if (game.mode === 'daily' && MT.daily) banner('📅 ' + MT.daily.name(), MT.daily.desc());
     else banner('DEFENDA O REINO 🏰', 'Compre um gato e posicione no gramado');
   }
+  function saveNow() { if (game.mode === 'normal') MT.save && MT.save.write && MT.save.write(); }
 
   MT.game = game;
   MT.api = {

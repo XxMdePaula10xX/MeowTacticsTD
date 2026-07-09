@@ -62,7 +62,7 @@
     $('btnMaps').addEventListener('click', () => { hide('endScreen'); showMapSelect(MT.game.mode === 'daily' ? 'normal' : MT.game.mode); });
     updateSoundLabel();
     // tooltips (hover no desktop; toque fixa por alguns segundos)
-    document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
+    document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { unpinTip(); const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
     document.addEventListener('mouseout', e => { if (e.target.closest && e.target.closest('[data-tip]')) tipHide(); });
   }
 
@@ -130,6 +130,7 @@
   function refresh() {
     const g = MT.game;
     if (g.phase === 'menu') return;
+    if (g.freshRun) { lastCoins = null; lastLives = null; g.freshRun = false; } // run nova: sem delta falso
     // feedback de economia (pop + flutuante +X/-X)
     if (lastCoins != null && g.coins !== lastCoins) { bumpChip('coins'); coinFloat(g.coins - lastCoins); }
     if (lastLives != null && g.lives !== lastLives && g.lives < lastLives) bumpChip('lives');
@@ -145,7 +146,8 @@
     refs.reroll.textContent = '🎲 ' + B.rerollCost;
     refs.reroll.disabled = running || g.coins < B.rerollCost;
     refs.hint.classList.toggle('show', !!(g.selected && g.selected.kind === 'bench'));
-    document.querySelector('.dock') && document.querySelector('.dock').classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench'));
+    const dock = document.querySelector('.dock');
+    if (dock) { dock.classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench')); dock.classList.toggle('wave-lock', running); }
     const sh = $('shopHint'); if (sh) sh.textContent = '· reroll ' + B.rerollCost + '🪙';
 
     buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
@@ -183,6 +185,7 @@
         '<div class="cat-cost">🪙 ' + c.cost + '</div>' +
         '<div class="cat-tags">' + tags + '</div>';
       card.addEventListener('click', () => {
+        if (MT.game.phase !== 'prep') return; // loja travada durante a onda
         if (c.cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
         card.classList.add('pop'); MT.api.buy(i);
       });
@@ -204,7 +207,7 @@
       if (grew && i === count - 1) slot.classList.add('lit');
       slot.innerHTML = '<img src="' + asset(cat.data.sprite) + '" alt="" draggable="false">' +
         '<span class="mini-badge ' + cat.data.type + '">' + SYM[cat.data.type] + '</span>';
-      slot.addEventListener('click', () => { if (g.selected && g.selected.cat === cat) MT.api.deselect(); else MT.api.pick(cat, 'bench'); });
+      slot.addEventListener('click', () => { if (MT.game.phase !== 'prep') return; if (g.selected && g.selected.cat === cat) MT.api.deselect(); else MT.api.pick(cat, 'bench'); });
       wrap.appendChild(slot);
     }
     lastBench = count;
@@ -418,6 +421,7 @@
   function tipShow(html, x, y) { if (!html) return; const t = $('tip'); t.innerHTML = html; t.classList.remove('hide'); positionTip(x, y); }
   function tipHide() { if (tipPinned) return; $('tip').classList.add('hide'); }
   function pinTip(html, x, y) { tipPinned = false; tipShow(html, x, y); tipPinned = true; clearTimeout(tipTimer); tipTimer = setTimeout(() => { tipPinned = false; $('tip').classList.add('hide'); }, 2600); }
+  function unpinTip() { tipPinned = false; clearTimeout(tipTimer); }
 
   // ---------- STYLE GUIDE ----------
   function showStyleGuide() { hide('menu'); buildStyleGuide(); show('styleguide'); }
@@ -446,6 +450,8 @@
   // ---------- overlays por frame ----------
   function frameUI() {
     const g = MT.game;
+    // HUD ao vivo durante a partida (vidas/moedas mudam no combate sem passar por refresh)
+    if ((g.phase === 'wave' || g.phase === 'prep') && refs.lives) { refs.lives.textContent = g.lives; refs.coins.textContent = g.coins; }
     if (g.bannerT > 0 && g.banner) { refs.banner.querySelector('.b1').textContent = g.banner.t1; refs.banner.querySelector('.b2').textContent = g.banner.t2 || ''; refs.banner.classList.add('show'); }
     else refs.banner.classList.remove('show');
     if (g.toastT > 0) { refs.toast.textContent = g.toast; refs.toast.classList.add('show'); }

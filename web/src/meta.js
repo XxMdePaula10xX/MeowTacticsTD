@@ -41,7 +41,7 @@
       const raw = get(SKEY, null); if (!raw) return false;
       let d; try { d = JSON.parse(raw); } catch (e) { return false; }
       const g = MT.game;
-      MT.api.newRun('normal', d.mapId);
+      MT.api.newRun('normal', d.mapId, { restoring: true });
       if (d.run) Object.assign(g.run, d.run);
       g.coins = d.coins; g.lives = d.lives; g.waveIndex = d.waveIndex;
       g.bench = []; g.board = [];

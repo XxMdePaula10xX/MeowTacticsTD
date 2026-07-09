@@ -69,6 +69,11 @@
         single = null;
         if (e.pointerType !== 'mouse') input.hover = null;
       }
+      // Após uma pinça, o dedo que sobra reassume o controle (pan), sem virar toque.
+      if (!single && pointers.size === 1) {
+        const id = [...pointers.keys()][0], p = pointers.get(id);
+        single = { id, sx: p.x, sy: p.y, lastX: p.x, lastY: p.y, moved: true };
+      }
     }
     canvas.addEventListener('pointerup', up);
     canvas.addEventListener('pointercancel', up);

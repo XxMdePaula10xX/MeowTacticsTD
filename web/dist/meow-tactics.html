@@ -1,4 +1,7 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Meow Tactics TD</title>
 <style>
 /* Meow Tactics TD — Design tokens
@@ -417,6 +420,22 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .sg-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
 .sg-sw { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); }
 
+/* ---------- Loja/banco travados durante a onda ---------- */
+.dock.wave-lock .shop-rail, .dock.wave-lock .bench-rail { opacity: .5; filter: saturate(.6); pointer-events: none; }
+
+/* ---------- Aviso: gire o dispositivo (retrato) ---------- */
+.rotate-hint { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; text-align: center; padding: 24px; background: radial-gradient(80% 60% at 50% 45%, #191a35, var(--bg-deep)); color: var(--ink); }
+.rotate-hint .rot-emoji { font-size: 62px; animation: rotateWiggle 2.4s ease-in-out infinite; }
+.rotate-hint .rot-title { font-weight: 900; font-size: 22px; letter-spacing: .5px; }
+@keyframes rotateWiggle { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(78deg); } }
+@media (orientation: portrait) and (max-width: 860px) { .rotate-hint { display: flex; } }
+/* segurança: encolhe painéis em landscape muito estreito para não sobreporem */
+@media (max-width: 620px) {
+  .synergy-panel { width: 150px; max-width: 150px; padding: 6px 8px; }
+  .sel-panel { width: 188px; }
+}
+
 /* ---------- Resultado ---------- */
 .end-extra { display: flex; flex-direction: column; gap: 6px; align-items: center; margin-top: 4px; }
 .end-best { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--gold); border-radius: 12px; padding: 8px 12px; }
@@ -555,6 +574,13 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 
   <!-- TOOLTIP -->
   <div class="tip hide" id="tip"></div>
+
+  <!-- AVISO GIRAR (retrato) -->
+  <div class="rotate-hint" id="rotateHint">
+    <div class="rot-emoji">📱</div>
+    <div class="rot-title">Gire o dispositivo</div>
+    <div class="sub">Meow Tactics é jogado na horizontal (paisagem).</div>
+  </div>
 
 <script>
 /* src/data/gamedata.js */
@@ -2518,14 +2544,14 @@ window.MT = window.MT || {};
     game.shop[slot] = null;
     MT.stats && MT.stats.add('catsBought', 1);
     MT.sfx && MT.sfx.play('place');
-    recompute();
+    recompute(); saveNow();
   }
   function reroll() {
     if (game.phase !== 'prep') return;
     if (!canAfford(B.rerollCost)) { toast('Moedas insuficientes'); SFXerr(); return; }
     game.coins -= B.rerollCost; generateShop();
     MT.sfx && MT.sfx.play('coin'); MT.stats && MT.stats.add('rerolls', 1);
-    recompute();
+    recompute(); saveNow();
   }
   function SFXerr() { MT.sfx && MT.sfx.play('error'); }
   function sell(cat) {
@@ -2534,7 +2560,7 @@ window.MT = window.MT || {};
     for (const it of cat.items) game.inventory.push(it); // itens voltam ao inventário
     removeCat(cat);
     if (game.selected && game.selected.cat === cat) game.selected = null;
-    recompute();
+    recompute(); saveNow();
   }
   function removeCat(cat) {
     let i = game.board.indexOf(cat); if (i >= 0) game.board.splice(i, 1);
@@ -2644,10 +2670,10 @@ window.MT = window.MT || {};
     game.inventory.splice(idx, 1);
     cat.items.push(itemId);
     MT.stats && MT.stats.add('itemsEquipped', 1);
-    recompute();
+    recompute(); saveNow();
     return true;
   }
-  function takeItem(itemId) { game.inventory.push(itemId); game.pendingDraft = null; recompute(); }
+  function takeItem(itemId) { game.inventory.push(itemId); game.pendingDraft = null; recompute(); saveNow(); }
 
   const RELIC_FX = {
     claws: r => r.catDmg += 25, eagle: r => r.catRange += 25, reflex: r => r.catAtkSpd += 25,
@@ -2666,7 +2692,7 @@ window.MT = window.MT || {};
     if (fx) fx(game.run);
     game.run.takenRelics.push(relicId);
     game.pendingDraft = null;
-    recompute();
+    recompute(); saveNow();
   }
 
   // ---------- COMBATE ----------
@@ -2733,6 +2759,7 @@ window.MT = window.MT || {};
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(true);
   }
   function lose() {
+    if (game.phase === 'over' || game.phase === 'win') return; // evita disparo múltiplo no mesmo frame
     game.phase = 'over'; game.waveRunning = false; shakeCam(0.4, 0.5);
     recordBest(); MT.save && MT.save.clear && MT.save.clear();
     MT.sfx && MT.sfx.play('lose'); checkAch();
@@ -2823,9 +2850,11 @@ window.MT = window.MT || {};
   }
 
   // ---------- NOVA RUN ----------
-  function newRun(mode, mapId) {
+  function newRun(mode, mapId, opts) {
+    opts = opts || {};
     game.mode = mode || 'normal';
-    MT.stats && MT.stats.add('games', 1); MT.sfx && MT.sfx.resume();
+    if (!opts.restoring) MT.stats && MT.stats.add('games', 1);
+    MT.sfx && MT.sfx.resume();
     game.run = defaultRun();
     if (game.mode === 'daily') MT.daily && MT.daily.apply && MT.daily.apply(game.run);
     resolveMap(game.mode === 'daily' && MT.daily ? MT.daily.mapId() : (mapId || 'jardim'));
@@ -2835,11 +2864,17 @@ window.MT = window.MT || {};
     game.bench = []; game.board = []; game.inventory = [];
     game.enemies = []; game.shots = []; game.floats = []; game.parts = [];
     game.selected = null; game.phase = 'prep'; game.pendingDraft = null;
+    // zera TODO o estado de onda (senão startWave pode ficar travado por waveRunning obsoleto)
+    game.waveRunning = false; game.finishedSpawning = false; game.spawnQueue = [];
+    game.aliveCount = 0; game.removedThisWave = 0; game.enemiesTotal = 0; game.spawnTimer = 0; game.curWave = null;
+    game.freshRun = true; // faz o HUD ignorar o delta de moedas da run anterior
     if (MT.cam) MT.cam.reset();
     generateShop(); recompute();
+    if (opts.restoring) return; // Continuar restaura o estado real depois; sem banner nova-run
     if (game.mode === 'daily' && MT.daily) banner('📅 ' + MT.daily.name(), MT.daily.desc());
     else banner('DEFENDA O REINO 🏰', 'Compre um gato e posicione no gramado');
   }
+  function saveNow() { if (game.mode === 'normal') MT.save && MT.save.write && MT.save.write(); }
 
   MT.game = game;
   MT.api = {
@@ -2893,7 +2928,7 @@ window.MT = window.MT || {};
       const raw = get(SKEY, null); if (!raw) return false;
       let d; try { d = JSON.parse(raw); } catch (e) { return false; }
       const g = MT.game;
-      MT.api.newRun('normal', d.mapId);
+      MT.api.newRun('normal', d.mapId, { restoring: true });
       if (d.run) Object.assign(g.run, d.run);
       g.coins = d.coins; g.lives = d.lives; g.waveIndex = d.waveIndex;
       g.bench = []; g.board = [];
@@ -3298,6 +3333,11 @@ window.MT = window.MT || {};
         single = null;
         if (e.pointerType !== 'mouse') input.hover = null;
       }
+      // Após uma pinça, o dedo que sobra reassume o controle (pan), sem virar toque.
+      if (!single && pointers.size === 1) {
+        const id = [...pointers.keys()][0], p = pointers.get(id);
+        single = { id, sx: p.x, sy: p.y, lastX: p.x, lastY: p.y, moved: true };
+      }
     }
     canvas.addEventListener('pointerup', up);
     canvas.addEventListener('pointercancel', up);
@@ -3386,7 +3426,7 @@ window.MT = window.MT || {};
     $('btnMaps').addEventListener('click', () => { hide('endScreen'); showMapSelect(MT.game.mode === 'daily' ? 'normal' : MT.game.mode); });
     updateSoundLabel();
     // tooltips (hover no desktop; toque fixa por alguns segundos)
-    document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
+    document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { unpinTip(); const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
     document.addEventListener('mouseout', e => { if (e.target.closest && e.target.closest('[data-tip]')) tipHide(); });
   }
 
@@ -3454,6 +3494,7 @@ window.MT = window.MT || {};
   function refresh() {
     const g = MT.game;
     if (g.phase === 'menu') return;
+    if (g.freshRun) { lastCoins = null; lastLives = null; g.freshRun = false; } // run nova: sem delta falso
     // feedback de economia (pop + flutuante +X/-X)
     if (lastCoins != null && g.coins !== lastCoins) { bumpChip('coins'); coinFloat(g.coins - lastCoins); }
     if (lastLives != null && g.lives !== lastLives && g.lives < lastLives) bumpChip('lives');
@@ -3469,7 +3510,8 @@ window.MT = window.MT || {};
     refs.reroll.textContent = '🎲 ' + B.rerollCost;
     refs.reroll.disabled = running || g.coins < B.rerollCost;
     refs.hint.classList.toggle('show', !!(g.selected && g.selected.kind === 'bench'));
-    document.querySelector('.dock') && document.querySelector('.dock').classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench'));
+    const dock = document.querySelector('.dock');
+    if (dock) { dock.classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench')); dock.classList.toggle('wave-lock', running); }
     const sh = $('shopHint'); if (sh) sh.textContent = '· reroll ' + B.rerollCost + '🪙';
 
     buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
@@ -3507,6 +3549,7 @@ window.MT = window.MT || {};
         '<div class="cat-cost">🪙 ' + c.cost + '</div>' +
         '<div class="cat-tags">' + tags + '</div>';
       card.addEventListener('click', () => {
+        if (MT.game.phase !== 'prep') return; // loja travada durante a onda
         if (c.cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
         card.classList.add('pop'); MT.api.buy(i);
       });
@@ -3528,7 +3571,7 @@ window.MT = window.MT || {};
       if (grew && i === count - 1) slot.classList.add('lit');
       slot.innerHTML = '<img src="' + asset(cat.data.sprite) + '" alt="" draggable="false">' +
         '<span class="mini-badge ' + cat.data.type + '">' + SYM[cat.data.type] + '</span>';
-      slot.addEventListener('click', () => { if (g.selected && g.selected.cat === cat) MT.api.deselect(); else MT.api.pick(cat, 'bench'); });
+      slot.addEventListener('click', () => { if (MT.game.phase !== 'prep') return; if (g.selected && g.selected.cat === cat) MT.api.deselect(); else MT.api.pick(cat, 'bench'); });
       wrap.appendChild(slot);
     }
     lastBench = count;
@@ -3742,6 +3785,7 @@ window.MT = window.MT || {};
   function tipShow(html, x, y) { if (!html) return; const t = $('tip'); t.innerHTML = html; t.classList.remove('hide'); positionTip(x, y); }
   function tipHide() { if (tipPinned) return; $('tip').classList.add('hide'); }
   function pinTip(html, x, y) { tipPinned = false; tipShow(html, x, y); tipPinned = true; clearTimeout(tipTimer); tipTimer = setTimeout(() => { tipPinned = false; $('tip').classList.add('hide'); }, 2600); }
+  function unpinTip() { tipPinned = false; clearTimeout(tipTimer); }
 
   // ---------- STYLE GUIDE ----------
   function showStyleGuide() { hide('menu'); buildStyleGuide(); show('styleguide'); }
@@ -3770,6 +3814,8 @@ window.MT = window.MT || {};
   // ---------- overlays por frame ----------
   function frameUI() {
     const g = MT.game;
+    // HUD ao vivo durante a partida (vidas/moedas mudam no combate sem passar por refresh)
+    if ((g.phase === 'wave' || g.phase === 'prep') && refs.lives) { refs.lives.textContent = g.lives; refs.coins.textContent = g.coins; }
     if (g.bannerT > 0 && g.banner) { refs.banner.querySelector('.b1').textContent = g.banner.t1; refs.banner.querySelector('.b2').textContent = g.banner.t2 || ''; refs.banner.classList.add('show'); }
     else refs.banner.classList.remove('show');
     if (g.toastT > 0) { refs.toast.textContent = g.toast; refs.toast.classList.add('show'); }

@@ -53,7 +53,16 @@ html = open(p('index.html')).read()
 body = re.search(r'<body>(.*)</body>', html, re.S).group(1)
 body = re.sub(r'\s*<script src=[^>]+></script>', '', body)
 
-out = '<meta charset="utf-8">\n<title>Meow Tactics TD</title>\n<style>\n' + css + '\n</style>\n' + body + '\n<script>\n' + js + '\n</script>\n'
+# Preserva as <meta> da <head> original (charset, viewport, apple-web-app) para
+# o bundle NÃO divergir do index.html — sem isso, mobile renderiza em largura
+# desktop e a safe-area (env(...)) vira 0.
+head = re.search(r'<head>(.*)</head>', html, re.S).group(1)
+metas = re.findall(r'<meta[^>]+>', head)
+if not any('charset' in m for m in metas):
+    metas.insert(0, '<meta charset="utf-8">')
+head_out = '\n'.join(metas) + '\n<title>Meow Tactics TD</title>'
+
+out = head_out + '\n<style>\n' + css + '\n</style>\n' + body + '\n<script>\n' + js + '\n</script>\n'
 os.makedirs(p('dist'), exist_ok=True)
 open(p('dist', 'meow-tactics.html'), 'w').write(out)
 print('dist/meow-tactics.html:', len(out) // 1024, 'KB  |  assets:', len(assets))
