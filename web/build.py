@@ -7,15 +7,20 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.abspath(__file__))
 def p(*a): return os.path.join(ROOT, *a)
 
-def data_uri_png(path, size, is_map=False):
-    im = Image.open(path).convert('RGBA')
+def data_uri_png(path, size, is_map=False, jpeg=False, quality=80):
+    im = Image.open(path)
+    im = im.convert('RGB') if jpeg else im.convert('RGBA')
     if is_map:
         w = size; h = round(im.height * size / im.width)
         im = im.resize((w, h), Image.LANCZOS)
     else:
         im = im.resize((size, size), Image.LANCZOS)
-    buf = io.BytesIO(); im.save(buf, format='PNG', optimize=True)
-    return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+    buf = io.BytesIO()
+    if jpeg:
+        im.save(buf, format='JPEG', quality=quality, optimize=True); mime = 'image/jpeg'
+    else:
+        im.save(buf, format='PNG', optimize=True); mime = 'image/png'
+    return 'data:' + mime + ';base64,' + base64.b64encode(buf.getvalue()).decode()
 
 # ---- assets ----
 assets = {}
@@ -23,14 +28,15 @@ for f in os.listdir(p('assets', 'cats')):
     if f.endswith('.png'): assets['assets/cats/' + f] = data_uri_png(p('assets', 'cats', f), 140)
 for f in os.listdir(p('assets', 'enemies')):
     if f.endswith('.png'): assets['assets/enemies/' + f] = data_uri_png(p('assets', 'enemies', f), 140)
+# mapas: fotográficos (sem alpha) -> JPEG comprime muito melhor que PNG no bundle
 for f in os.listdir(p('assets', 'maps')):
-    if f.endswith('.png'): assets['assets/maps/' + f] = data_uri_png(p('assets', 'maps', f), 640, is_map=True)
-# UI: fundo do menu (grande) + ícones (pequenos)
-UI_SIZE = {'menu_bg.png': (720, True), 'ui_moeda.png': (72, False), 'ui_vida.png': (72, False),
-           'ui_painel.png': (300, True), 'ui_botao.png': (300, True), 'app_icon.png': (256, False)}
-for f, (sz, ismap) in UI_SIZE.items():
+    if f.endswith('.png'): assets['assets/maps/' + f] = data_uri_png(p('assets', 'maps', f), 760, is_map=True, jpeg=True, quality=82)
+# UI: fundo do menu (JPEG) + ícones/painéis (PNG com alpha)
+UI_SIZE = {'menu_bg.png': (760, True, True), 'ui_moeda.png': (72, False, False), 'ui_vida.png': (72, False, False),
+           'ui_painel.png': (300, True, False), 'ui_botao.png': (300, True, False), 'app_icon.png': (256, False, False)}
+for f, (sz, ismap, isjpg) in UI_SIZE.items():
     fp = p('assets', 'ui', f)
-    if os.path.exists(fp): assets['assets/ui/' + f] = data_uri_png(fp, sz, is_map=ismap)
+    if os.path.exists(fp): assets['assets/ui/' + f] = data_uri_png(fp, sz, is_map=ismap, jpeg=isjpg)
 
 # ---- css ----
 css = (open(p('styles', 'tokens.css')).read() + '\n' + open(p('styles', 'ui.css')).read()
