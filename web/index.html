@@ -24,6 +24,7 @@
       <div class="banner" id="banner"><div class="b1"></div><div class="b2"></div></div>
       <div class="toast" id="toast"></div>
       <aside class="synergy-panel" id="synPanel"></aside>
+      <div class="relic-strip" id="relicStrip"></div>
       <aside class="sel-panel hide" id="selPanel"></aside>
       <div class="zoom-ctl">
         <button id="zoomIn" aria-label="Aproximar">＋</button>
@@ -63,6 +64,10 @@
           <button class="btn alt" id="btnEndless">♾️ INFINITO</button>
           <button class="btn alt2" id="btnDaily">📅 DIÁRIO</button>
         </div>
+        <div class="menu-row">
+          <button class="btn ghost" id="btnCollection">📖 COLEÇÃO</button>
+          <button class="btn ghost" id="btnSound">🔊 SOM</button>
+        </div>
       </div>
       <div class="menu-records" id="menuRecords"></div>
     </div>
@@ -73,6 +78,28 @@
     <div class="screen-title" id="mapTitle">ESCOLHA O MAPA</div>
     <div class="map-list" id="mapList"></div>
     <button class="link-back" id="mapBack">◂ Voltar</button>
+  </div>
+
+  <!-- DRAFT (itens / relíquias) -->
+  <div class="draft hide" id="draft">
+    <div class="draft-box">
+      <div class="draft-title" id="draftTitle">ESCOLHA UMA RECOMPENSA</div>
+      <div class="draft-sub" id="draftSub"></div>
+      <div class="draft-cards" id="draftCards"></div>
+    </div>
+  </div>
+
+  <!-- COLEÇÃO -->
+  <div class="screen hide" id="collection">
+    <div class="screen-title">📖 COLEÇÃO</div>
+    <div class="coll-tabs" id="collTabs">
+      <button class="coll-tab active" data-tab="cats">Gatos</button>
+      <button class="coll-tab" data-tab="enemies">Inimigos</button>
+      <button class="coll-tab" data-tab="synergies">Sinergias</button>
+      <button class="coll-tab" data-tab="ach">Conquistas</button>
+    </div>
+    <div class="coll-body" id="collBody"></div>
+    <button class="link-back" id="collBack">◂ Voltar</button>
   </div>
 
   <!-- FIM DE JOGO -->
@@ -89,6 +116,7 @@
   <script src="src/rules.js"></script>
   <script src="src/game.js"></script>
   <script src="src/meta.js"></script>
+  <script src="src/sound.js"></script>
   <script src="src/render.js"></script>
   <script src="src/input.js"></script>
   <script src="src/ui.js"></script>

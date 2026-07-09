@@ -3,17 +3,24 @@
   'use strict';
   const U = MT.util, R = MT.rules, D = MT.DATA, B = MT.DATA.balance;
   const SYM = { phys: '▲', magic: '★', 'true': '◆' };
+  const ITEM_ICON = { claw: '🗡️', paw: '🐾', scope: '🔭', tiger: '🐯', piercer: '🔩', rune: '🔮', phantom: '👻',
+    frost: '❄️', herb: '💣', emblem_ninja: '🥷', emblem_sniper: '🎯', emblem_mystic: '✨' };
+  const RELIC_ICON = { claws: '⚔️', eagle: '🦅', reflex: '🐆', instinct: '🗡️', piercer: '🔩', rune: '📜', backpack: '🎒',
+    purse: '💰', merchant: '🤝', luck: '🍀', heart: '❤️', treasure: '💎', ward: '🛡️' };
+  const ITEM = {}; MT.DATA.items.forEach(i => ITEM[i.id] = i);
+  const RELIC = {}; MT.DATA.relics.forEach(r => RELIC[r.id] = r);
   const $ = (id) => document.getElementById(id);
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function asset(p) { return MT.assetURL ? MT.assetURL(p) : p; }
 
   let refs = {};
+  let collTab = 'cats';
 
   function build() {
     refs = {
       lives: $('lives'), coins: $('coins'), wave: $('wave'),
       shop: $('shop'), bench: $('bench'), syn: $('synPanel'), sel: $('selPanel'),
-      hint: $('placeHint'), banner: $('banner'), toast: $('toast'),
+      hint: $('placeHint'), banner: $('banner'), toast: $('toast'), relicStrip: $('relicStrip'),
       start: $('startBtn'), reroll: $('rerollBtn'), speed: $('speedBtn'),
     };
     refs.start.addEventListener('click', () => MT.api.startWave());
@@ -35,10 +42,16 @@
     $('btnNormal').addEventListener('click', () => showMapSelect('normal'));
     $('btnEndless').addEventListener('click', () => showMapSelect('endless'));
     $('btnDaily').addEventListener('click', () => startRun('daily', null));
+    $('btnCollection').addEventListener('click', showCollection);
+    $('btnSound').addEventListener('click', toggleSound);
     const cont = $('btnContinue');
     if (MT.save.has()) { cont.style.display = ''; cont.addEventListener('click', continueRun); }
+    // coleção
+    $('collBack').addEventListener('click', () => { hide('collection'); showMenu(); });
+    [...$('collTabs').children].forEach(t => t.addEventListener('click', () => selectCollTab(t.dataset.tab)));
     // fim
     $('btnAgain').addEventListener('click', () => { hide('endScreen'); showMenu(); });
+    updateSoundLabel();
   }
 
   // ---------- TELAS ----------
@@ -111,7 +124,18 @@
     refs.reroll.disabled = running;
     refs.hint.classList.toggle('show', !!(g.selected && g.selected.kind === 'bench'));
 
-    buildShop(); buildBench(); buildSyn(); buildSel();
+    buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
+  }
+
+  function buildRelicStrip() {
+    const g = MT.game, wrap = refs.relicStrip; if (!wrap) return;
+    wrap.innerHTML = '';
+    for (const id of g.run.takenRelics) {
+      const r = RELIC[id];
+      const c = el('div', 'relic', RELIC_ICON[id] || '🏺');
+      c.title = r ? (r.name + ' — ' + (r.desc || '')) : id;
+      wrap.appendChild(c);
+    }
   }
 
   function buildShop() {
@@ -166,11 +190,27 @@
 
   function buildSel() {
     const g = MT.game, wrap = refs.sel; if (!wrap) return;
-    if (!(g.selected && g.selected.kind === 'board')) { wrap.classList.add('hide'); return; }
+    const showing = !!(g.selected && g.selected.kind === 'board');
+    const zc = document.querySelector('.zoom-ctl'); if (zc) zc.style.display = showing ? 'none' : 'flex';
+    if (!showing) { wrap.classList.add('hide'); return; }
     const cat = g.selected.cat, cur = cat.cur || {};
     wrap.classList.remove('hide');
     const sellVal = Math.floor(cat.invested * (g.run.sellFull ? 1 : B.sellRatio));
     const tags = cat.data.tags.join(' · ');
+    const maxS = MT.api.maxSlots(cat);
+    let slotsHtml = '';
+    for (let i = 0; i < maxS; i++) {
+      const it = cat.items[i];
+      slotsHtml += it ? '<div class="sel-item" title="' + (ITEM[it] ? ITEM[it].name : it) + '">' + (ITEM_ICON[it] || '❔') + '</div>'
+        : '<div class="sel-item empty"></div>';
+    }
+    let invHtml = '';
+    if (g.inventory.length) {
+      invHtml = '<div class="inv-title">INVENTÁRIO (toque p/ equipar)</div><div class="inv-list">' +
+        g.inventory.map((it, i) => '<div class="inv-item" data-inv="' + i + '" title="' + (ITEM[it] ? ITEM[it].name + ' — ' + ITEM[it].desc : it) + '">' + (ITEM_ICON[it] || '❔') + '</div>').join('') + '</div>';
+    } else {
+      invHtml = '<div class="inv-title">INVENTÁRIO</div><div class="inv-empty">vazio — ganhe itens nas ondas pares</div>';
+    }
     wrap.innerHTML =
       '<div class="sel-head"><img src="' + asset(cat.data.sprite) + '"><div><b>' + cat.data.name + '</b>' +
       '<span class="sel-type ' + cat.data.type + '">' + SYM[cat.data.type] + ' ' + typeName(cat.data.type) + '</span></div>' +
@@ -179,14 +219,99 @@
         st('DANO', Math.round(cur.dmg || cat.data.dmg)) + st('ALC', (cur.range || cat.data.range).toFixed(1)) +
         st('VEL', (1 / (cur.interval || cat.data.interval)).toFixed(2) + '/s') + st('CRIT', Math.round(cur.crit || cat.data.crit) + '%') +
       '</div>' +
+      '<div class="sel-items">' + slotsHtml + '</div>' +
+      invHtml +
       '<div class="sel-tags">' + tags + '</div>' +
       '<div class="sel-actions"><span class="sel-hint">toque no gramado p/ mover</span>' +
       '<button class="btn-sell" id="selSell">Vender 🪙' + sellVal + '</button></div>';
     $('selClose').onclick = () => MT.api.deselect();
     $('selSell').onclick = () => MT.api.sell(cat);
+    wrap.querySelectorAll('.inv-item').forEach(node => node.onclick = () => {
+      const i = +node.dataset.inv, itemId = g.inventory[i];
+      if (itemId != null && MT.api.equipItem(cat, itemId)) { MT.sfx && MT.sfx.play && MT.sfx.play('place'); }
+    });
   }
   function st(l, v) { return '<div class="ss"><span>' + l + '</span><b>' + v + '</b></div>'; }
   function typeName(t) { return t === 'phys' ? 'Físico' : t === 'magic' ? 'Mágico' : 'Verdadeiro'; }
+
+  // ---------- DRAFT (itens / relíquias) ----------
+  const DMGCOL = { phys: 'var(--dmg-phys)', magic: 'var(--dmg-magic)', 'true': 'var(--dmg-true)' };
+  const RELIC_DESC = {
+    claws: '+25% de dano em todos os gatos', eagle: '+25% de alcance', reflex: '+25% de velocidade de ataque',
+    instinct: '+20% de chance de crítico', piercer: '+40 de penetração de armadura', rune: '+40 de penetração mágica',
+    backpack: '+1 slot de item por gato', purse: '+4 moedas ao fim de cada onda', merchant: 'venda devolve 100% do investido',
+    luck: 'ganho de moedas ×1.3', heart: '+5 vidas imediatamente', treasure: '+15 moedas imediatamente', ward: '−10% de HP dos inimigos',
+  };
+  function itemDesc(it) { return it.desc || ''; }
+  function showDraft() {
+    const g = MT.game, d = g.pendingDraft; if (!d) return;
+    const isRelic = d.type === 'relic';
+    $('draftTitle').textContent = isRelic ? '✨ ESCOLHA UMA RELÍQUIA' : '🎁 ESCOLHA UM ITEM';
+    $('draftSub').textContent = isRelic ? 'Bônus permanente para esta partida' : 'Guarde no inventário e equipe num gato';
+    const wrap = $('draftCards'); wrap.innerHTML = '';
+    d.choices.forEach(id => {
+      const info = isRelic ? RELIC[id] : ITEM[id];
+      const icon = isRelic ? (RELIC_ICON[id] || '🏺') : (ITEM_ICON[id] || '❔');
+      const desc = isRelic ? (RELIC_DESC[id] || (info && info.desc) || '') : itemDesc(info);
+      const card = el('div', 'draft-card' + (isRelic ? ' relic' : ''));
+      card.innerHTML = '<div class="draft-icon">' + icon + '</div><div class="draft-name">' + (info ? info.name : id) + '</div><div class="draft-desc">' + desc + '</div>';
+      card.addEventListener('click', () => pickDraft(id));
+      wrap.appendChild(card);
+    });
+    show('draft');
+  }
+  function pickDraft(id) {
+    const g = MT.game, d = g.pendingDraft; if (!d) { hide('draft'); return; }
+    if (d.type === 'relic') MT.api.takeRelic(id); else MT.api.takeItem(id);
+    MT.sfx && MT.sfx.play('coin');
+    hide('draft'); refresh();
+  }
+
+  // ---------- COLEÇÃO ----------
+  function showCollection() { hide('menu'); collTab = 'cats'; setActiveTab(); buildColl(); show('collection'); }
+  function selectCollTab(t) { collTab = t; setActiveTab(); buildColl(); }
+  function setActiveTab() { [...$('collTabs').children].forEach(b => b.classList.toggle('active', b.dataset.tab === collTab)); }
+  function buildColl() {
+    const body = $('collBody'); body.innerHTML = '';
+    if (collTab === 'cats') D.cats.forEach(c => body.appendChild(collCat(c)));
+    else if (collTab === 'enemies') D.enemies.forEach(e => body.appendChild(collEnemy(e)));
+    else if (collTab === 'synergies') D.synergies.forEach(s => body.appendChild(collSyn(s)));
+    else buildAch(body);
+  }
+  function collCat(c) {
+    const card = el('div', 'coll-card');
+    card.innerHTML = '<img src="' + asset(c.sprite) + '"><b>' + shortName(c.name) + ' <span class="badge" style="color:' + DMGCOL[c.type] + '">' + SYM[c.type] + '</span></b>' +
+      '<small>🪙' + c.cost + ' · dano ' + c.dmg + ' · alc ' + c.range + '<br>' + c.tags.join(' · ') + '</small>';
+    return card;
+  }
+  function collEnemy(e) {
+    const card = el('div', 'coll-card');
+    card.innerHTML = '<img src="' + asset(e.sprite) + '"><b>' + e.name + (e.boss ? ' 👑' : '') + '</b>' +
+      '<small>HP ' + e.hp + ' · arm ' + e.armor + ' · resist ' + e.mr + '<br>🪙' + e.bounty + '</small>';
+    return card;
+  }
+  function collSyn(s) {
+    const card = el('div', 'coll-card'); card.style.textAlign = 'left';
+    const tiers = s.tiers.map(t => '<div><b style="color:var(--gold)">' + t.need + '</b> ' + t.label + '</div>').join('');
+    card.innerHTML = '<b>' + s.name + '</b><small>' + tiers + '</small>';
+    return card;
+  }
+  function buildAch(body) {
+    const done = MT.stats.unlockedCount();
+    const head = el('div', 'coll-card'); head.style.gridColumn = '1 / -1'; head.style.textAlign = 'center';
+    head.innerHTML = '<b>' + done + ' / ' + D.achievements.length + ' conquistas</b>';
+    body.appendChild(head);
+    D.achievements.forEach(a => {
+      const on = MT.stats.unlocked(a);
+      const card = el('div', 'coll-card ach' + (on ? ' on' : ' locked'));
+      card.innerHTML = '<div class="badge">' + (on ? '🏆' : '🔒') + '</div><b>' + a.name + '</b><small>' + (a.desc || '') + '</small>';
+      body.appendChild(card);
+    });
+  }
+
+  // ---------- SOM ----------
+  function toggleSound() { const on = !MT.sfx.enabled.get(); MT.sfx.enabled.set(on); if (on) { MT.sfx.resume(); MT.sfx.play('coin'); } updateSoundLabel(); }
+  function updateSoundLabel() { const b = $('btnSound'); if (b) b.textContent = MT.sfx.enabled.get() ? '🔊 SOM' : '🔇 SOM'; }
 
   // ---------- overlays por frame ----------
   function frameUI() {
@@ -197,5 +322,5 @@
     else refs.toast.classList.remove('show');
   }
 
-  MT.ui = { build, refresh, showMenu, showEnd, frameUI };
+  MT.ui = { build, refresh, showMenu, showEnd, frameUI, showDraft, showCollection };
 })(window.MT);

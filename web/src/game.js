@@ -6,7 +6,7 @@
   function defaultRun() {
     return { coinMult: 1, spd: 1, hp: 1, livesBonus: 0, coinsBonus: 0,
       catDmg: 0, catRange: 0, catAtkSpd: 0, catCrit: 0, catArmorPen: 0, catMagicPen: 0,
-      extraSlots: 0, coinsPerWave: 0, sellFull: false, label: '' };
+      extraSlots: 0, coinsPerWave: 0, sellFull: false, label: '', takenRelics: [] };
   }
 
   const game = {
@@ -73,11 +73,17 @@
     game.synergies = R.computeSynergies(game.board);
     for (const c of game.board) R.catStats(c, game.synergies, game.run);
     for (const c of game.bench) R.catStats(c, [], game.run); // bench: sem sinergia
+    if (MT.stats) { MT.stats.max('maxCatsPlaced', game.board.length); MT.stats.max('maxSynergiesInMatch', game.synergies.filter(s => s.tier >= 0).length); }
     MT.ui && MT.ui.refresh && MT.ui.refresh();
   }
 
   // ---------- ECONOMIA ----------
-  function addCoins(n) { if (n > 0) n = Math.round(n * game.run.coinMult); game.coins += n; }
+  function addCoins(n) { if (n > 0) { n = Math.round(n * game.run.coinMult); MT.stats && MT.stats.add('coins', n); } game.coins += n; }
+  function checkAch() {
+    if (!MT.stats) return;
+    const fresh = MT.stats.checkNew();
+    if (fresh.length) { toast('🏆 ' + fresh[0].name); MT.sfx && MT.sfx.play('ach'); }
+  }
   function canAfford(n) { return game.coins >= n; }
 
   function generateShop() {
@@ -93,13 +99,18 @@
     game.coins -= cost;
     game.bench.push(makeCat(id));
     game.shop[slot] = null;
+    MT.stats && MT.stats.add('catsBought', 1);
+    MT.sfx && MT.sfx.play('place');
     recompute();
   }
   function reroll() {
     if (game.phase !== 'prep') return;
-    if (!canAfford(B.rerollCost)) { toast('Moedas insuficientes'); return; }
-    game.coins -= B.rerollCost; generateShop(); recompute();
+    if (!canAfford(B.rerollCost)) { toast('Moedas insuficientes'); SFXerr(); return; }
+    game.coins -= B.rerollCost; generateShop();
+    MT.sfx && MT.sfx.play('coin'); MT.stats && MT.stats.add('rerolls', 1);
+    recompute();
   }
+  function SFXerr() { MT.sfx && MT.sfx.play('error'); }
   function sell(cat) {
     const ratio = game.run.sellFull ? 1 : B.sellRatio;
     game.coins += Math.floor(cat.invested * ratio); // valor fixo (venda não usa coinMult)
@@ -124,13 +135,14 @@
   }
   function placeAt(wx, wy) {
     if (game.phase !== 'prep' || !game.selected) return;
-    if (!placeValid(wx, wy)) { toast('Local inválido (perto do caminho/gato)'); return; }
-    if (game.board.length >= B.placementSlots && game.selected.kind === 'bench') { toast('Máximo de gatos no tabuleiro'); return; }
+    if (!placeValid(wx, wy)) { toast('Local inválido (perto do caminho/gato)'); SFXerr(); return; }
+    if (game.board.length >= B.placementSlots && game.selected.kind === 'bench') { toast('Máximo de gatos no tabuleiro'); SFXerr(); return; }
     const cat = game.selected.cat;
     if (game.selected.kind === 'bench') { removeCat(cat); game.board.push(cat); }
     cat.x = wx; cat.y = wy; cat.pop = 0.6;
     game.selected = null;
     fxBurst(wx, wy, '#ffd24f', 8);
+    MT.sfx && MT.sfx.play('place');
     recompute();
   }
   function selectBoard(cat) { if (game.phase === 'prep') pick(cat, 'board'); }
@@ -138,9 +150,10 @@
   // ---------- ONDAS ----------
   function startWave() {
     if (game.phase !== 'prep' || game.waveRunning) return;
-    if (game.board.length === 0) { toast('Posicione ao menos um gato!'); return; }
+    if (game.board.length === 0) { toast('Posicione ao menos um gato!'); SFXerr(); return; }
     const wave = R.waveForIndex(game.waveIndex, game.mode === 'endless');
     if (!wave) return;
+    MT.sfx && MT.sfx.play('wave');
     game.selected = null;
     game.spawnQueue = [];
     for (const grp of wave.groups) for (let i = 0; i < grp.count; i++) game.spawnQueue.push({ enemy: grp.enemy, scale: grp.scale });
@@ -164,13 +177,16 @@
     game.enemies.push({ ...st, hp: st.hpMax, laneIdx: lane, d: -U.rand() * 0.6, x: p.x, y: p.y, ang: p.ang,
       hit: 0, slowT: 0, slowAmt: 0 });
     game.aliveCount++;
+    if (st.boss) { shakeCam(0.25, 0.4); MT.sfx && MT.sfx.play('boss'); }
   }
   function endWave() {
     game.waveRunning = false;
     const waveNumber = game.waveIndex + 1;
     const reward = R.waveReward(waveNumber, game.curWave ? game.curWave.bonusReward : 0, game.run);
     addCoins(reward);
+    MT.sfx && MT.sfx.play('coin');
     MT.progress && MT.progress.onWave && MT.progress.onWave(waveNumber, game.enemiesKilled);
+    if (MT.stats) { MT.stats.add('waves', 1); MT.stats.max('bestWave', waveNumber); MT.stats.add('synergiesActivated', game.synergies.filter(s => s.tier >= 0).length); }
 
     const wasLast = game.mode !== 'endless' && game.waveIndex >= R.TOTAL_WAVES - 1;
     if (wasLast) { win(); return; }
@@ -181,6 +197,59 @@
     banner('ONDA VENCIDA!  +' + reward + ' 🪙', 'Prepare a próxima defesa');
     if (game.mode === 'normal') MT.save && MT.save.write && MT.save.write();
     MT.ui && MT.ui.refresh && MT.ui.refresh();
+    checkAch();
+
+    // Drafts: RELÍQUIA nas ondas 5/15/25/35/45; ITEM nas ondas pares (sem colidir).
+    game.pendingDraft = null;
+    let offeredRelic = false;
+    if (waveNumber % 10 === 5) {
+      const rc = getRelicChoices(3);
+      if (rc.length) { game.pendingDraft = { type: 'relic', choices: rc }; offeredRelic = true; }
+    }
+    if (!offeredRelic && B.itemDropEveryN > 0 && waveNumber % B.itemDropEveryN === 0) {
+      const ic = getItemChoices(B.itemDraftChoices);
+      if (ic.length) game.pendingDraft = { type: 'item', choices: ic };
+    }
+    if (game.pendingDraft) MT.ui && MT.ui.showDraft && MT.ui.showDraft();
+  }
+
+  // ---------- ITENS & RELÍQUIAS ----------
+  function getItemChoices(n) {
+    const pool = MT.util.shuffle(D.items);
+    return pool.slice(0, n).map(it => it.id);
+  }
+  function maxSlots(cat) { return B.maxItemsPerCat + game.run.extraSlots; }
+  function canEquip(cat) { return cat.items.length < maxSlots(cat); }
+  function equipItem(cat, itemId) {
+    if (!canEquip(cat)) { toast('Gato sem espaço de item'); return false; }
+    const idx = game.inventory.indexOf(itemId);
+    if (idx < 0) return false;
+    game.inventory.splice(idx, 1);
+    cat.items.push(itemId);
+    MT.stats && MT.stats.add('itemsEquipped', 1);
+    recompute();
+    return true;
+  }
+  function takeItem(itemId) { game.inventory.push(itemId); game.pendingDraft = null; recompute(); }
+
+  const RELIC_FX = {
+    claws: r => r.catDmg += 25, eagle: r => r.catRange += 25, reflex: r => r.catAtkSpd += 25,
+    instinct: r => r.catCrit += 20, piercer: r => r.catArmorPen += 40, rune: r => r.catMagicPen += 40,
+    backpack: r => r.extraSlots += 1, purse: r => r.coinsPerWave += 4, merchant: r => r.sellFull = true,
+    luck: r => r.coinMult *= 1.3, ward: r => r.hp *= 0.9,
+    heart: r => { game.lives += 5; if (GM_lives) GM_lives(); }, treasure: r => { game.coins += 15; },
+  };
+  function GM_lives() { MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function getRelicChoices(n) {
+    const avail = D.relics.filter(r => game.run.takenRelics.indexOf(r.id) < 0);
+    return MT.util.shuffle(avail).slice(0, n).map(r => r.id);
+  }
+  function takeRelic(relicId) {
+    const fx = RELIC_FX[relicId];
+    if (fx) fx(game.run);
+    game.run.takenRelics.push(relicId);
+    game.pendingDraft = null;
+    recompute();
   }
 
   // ---------- COMBATE ----------
@@ -191,6 +260,7 @@
     game.removedThisWave++;
     addCoins(en.bounty);
     game.enemiesKilled++;
+    if (MT.stats) { MT.stats.add('kills', 1); if (en.boss) MT.stats.add('bossKills', 1); }
     fxBurst(en.x, en.y, en.boss ? '#ffd24f' : '#b98cff', en.boss ? 24 : 7);
     if (en.boss) banner('CHEFE DERROTADO! 👑', '+' + en.bounty + ' 🪙');
     checkWaveEnd();
@@ -239,10 +309,15 @@
   function toast(m) { game.toast = m; game.toastT = 1.5; }
 
   // ---------- FIM ----------
-  function win() { game.phase = 'win'; recordBest(); MT.save && MT.save.clear && MT.save.clear(); MT.ui && MT.ui.showEnd && MT.ui.showEnd(true); }
+  function win() {
+    game.phase = 'win'; recordBest(); MT.save && MT.save.clear && MT.save.clear();
+    MT.stats && MT.stats.add('wins', 1); MT.sfx && MT.sfx.play('win'); checkAch();
+    MT.ui && MT.ui.showEnd && MT.ui.showEnd(true);
+  }
   function lose() {
     game.phase = 'over'; game.waveRunning = false; shakeCam(0.4, 0.5);
     recordBest(); MT.save && MT.save.clear && MT.save.clear();
+    MT.sfx && MT.sfx.play('lose'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(false);
   }
   function recordBest() { MT.progress && MT.progress.recordBest && MT.progress.recordBest(game.waveIndex + 1); }
@@ -332,6 +407,7 @@
   // ---------- NOVA RUN ----------
   function newRun(mode, mapId) {
     game.mode = mode || 'normal';
+    MT.stats && MT.stats.add('games', 1); MT.sfx && MT.sfx.resume();
     game.run = defaultRun();
     if (game.mode === 'daily') MT.daily && MT.daily.apply && MT.daily.apply(game.run);
     resolveMap(game.mode === 'daily' && MT.daily ? MT.daily.mapId() : (mapId || 'jardim'));
@@ -340,15 +416,17 @@
     game.waveIndex = 0; game.enemiesKilled = 0;
     game.bench = []; game.board = []; game.inventory = [];
     game.enemies = []; game.shots = []; game.floats = []; game.parts = [];
-    game.selected = null; game.phase = 'prep';
+    game.selected = null; game.phase = 'prep'; game.pendingDraft = null;
     if (MT.cam) MT.cam.reset();
     generateShop(); recompute();
-    banner('DEFENDA O REINO 🏰', 'Compre um gato e posicione no gramado');
+    if (game.mode === 'daily' && MT.daily) banner('📅 ' + MT.daily.name(), MT.daily.desc());
+    else banner('DEFENDA O REINO 🏰', 'Compre um gato e posicione no gramado');
   }
 
   MT.game = game;
   MT.api = {
     newRun, update, buy, reroll, sell, pick, deselect, placeAt, selectBoard,
     startWave, recompute, resolveMap, distToPaths, placeValid, posAlong, addCoins,
+    takeItem, takeRelic, equipItem, canEquip, maxSlots, getItemChoices, getRelicChoices,
   };
 })(window.MT);

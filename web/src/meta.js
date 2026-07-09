@@ -34,7 +34,7 @@
       if (g.mode !== 'normal') return;
       const enc = (c) => ({ id: c.data.id, x: c.x, y: c.y, items: c.items.slice(), invested: c.invested });
       const d = { mapId: g.mapId, coins: g.coins, lives: g.lives, waveIndex: g.waveIndex,
-        board: g.board.map(enc), bench: g.bench.map(enc), inventory: g.inventory.slice() };
+        board: g.board.map(enc), bench: g.bench.map(enc), inventory: g.inventory.slice(), run: g.run };
       set(SKEY, JSON.stringify(d));
     },
     restore() {
@@ -42,6 +42,7 @@
       let d; try { d = JSON.parse(raw); } catch (e) { return false; }
       const g = MT.game;
       MT.api.newRun('normal', d.mapId);
+      if (d.run) Object.assign(g.run, d.run);
       g.coins = d.coins; g.lives = d.lives; g.waveIndex = d.waveIndex;
       g.bench = []; g.board = [];
       const build = (s, onBoard) => {
@@ -77,5 +78,22 @@
     },
   };
 
-  MT.progress = progress; MT.save = save; MT.daily = daily;
+  // ---------- ESTATÍSTICAS & CONQUISTAS ----------
+  const stats = {
+    get(m) { return parseInt(get('mt_stat_' + m, '0'), 10) || 0; },
+    add(m, n) { set('mt_stat_' + m, String(this.get(m) + (n == null ? 1 : n))); },
+    max(m, n) { if (n > this.get(m)) set('mt_stat_' + m, String(n)); },
+    unlocked(a) { return this.get(a.metric) >= a.threshold; },
+    unlockedCount() { return D.achievements.filter(a => this.unlocked(a)).length; },
+    // Retorna conquistas recém-desbloqueadas (para exibir toast).
+    checkNew() {
+      let seen; try { seen = new Set(JSON.parse(get('mt_ach_seen', '[]'))); } catch (e) { seen = new Set(); }
+      const now = D.achievements.filter(a => this.unlocked(a)).map(a => a.id);
+      const fresh = now.filter(id => !seen.has(id));
+      if (fresh.length) set('mt_ach_seen', JSON.stringify(now));
+      return fresh.map(id => D.achievements.find(a => a.id === id));
+    },
+  };
+
+  MT.progress = progress; MT.save = save; MT.daily = daily; MT.stats = stats;
 })(window.MT);

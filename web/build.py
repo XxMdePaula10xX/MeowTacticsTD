@@ -37,7 +37,7 @@ css = open(p('styles', 'tokens.css')).read() + '\n' + open(p('styles', 'ui.css')
 
 # ---- js (ordem) ----
 JS_ORDER = ['src/data/gamedata.js', 'src/util.js', 'src/rules.js', 'src/game.js',
-            'src/meta.js', 'src/render.js', 'src/input.js', 'src/ui.js', 'src/main.js']
+            'src/meta.js', 'src/sound.js', 'src/render.js', 'src/input.js', 'src/ui.js', 'src/main.js']
 js_parts = []
 for f in JS_ORDER:
     if f == 'src/main.js':
