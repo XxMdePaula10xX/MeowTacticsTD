@@ -92,8 +92,11 @@
     D.maps.forEach(m => {
       const best = MT.progress.bestFor(mode, m.id);
       const card = el('div', 'map-card');
-      card.innerHTML =
-        '<div class="map-thumb" style="background-image:url(' + asset(m.bg) + ')"></div>' +
+      const th = (!m.bg && MT.mapart) ? MT.mapart.thumb(m.id) : null;
+      const thumb = th
+        ? '<div class="map-thumb" style="background:' + th.grad + '"><span class="map-thumb-ico">' + th.ico + '</span></div>'
+        : '<div class="map-thumb" style="background-image:url(' + asset(m.bg) + ')"></div>';
+      card.innerHTML = thumb +
         '<div class="map-info"><b>' + m.name + '</b><span>' + laneLabel(m.lanes) + '</span>' +
         '<span class="map-best">Recorde: onda ' + best + '</span></div>';
       card.addEventListener('click', () => startRun(mode, m.id));

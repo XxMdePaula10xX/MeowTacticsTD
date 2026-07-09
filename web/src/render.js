@@ -34,7 +34,7 @@
       const k = g.shake.amt * (g.shake.t / g.shake.dur) * cam.U;
       ctx.translate((U.rand() * 2 - 1) * k, (U.rand() * 2 - 1) * k);
     }
-    drawField();
+    drawField(t);
     drawPaths(t);
     // preview de alcance ao posicionar / selecionar
     if (g.selected) drawPlacePreview();
@@ -50,8 +50,9 @@
   function W(wx) { return cam.sx(wx); }
   function H(wy) { return cam.sy(wy); }
 
-  function drawField() {
+  function drawField(t) {
     const g = MT.game, A = cam.ART;
+    if (g.map && g.map.proc && MT.mapart) { MT.mapart.draw(g.map, ctx, cam, t); return; }
     const bg = g.map ? img(g.map.bg) : null;
     // fundo ambiente (cobre o tabuleiro inteiro, escurecido — preenche as bordas)
     if (bg) {
@@ -89,6 +90,15 @@
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     if (MT.DEBUG_PATH) {
       for (const lane of MT.game.lanes) { ctx.strokeStyle = '#ff3b6b'; ctx.lineWidth = 3; tracePath(lane); ctx.stroke(); }
+    }
+    // mapas procedurais: desenha a trilha (a arte não tem caminho pintado)
+    const th = (MT.game.map && MT.game.map.proc && MT.mapart) ? MT.mapart.theme(MT.game.map.id) : null;
+    if (th) {
+      for (const lane of MT.game.lanes) {
+        if (th.pGlow) { ctx.strokeStyle = th.pGlow; ctx.lineWidth = 0.74 * cam.U; tracePath(lane); ctx.stroke(); }
+        ctx.strokeStyle = th.pEdge; ctx.lineWidth = 0.6 * cam.U; tracePath(lane); ctx.stroke();
+        ctx.strokeStyle = th.pFill; ctx.lineWidth = 0.46 * cam.U; tracePath(lane); ctx.stroke();
+      }
     }
     // trilha de fluxo sutil (pontos que correm no sentido do movimento) sobre a arte
     for (let li = 0; li < MT.game.lanes.length; li++) {
