@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Meow Tactics TD</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/ui.css">
+</head>
+<body>
+  <div id="app">
+    <header class="hud">
+      <div class="title">🐾 <span>Meow Tactics</span> <small>TD</small></div>
+      <div class="chip lives"><span class="ico">❤️</span><span id="lives">20</span></div>
+      <div class="chip coins"><span class="ico">🪙</span><span id="coins">7</span></div>
+      <div class="chip wave"><span class="ico">🌊</span><span id="wave">1/50</span></div>
+    </header>
+
+    <div class="board-wrap">
+      <canvas id="game"></canvas>
+      <div class="place-hint" id="placeHint">Toque no gramado para posicionar</div>
+      <div class="banner" id="banner"><div class="b1"></div><div class="b2"></div></div>
+      <div class="toast" id="toast"></div>
+      <aside class="synergy-panel" id="synPanel"></aside>
+      <aside class="sel-panel hide" id="selPanel"></aside>
+    </div>
+
+    <div class="dock">
+      <div class="bench-rail" id="bench"></div>
+      <div class="shop-rail" id="shop"></div>
+      <div class="controls">
+        <button class="btn ghost" id="rerollBtn">🎲 2</button>
+        <button class="btn ghost" id="speedBtn">1×</button>
+        <button class="btn start" id="startBtn">⚔️ INICIAR ONDA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="screen" id="menu">
+    <div class="logo">🐱</div>
+    <div class="big">MEOW <span class="g">TACTICS</span> TD</div>
+    <div class="sub">Torres-gato, sinergias e pesadelos. Defenda o reino ao longo de 50 ondas.</div>
+    <div class="legend">
+      <span style="color:var(--dmg-phys)"><b>▲</b> Físico</span>
+      <span style="color:var(--dmg-magic)"><b>★</b> Mágico</span>
+      <span style="color:var(--dmg-true)"><b>◆</b> Verdadeiro</span>
+    </div>
+    <div class="menu-btns">
+      <button class="btn primary" id="btnNormal">🗺️ NOVO JOGO</button>
+      <button class="btn ghost" id="btnContinue" style="display:none">▶️ CONTINUAR</button>
+      <button class="btn alt" id="btnEndless">♾️ INFINITO</button>
+      <button class="btn alt2" id="btnDaily">📅 DESAFIO DIÁRIO</button>
+    </div>
+    <div class="menu-records" id="menuRecords"></div>
+  </div>
+
+  <!-- SELEÇÃO DE MAPA -->
+  <div class="screen hide" id="mapSelect">
+    <div class="screen-title" id="mapTitle">ESCOLHA O MAPA</div>
+    <div class="map-list" id="mapList"></div>
+    <button class="link-back" id="mapBack">◂ Voltar</button>
+  </div>
+
+  <!-- FIM DE JOGO -->
+  <div class="screen hide" id="endScreen">
+    <div class="logo" id="endLogo">🏆</div>
+    <div class="big" id="endTitle">VITÓRIA!</div>
+    <div class="sub" id="endSub"></div>
+    <div class="end-stats" id="endStats"></div>
+    <div class="menu-btns"><button class="btn primary" id="btnAgain">▸ MENU PRINCIPAL</button></div>
+  </div>
+
+  <script src="src/data/gamedata.js"></script>
+  <script src="src/util.js"></script>
+  <script src="src/rules.js"></script>
+  <script src="src/game.js"></script>
+  <script src="src/meta.js"></script>
+  <script src="src/render.js"></script>
+  <script src="src/input.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
