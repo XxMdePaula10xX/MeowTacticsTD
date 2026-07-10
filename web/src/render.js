@@ -54,27 +54,14 @@
     const g = MT.game, A = cam.ART;
     if (g.map && g.map.proc && MT.mapart) { MT.mapart.draw(g.map, ctx, cam, t); return; }
     const bg = g.map ? img(g.map.bg) : null;
-    // fundo ambiente das colunas laterais: bem escurecido pra "recuar" e o
-    // mapa nítido virar protagonista.
-    if (bg) {
-      coverDraw(bg, 0, 0, cam.w, cam.h);
-      ctx.fillStyle = 'rgba(9,9,20,.74)'; ctx.fillRect(0, 0, cam.w, cam.h);
-    } else {
-      const th = THEME[g.mapId] || THEME.jardim;
-      ctx.fillStyle = th.b; ctx.fillRect(0, 0, cam.w, cam.h);
-    }
-    // arte principal, alinhada ao mundo (segue zoom/pan). Aqui os caminhos batem.
+    // fundo escuro de segurança (some sob a arte quando ela cobre tudo)
+    const th = THEME[g.mapId] || THEME.jardim;
+    ctx.fillStyle = th.b || '#0a0a16'; ctx.fillRect(0, 0, cam.w, cam.h);
+    // arte ÚNICA, alinhada ao mundo (cover: preenche o tabuleiro). Um só mapa,
+    // sem duplicata nem colunas. Segue zoom/pan e bate com os caminhos.
     if (bg) {
       const x = W(-A.hw), y = H(A.hh), w = 2 * A.hw * cam.U, h = 2 * A.hh * cam.U;
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 24;
       ctx.drawImage(bg, x, y, w, h);
-      ctx.restore();
-      // moldura sutil definindo a borda do tabuleiro (cara de "board")
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 2;
-      ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
-      ctx.restore();
     }
   }
   // desenha uma imagem cobrindo (dx,dy,dw,dh) preservando proporção (cover)

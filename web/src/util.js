@@ -23,7 +23,11 @@ window.MT = window.MT || {};
     U: 60, baseU: 60, w: 0, h: 0, zoom: 1, panX: 0, panY: 0, minZoom: 1, maxZoom: 4.5, ART,
     fit(pxW, pxH) {
       this.w = pxW; this.h = pxH;
-      this.baseU = Math.min(pxW / (ART.hw * 2), pxH / (ART.hh * 2));
+      // COVER (max): a arte preenche o tabuleiro inteiro — um único mapa, sem
+      // colunas escuras nem duplicata. Os caminhos seguem a mesma transformação,
+      // então continuam alinhados. O excedente vertical/horizontal fica cortável
+      // via pan/zoom.
+      this.baseU = Math.max(pxW / (ART.hw * 2), pxH / (ART.hh * 2));
       this.apply();
     },
     apply() { this.U = this.baseU * this.zoom; this.clampPan(); },

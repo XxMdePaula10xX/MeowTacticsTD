@@ -113,9 +113,13 @@
       if (!moved && Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > TAP_MOVE) moved = true;
       if (moved && overCanvas(ev.clientX, ev.clientY)) { const p = rectXY(ev.clientX, ev.clientY); input.hover = toWorld(p.x, p.y); }
     };
-    const up = (ev) => {
+    const cleanup = () => {
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', cancel);
+    };
+    const up = (ev) => {
+      cleanup();
       if (moved) {
         if (overCanvas(ev.clientX, ev.clientY)) {
           const p = rectXY(ev.clientX, ev.clientY), w = toWorld(p.x, p.y); input.hover = w;
@@ -123,10 +127,15 @@
         } else MT.api.deselect();
         input.hover = null;
       } else if (wasSel) MT.api.deselect(); // toque repetido no mesmo gato desmarca
-      // toque simples num gato não selecionado: mantém selecionado (toque-e-aponta)
+      // toque simples num gato não selecionado: mantém selecionado (toque-e-aponta),
+      // então basta tocar no mapa pra posicionar.
     };
+    // iOS pode cancelar o ponteiro (ex.: gesto virou rolagem): mantém o gato
+    // selecionado pra que o toque-e-aponta ainda funcione.
+    const cancel = () => { cleanup(); input.hover = null; };
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', cancel);
   }
 
   MT.input = input; MT.input.attach = attach; MT.input.beginBenchDrag = beginBenchDrag;

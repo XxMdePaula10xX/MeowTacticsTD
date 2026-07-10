@@ -74,9 +74,14 @@
     $('btnMaps').addEventListener('click', () => { hide('endScreen'); showMapSelect(MT.game.mode === 'daily' ? 'normal' : MT.game.mode); });
     $('coachSkip').addEventListener('click', () => tutorial.finish());
     updateSoundLabel();
-    // tooltips (hover no desktop; toque fixa por alguns segundos)
-    document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { unpinTip(); const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
-    document.addEventListener('mouseout', e => { if (e.target.closest && e.target.closest('[data-tip]')) tipHide(); });
+    // tooltips por HOVER só em dispositivos com mouse — no touch (iOS) o
+    // mouseover sintético fazia o popup piscar ao tocar nos cards. No touch o
+    // detalhe vem por toque fixado (pinTip) quando aplicável.
+    const canHover = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (canHover) {
+      document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { unpinTip(); const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
+      document.addEventListener('mouseout', e => { if (e.target.closest && e.target.closest('[data-tip]')) tipHide(); });
+    }
   }
 
   // ---------- TELAS ----------

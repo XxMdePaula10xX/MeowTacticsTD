@@ -37,7 +37,7 @@ button.chip.speed::after { content: ""; position: absolute; inset: -8px -6px; }
 
 /* ---------- BOARD ---------- */
 .board-wrap { position: relative; flex: 1; min-height: 0; }
-canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
 .place-hint { position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
   background: var(--glass); border: 1px solid var(--azure); color: var(--azure); font-weight: 800; font-size: var(--t-sm);
@@ -98,6 +98,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .bench-rail::-webkit-scrollbar { display: none; }
 .bench-slot { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 12px; background: rgba(20,20,40,.5);
   border: 1px dashed var(--line); position: relative; display: grid; place-items: center; }
+/* impede o iOS de tratar o arraste do gato como rolagem da fileira do banco */
+.bench-slot.filled { touch-action: none; }
 .bench-slot.filled { background: linear-gradient(180deg, var(--card-2), var(--card)); border: 1px solid var(--line); cursor: pointer; box-shadow: var(--shadow-sm); }
 .bench-slot.picked { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
 .bench-slot img { width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }

@@ -111,7 +111,7 @@ button.chip.speed::after { content: ""; position: absolute; inset: -8px -6px; }
 
 /* ---------- BOARD ---------- */
 .board-wrap { position: relative; flex: 1; min-height: 0; }
-canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
 .place-hint { position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
   background: var(--glass); border: 1px solid var(--azure); color: var(--azure); font-weight: 800; font-size: var(--t-sm);
@@ -172,6 +172,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .bench-rail::-webkit-scrollbar { display: none; }
 .bench-slot { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 12px; background: rgba(20,20,40,.5);
   border: 1px dashed var(--line); position: relative; display: grid; place-items: center; }
+/* impede o iOS de tratar o arraste do gato como rolagem da fileira do banco */
+.bench-slot.filled { touch-action: none; }
 .bench-slot.filled { background: linear-gradient(180deg, var(--card-2), var(--card)); border: 1px solid var(--line); cursor: pointer; box-shadow: var(--shadow-sm); }
 .bench-slot.picked { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
 .bench-slot img { width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
@@ -2708,7 +2710,11 @@ window.MT = window.MT || {};
     U: 60, baseU: 60, w: 0, h: 0, zoom: 1, panX: 0, panY: 0, minZoom: 1, maxZoom: 4.5, ART,
     fit(pxW, pxH) {
       this.w = pxW; this.h = pxH;
-      this.baseU = Math.min(pxW / (ART.hw * 2), pxH / (ART.hh * 2));
+      // COVER (max): a arte preenche o tabuleiro inteiro — um único mapa, sem
+      // colunas escuras nem duplicata. Os caminhos seguem a mesma transformação,
+      // então continuam alinhados. O excedente vertical/horizontal fica cortável
+      // via pan/zoom.
+      this.baseU = Math.max(pxW / (ART.hw * 2), pxH / (ART.hh * 2));
       this.apply();
     },
     apply() { this.U = this.baseU * this.zoom; this.clampPan(); },
@@ -3593,27 +3599,14 @@ window.MT = window.MT || {};
     const g = MT.game, A = cam.ART;
     if (g.map && g.map.proc && MT.mapart) { MT.mapart.draw(g.map, ctx, cam, t); return; }
     const bg = g.map ? img(g.map.bg) : null;
-    // fundo ambiente das colunas laterais: bem escurecido pra "recuar" e o
-    // mapa nítido virar protagonista.
-    if (bg) {
-      coverDraw(bg, 0, 0, cam.w, cam.h);
-      ctx.fillStyle = 'rgba(9,9,20,.74)'; ctx.fillRect(0, 0, cam.w, cam.h);
-    } else {
-      const th = THEME[g.mapId] || THEME.jardim;
-      ctx.fillStyle = th.b; ctx.fillRect(0, 0, cam.w, cam.h);
-    }
-    // arte principal, alinhada ao mundo (segue zoom/pan). Aqui os caminhos batem.
+    // fundo escuro de segurança (some sob a arte quando ela cobre tudo)
+    const th = THEME[g.mapId] || THEME.jardim;
+    ctx.fillStyle = th.b || '#0a0a16'; ctx.fillRect(0, 0, cam.w, cam.h);
+    // arte ÚNICA, alinhada ao mundo (cover: preenche o tabuleiro). Um só mapa,
+    // sem duplicata nem colunas. Segue zoom/pan e bate com os caminhos.
     if (bg) {
       const x = W(-A.hw), y = H(A.hh), w = 2 * A.hw * cam.U, h = 2 * A.hh * cam.U;
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 24;
       ctx.drawImage(bg, x, y, w, h);
-      ctx.restore();
-      // moldura sutil definindo a borda do tabuleiro (cara de "board")
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 2;
-      ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
-      ctx.restore();
     }
   }
   // desenha uma imagem cobrindo (dx,dy,dw,dh) preservando proporção (cover)
@@ -3918,9 +3911,13 @@ window.MT = window.MT || {};
       if (!moved && Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > TAP_MOVE) moved = true;
       if (moved && overCanvas(ev.clientX, ev.clientY)) { const p = rectXY(ev.clientX, ev.clientY); input.hover = toWorld(p.x, p.y); }
     };
-    const up = (ev) => {
+    const cleanup = () => {
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', cancel);
+    };
+    const up = (ev) => {
+      cleanup();
       if (moved) {
         if (overCanvas(ev.clientX, ev.clientY)) {
           const p = rectXY(ev.clientX, ev.clientY), w = toWorld(p.x, p.y); input.hover = w;
@@ -3928,10 +3925,15 @@ window.MT = window.MT || {};
         } else MT.api.deselect();
         input.hover = null;
       } else if (wasSel) MT.api.deselect(); // toque repetido no mesmo gato desmarca
-      // toque simples num gato não selecionado: mantém selecionado (toque-e-aponta)
+      // toque simples num gato não selecionado: mantém selecionado (toque-e-aponta),
+      // então basta tocar no mapa pra posicionar.
     };
+    // iOS pode cancelar o ponteiro (ex.: gesto virou rolagem): mantém o gato
+    // selecionado pra que o toque-e-aponta ainda funcione.
+    const cancel = () => { cleanup(); input.hover = null; };
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', cancel);
   }
 
   MT.input = input; MT.input.attach = attach; MT.input.beginBenchDrag = beginBenchDrag;
@@ -4014,9 +4016,14 @@ window.MT = window.MT || {};
     $('btnMaps').addEventListener('click', () => { hide('endScreen'); showMapSelect(MT.game.mode === 'daily' ? 'normal' : MT.game.mode); });
     $('coachSkip').addEventListener('click', () => tutorial.finish());
     updateSoundLabel();
-    // tooltips (hover no desktop; toque fixa por alguns segundos)
-    document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { unpinTip(); const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
-    document.addEventListener('mouseout', e => { if (e.target.closest && e.target.closest('[data-tip]')) tipHide(); });
+    // tooltips por HOVER só em dispositivos com mouse — no touch (iOS) o
+    // mouseover sintético fazia o popup piscar ao tocar nos cards. No touch o
+    // detalhe vem por toque fixado (pinTip) quando aplicável.
+    const canHover = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (canHover) {
+      document.addEventListener('mouseover', e => { const n = e.target.closest && e.target.closest('[data-tip]'); if (n) { unpinTip(); const r = n.getBoundingClientRect(); tipShow(resolveTip(n), r.left + r.width / 2, r.bottom); } });
+      document.addEventListener('mouseout', e => { if (e.target.closest && e.target.closest('[data-tip]')) tipHide(); });
+    }
   }
 
   // ---------- TELAS ----------
