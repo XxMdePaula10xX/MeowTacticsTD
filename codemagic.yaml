@@ -1,8 +1,8 @@
 # Codemagic CI/CD — build iOS do Meow Tactics (Capacitor) e envio ao TestFlight.
-# Requisitos (feitos no painel do Codemagic / App Store Connect):
+# Requisitos (no painel do Codemagic / App Store Connect):
 #   1. Integração App Store Connect API key com o nome "quantum_asc" (Key 4UQMCZZJ95).
-#   2. Um app criado no App Store Connect com o Bundle ID com.meowtactics.td.
-#   3. A API key com papel "App Manager" ou "Admin" (para criar perfis e subir builds).
+#   2. Um app criado no App Store Connect com o Bundle ID com.meowtactics.td (App ID já registrado).
+#   3. A API key com papel "App Manager" ou "Admin" (para CRIAR o provisioning profile e subir builds).
 # Team ID: 249VTHN4GQ
 workflows:
   ios-testflight:
@@ -12,6 +12,12 @@ workflows:
     integrations:
       app_store_connect: quantum_asc
     environment:
+      # Assinatura AUTOMÁTICA: o Codemagic busca OU CRIA o certificado e o
+      # provisioning profile (App Store) para este bundle id usando a API key,
+      # e os instala no lugar certo para o "xcode-project use-profiles" aplicar.
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.meowtactics.td
       vars:
         BUNDLE_ID: "com.meowtactics.td"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -34,6 +40,12 @@ workflows:
           cd web
           npx cap add ios
           npx cap sync ios
+      - name: Garantir o Bundle ID no projeto Xcode
+        script: |
+          cd web/ios/App
+          # força PRODUCT_BUNDLE_IDENTIFIER do target App para casar com o profile
+          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = ${BUNDLE_ID};/g" App.xcodeproj/project.pbxproj
+          echo "Bundle IDs no projeto:"; grep PRODUCT_BUNDLE_IDENTIFIER App.xcodeproj/project.pbxproj
       - name: Gerar ícone e splash a partir de resources/
         script: |
           cd web
@@ -46,13 +58,8 @@ workflows:
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist
           plutil -replace "UISupportedInterfaceOrientations~ipad" -json \
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist || true
-      - name: Assinatura — busca/CRIA o perfil e o certificado se não existir
+      - name: Aplicar perfis de assinatura ao projeto
         script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
           cd web
           xcode-project use-profiles
       - name: Definir número do build
