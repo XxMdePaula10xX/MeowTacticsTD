@@ -17,6 +17,8 @@ workflows:
     integrations:
       app_store_connect: quantum_asc
     environment:
+      groups:
+        - meowtactics_signing   # contém CERT_KEY_B64 (chave privada fixa, base64, secure)
       vars:
         BUNDLE_ID: "com.meowtactics.td"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
