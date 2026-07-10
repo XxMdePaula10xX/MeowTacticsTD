@@ -85,10 +85,30 @@ workflows:
           fi
           echo "===== 1) FETCH SIGNING FILES (verbose) ====="
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --certificate-key @file:"$CERT_KEY" \
-            --create --verbose
+          fetch_signing() {
+            app-store-connect fetch-signing-files "$BUNDLE_ID" \
+              --type IOS_APP_STORE \
+              --certificate-key @file:"$CERT_KEY" \
+              --create --verbose
+          }
+          if ! fetch_signing; then
+            echo "===== 1b) CREATE FALHOU — REVOGANDO CERTS DE DISTRIBUIÇÃO INCOMPATÍVEIS ====="
+            # Os certs existentes não têm a nossa chave privada e bloqueiam o --create (409).
+            # Como são inúteis pra nós (sem chave) e a conta é dedicada a este app, revogamos
+            # e recriamos UM com a chave fixa — que passa a ser reaproveitado em todo build.
+            app-store-connect certificates list --json 2>/dev/null > /tmp/certs.json || true
+            echo "Certificados encontrados na conta:"
+            python3 -c "import json;d=json.load(open('/tmp/certs.json'));it=d if isinstance(d,list) else d.get('data',[]);[print(' -',c.get('id'),c.get('attributes',{}).get('certificateType'),c.get('attributes',{}).get('serialNumber')) for c in it]" 2>/dev/null || echo "  (lista vazia ou ilegível)"
+            IDS=$(python3 -c "import json;d=json.load(open('/tmp/certs.json'));it=d if isinstance(d,list) else d.get('data',[]);print(chr(10).join(c['id'] for c in it if c.get('id') and 'DISTRIBUTION' in str(c.get('attributes',{}).get('certificateType','')).upper()))" 2>/dev/null || true)
+            for cid in $IDS; do
+              echo "Revogando certificado de distribuição: $cid"
+              app-store-connect certificates delete "$cid" --yes 2>/dev/null \
+                || yes | app-store-connect certificates delete "$cid" 2>/dev/null \
+                || echo "  (falha ao revogar $cid — revogue manualmente no portal da Apple)"
+            done
+            echo "===== 1c) RECRIANDO ASSINATURA COM A CHAVE FIXA ====="
+            fetch_signing
+          fi
           echo "===== 2) PROCURA .mobileprovision NO SISTEMA ====="
           find "$CM_BUILD_DIR" "$HOME" -name "*.mobileprovision" 2>/dev/null || true
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
