@@ -2,7 +2,7 @@
 # Requisitos (feitos no painel do Codemagic / App Store Connect):
 #   1. Integração App Store Connect API key com o nome "quantum_asc" (Key 4UQMCZZJ95).
 #   2. Um app criado no App Store Connect com o Bundle ID com.meowtactics.td.
-#   3. A API key com papel "App Manager" (para subir ao TestFlight).
+#   3. A API key com papel "App Manager" ou "Admin" (para criar perfis e subir builds).
 # Team ID: 249VTHN4GQ
 workflows:
   ios-testflight:
@@ -12,9 +12,6 @@ workflows:
     integrations:
       app_store_connect: quantum_asc
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.meowtactics.td
       vars:
         BUNDLE_ID: "com.meowtactics.td"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -49,8 +46,13 @@ workflows:
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist
           plutil -replace "UISupportedInterfaceOrientations~ipad" -json \
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist || true
-      - name: Aplicar perfis de assinatura (da API key)
+      - name: Assinatura — busca/CRIA o perfil e o certificado se não existir
         script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
           cd web
           xcode-project use-profiles
       - name: Definir número do build
