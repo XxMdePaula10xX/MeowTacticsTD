@@ -439,3 +439,14 @@
   .map-thumb { width: 100px; height: 64px; flex-basis: 100px; }
   .btn.map-play { min-width: 220px; }
 }
+
+/* ============================================================
+   CORREÇÕES DE TOQUE — overlays não podem roubar toques do tabuleiro.
+   (.toast ficava com opacity:0 mas sem display:none nem pointer-events:none,
+   criando uma barra invisível que engolia toques no centro-inferior do mapa.)
+   ============================================================ */
+.toast { pointer-events: none; }
+.place-hint { pointer-events: none; }
+.relic-strip { pointer-events: none; }             /* decorativa */
+.synergy-panel { pointer-events: none; }           /* não rouba toque do mapa atrás */
+.synergy-panel .syn-row { pointer-events: auto; }  /* mas as linhas continuam tocáveis (tooltip) */

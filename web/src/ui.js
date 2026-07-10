@@ -242,8 +242,19 @@
         '<div class="cat-tags">' + tags + '</div>' +
         (hint ? '<div class="syn-hint' + (hint.activates ? '' : ' dim') + '">' + hint.text + '</div>' : '');
       if (hint && hint.activates) card.classList.add('syn-boost');
+      // toque longo (≈380ms) mostra os detalhes do gato; toque simples compra.
+      let lpTimer = null, lpFired = false, lpX = 0, lpY = 0;
+      card.addEventListener('pointerdown', (e) => {
+        lpFired = false; lpX = e.clientX; lpY = e.clientY;
+        clearTimeout(lpTimer);
+        lpTimer = setTimeout(() => { lpFired = true; pinTip(catTip(c.id), lpX, lpY); }, 380);
+      });
+      card.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - lpX, e.clientY - lpY) > 10) clearTimeout(lpTimer); });
+      card.addEventListener('pointerup', () => clearTimeout(lpTimer));
+      card.addEventListener('pointercancel', () => clearTimeout(lpTimer));
       card.addEventListener('click', () => {
-        if (MT.game.phase !== 'prep') return; // loja travada durante a onda
+        if (lpFired) { lpFired = false; return; }   // já mostrou detalhes: não compra
+        if (MT.game.phase !== 'prep') return;       // loja travada durante a onda
         if (c.cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
         card.classList.add('pop'); MT.api.buy(i);
       });
