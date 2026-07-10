@@ -134,7 +134,7 @@
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(W(h.wx), H(h.wy), rng * cam.U, 0, 7); ctx.fill(); ctx.stroke();
       ctx.restore();
-      drawUnitSprite(g.selected.cat.data.sprite, h.wx, h.wy, 0.62, g.selected.cat.data);
+      drawUnitSprite(g.selected.cat.data.sprite, h.wx, h.wy, 0.84, g.selected.cat.data);
     }
   }
 
@@ -151,33 +151,33 @@
       // sombra + base
       ctx.save(); ctx.translate(x, y);
       ctx.fillStyle = 'rgba(0,0,0,.28)';
-      ctx.beginPath(); ctx.ellipse(0, 0.16 * cam.U, 0.32 * cam.U, 0.16 * cam.U, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, 0.22 * cam.U, 0.42 * cam.U, 0.20 * cam.U, 0, 0, 7); ctx.fill();
       const dragging = MT.input && MT.input.dragging === cat;
       const dok = !dragging || MT.api.placeValid(cat.x, cat.y, cat);
       ctx.fillStyle = 'rgba(43,40,86,.95)';
       ctx.strokeStyle = sel ? '#ffd24f' : dragging ? (dok ? '#4fc76e' : '#ee6b6e') : 'rgba(255,210,79,.5)';
       ctx.lineWidth = (sel || dragging) ? 3 : 2;
-      ctx.beginPath(); ctx.arc(0, 0, 0.34 * cam.U, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 0.46 * cam.U, 0, 7); ctx.fill(); ctx.stroke();
       // seta de direção
       ctx.rotate(cat.ang); ctx.fillStyle = '#ffd24f';
-      ctx.beginPath(); ctx.moveTo(0.32 * cam.U, 0); ctx.lineTo(0.2 * cam.U, -0.08 * cam.U); ctx.lineTo(0.2 * cam.U, 0.08 * cam.U); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0.43 * cam.U, 0); ctx.lineTo(0.27 * cam.U, -0.11 * cam.U); ctx.lineTo(0.27 * cam.U, 0.11 * cam.U); ctx.fill();
       ctx.restore();
       // sprite
-      drawUnitSprite(cat.data.sprite, cat.x, cat.y - 0.04, 0.58 * sc, cat.data);
+      drawUnitSprite(cat.data.sprite, cat.x, cat.y - 0.05, 0.80 * sc, cat.data);
       // símbolo de tipo (canto superior direito)
-      ctx.font = '900 ' + (0.22 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '900 ' + (0.28 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = DMGCOL[cat.data.type];
-      ctx.fillText(SYM[cat.data.type], x + 0.26 * cam.U, y - 0.26 * cam.U);
+      ctx.fillText(SYM[cat.data.type], x + 0.35 * cam.U, y - 0.35 * cam.U);
       // indicador de prioridade de alvo (canto superior esquerdo)
-      ctx.font = (0.17 * cam.U) + 'px serif';
-      ctx.globalAlpha = 0.9; ctx.fillText(PRIO_ICON[cat.priority || 'first'], x - 0.25 * cam.U, y - 0.25 * cam.U); ctx.globalAlpha = 1;
+      ctx.font = (0.22 * cam.U) + 'px serif';
+      ctx.globalAlpha = 0.9; ctx.fillText(PRIO_ICON[cat.priority || 'first'], x - 0.34 * cam.U, y - 0.34 * cam.U); ctx.globalAlpha = 1;
     }
   }
 
   function drawEnemies() {
     for (const en of MT.game.enemies) {
       if (en.d < 0) continue;
-      const x = W(en.x), y = H(en.y), big = en.boss ? 1.5 : 1, Sz = 0.56 * big;
+      const x = W(en.x), y = H(en.y), big = en.boss ? 1.5 : 1, Sz = 0.76 * big;
       // rastro nos velozes
       if (en.data.speed >= 1.5 && en.slowT <= 0) {
         for (let k = 1; k <= 2; k++) {
@@ -187,15 +187,15 @@
       }
       // sombra sob o personagem
       ctx.fillStyle = 'rgba(0,0,0,.34)';
-      ctx.beginPath(); ctx.ellipse(x, y + 0.17 * cam.U * big, 0.26 * cam.U * big, 0.12 * cam.U * big, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x, y + 0.22 * cam.U * big, 0.34 * cam.U * big, 0.16 * cam.U * big, 0, 0, 7); ctx.fill();
       // aura por tipo (boss dourado, mágico roxo, blindado aço)
       let aura = null, ring = false;
       if (en.boss) aura = 'rgba(255,210,79,.9)';
       else if (en.data.mr >= 30) aura = 'rgba(185,140,255,.9)';
       else if (en.data.armor >= 30) { aura = 'rgba(170,190,220,.9)'; ring = true; }
       if (aura) {
-        if (ring) { ctx.strokeStyle = aura; ctx.lineWidth = 2; ctx.globalAlpha = .8; ctx.beginPath(); ctx.arc(x, y, 0.32 * big * cam.U, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
-        else { ctx.globalAlpha = 0.16; ctx.fillStyle = aura; ctx.beginPath(); ctx.arc(x, y, 0.42 * big * cam.U, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+        if (ring) { ctx.strokeStyle = aura; ctx.lineWidth = 2; ctx.globalAlpha = .8; ctx.beginPath(); ctx.arc(x, y, 0.44 * big * cam.U, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+        else { ctx.globalAlpha = 0.16; ctx.fillStyle = aura; ctx.beginPath(); ctx.arc(x, y, 0.56 * big * cam.U, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
       }
       // sprite com glow de estado
       ctx.save();
@@ -206,8 +206,8 @@
       ctx.restore();
       // barra de vida (boss mais destacada)
       if (en.hp < en.hpMax || en.boss) {
-        const w = (en.boss ? 0.9 : 0.56) * cam.U * big, hp = Math.max(0, en.hp / en.hpMax);
-        const bx = x - w / 2, by = y - (en.boss ? 0.44 : 0.34) * cam.U * big, h = en.boss ? 6 : 4;
+        const w = (en.boss ? 1.1 : 0.72) * cam.U * big, hp = Math.max(0, en.hp / en.hpMax);
+        const bx = x - w / 2, by = y - (en.boss ? 0.58 : 0.46) * cam.U * big, h = en.boss ? 6 : 4;
         ctx.fillStyle = 'rgba(0,0,0,.6)'; rr(bx - 1, by - 1, w + 2, h + 2, 3); ctx.fill();
         ctx.fillStyle = hp > 0.5 ? '#4fc76e' : hp > 0.25 ? '#ffd24f' : '#ee6b6e'; rr(bx, by, w * hp, h, 2); ctx.fill();
       }

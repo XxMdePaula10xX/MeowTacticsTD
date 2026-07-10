@@ -19,8 +19,10 @@ window.MT = window.MT || {};
   // autorados nesse mesmo espaço no Unity, então batem com a arte.
   const ART = { hw: 11.95, hh: 6.72 };
 
+  // zoom padrão >1 aproxima o framing (unidades maiores, "câmera na batalha").
+  const HOME_ZOOM = 1.22;
   const cam = {
-    U: 60, baseU: 60, w: 0, h: 0, zoom: 1, panX: 0, panY: 0, minZoom: 1, maxZoom: 4.5, ART,
+    U: 60, baseU: 60, w: 0, h: 0, zoom: HOME_ZOOM, panX: 0, panY: 0, minZoom: 1, maxZoom: 4.5, ART, HOME_ZOOM,
     fit(pxW, pxH) {
       this.w = pxW; this.h = pxH;
       // COVER (max): a arte preenche o tabuleiro inteiro — um único mapa, sem
@@ -46,7 +48,7 @@ window.MT = window.MT || {};
       const maxX = Math.max(0, halfW - this.w / 2), maxY = Math.max(0, halfH - this.h / 2);
       this.panX = U.clamp(this.panX, -maxX, maxX); this.panY = U.clamp(this.panY, -maxY, maxY);
     },
-    reset() { this.zoom = 1; this.panX = 0; this.panY = 0; this.apply(); },
+    reset() { this.zoom = HOME_ZOOM; this.panX = 0; this.panY = 0; this.apply(); },
     sx(wx) { return this.w / 2 + this.panX + wx * this.U; },
     sy(wy) { return this.h / 2 + this.panY - wy * this.U; },
     wx(sx) { return (sx - (this.w / 2 + this.panX)) / this.U; },

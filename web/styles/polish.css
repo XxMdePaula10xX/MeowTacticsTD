@@ -450,3 +450,43 @@
 .relic-strip { pointer-events: none; }             /* decorativa */
 .synergy-panel { pointer-events: none; }           /* não rouba toque do mapa atrás */
 .synergy-panel .syn-row { pointer-events: auto; }  /* mas as linhas continuam tocáveis (tooltip) */
+
+/* ============================================================
+   ESTRUTURA v2 — MAPA EM TELA CHEIA (protagonista)
+   Antes: HUD/board/dock empilhados (flex) espremiam o mapa numa faixa
+   curta e larga (parecia achatado + faixas vazias). Agora o tabuleiro
+   ocupa a tela TODA e HUD/dock/painéis são overlays discretos por cima.
+   ============================================================ */
+#app { display: block; max-width: none; margin: 0; padding: 0; }
+.board-wrap { position: absolute; inset: 0; z-index: 1; min-height: 0; }
+
+/* HUD superior: overlay leve com scrim pra legibilidade */
+.hud { position: absolute; top: 0; left: 0; right: 0; z-index: 6;
+  padding: calc(var(--sp-2) + env(safe-area-inset-top, 0)) max(var(--sp-3), env(safe-area-inset-right, 0))
+           var(--sp-3) max(var(--sp-3), env(safe-area-inset-left, 0));
+  background: linear-gradient(180deg, rgba(9,9,20,.60) 0%, rgba(9,9,20,.28) 55%, rgba(9,9,20,0) 100%); }
+
+/* dock inferior: overlay com scrim (loja/banco legíveis sobre o mapa) */
+.dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+  padding: var(--sp-3) max(var(--sp-2), env(safe-area-inset-right, 0))
+           calc(var(--sp-2) + env(safe-area-inset-bottom, 0)) max(var(--sp-2), env(safe-area-inset-left, 0));
+  background: linear-gradient(0deg, rgba(9,9,20,.90) 0%, rgba(9,9,20,.86) 60%, rgba(9,9,20,0) 100%); }
+.dock.collapsed { background: linear-gradient(0deg, rgba(9,9,20,.82) 0%, rgba(9,9,20,.4) 80%, rgba(9,9,20,0) 100%); }
+
+/* painel de sinergias: compacto e ABAIXO da HUD, canto superior-esquerdo */
+.synergy-panel { top: 56px; left: max(8px, env(safe-area-inset-left,0)); width: 132px; max-width: 132px; padding: 7px 8px; }
+.syn-empty { padding: 6px 2px; font-size: 11px; }
+.syn-empty small { font-size: 9.5px; }
+
+/* painel do gato: abaixo da HUD, canto superior-direito */
+.sel-panel { top: 56px; right: max(8px, env(safe-area-inset-right,0)); }
+
+/* zoom: pequeno, discreto e ACIMA da barra inferior */
+.zoom-ctl { right: max(8px, env(safe-area-inset-right,0)); bottom: 74px; gap: 5px; }
+.zoom-ctl button { width: 30px; height: 30px; border-radius: 9px; font-size: 15px; opacity: .55;
+  background: rgba(16,16,34,.5); border: 1px solid rgba(255,255,255,.08); }
+.zoom-ctl button::after { content: ""; position: absolute; inset: -6px; }  /* hit-slop */
+.zoom-ctl #zoomReset { font-size: 12px; }
+
+/* relíquias: canto inferior-esquerdo, acima da barra */
+.relic-strip { bottom: 78px; left: max(8px, env(safe-area-inset-left,0)); }

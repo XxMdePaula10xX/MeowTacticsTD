@@ -759,6 +759,46 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .synergy-panel { pointer-events: none; }           /* não rouba toque do mapa atrás */
 .synergy-panel .syn-row { pointer-events: auto; }  /* mas as linhas continuam tocáveis (tooltip) */
 
+/* ============================================================
+   ESTRUTURA v2 — MAPA EM TELA CHEIA (protagonista)
+   Antes: HUD/board/dock empilhados (flex) espremiam o mapa numa faixa
+   curta e larga (parecia achatado + faixas vazias). Agora o tabuleiro
+   ocupa a tela TODA e HUD/dock/painéis são overlays discretos por cima.
+   ============================================================ */
+#app { display: block; max-width: none; margin: 0; padding: 0; }
+.board-wrap { position: absolute; inset: 0; z-index: 1; min-height: 0; }
+
+/* HUD superior: overlay leve com scrim pra legibilidade */
+.hud { position: absolute; top: 0; left: 0; right: 0; z-index: 6;
+  padding: calc(var(--sp-2) + env(safe-area-inset-top, 0)) max(var(--sp-3), env(safe-area-inset-right, 0))
+           var(--sp-3) max(var(--sp-3), env(safe-area-inset-left, 0));
+  background: linear-gradient(180deg, rgba(9,9,20,.60) 0%, rgba(9,9,20,.28) 55%, rgba(9,9,20,0) 100%); }
+
+/* dock inferior: overlay com scrim (loja/banco legíveis sobre o mapa) */
+.dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+  padding: var(--sp-3) max(var(--sp-2), env(safe-area-inset-right, 0))
+           calc(var(--sp-2) + env(safe-area-inset-bottom, 0)) max(var(--sp-2), env(safe-area-inset-left, 0));
+  background: linear-gradient(0deg, rgba(9,9,20,.90) 0%, rgba(9,9,20,.86) 60%, rgba(9,9,20,0) 100%); }
+.dock.collapsed { background: linear-gradient(0deg, rgba(9,9,20,.82) 0%, rgba(9,9,20,.4) 80%, rgba(9,9,20,0) 100%); }
+
+/* painel de sinergias: compacto e ABAIXO da HUD, canto superior-esquerdo */
+.synergy-panel { top: 56px; left: max(8px, env(safe-area-inset-left,0)); width: 132px; max-width: 132px; padding: 7px 8px; }
+.syn-empty { padding: 6px 2px; font-size: 11px; }
+.syn-empty small { font-size: 9.5px; }
+
+/* painel do gato: abaixo da HUD, canto superior-direito */
+.sel-panel { top: 56px; right: max(8px, env(safe-area-inset-right,0)); }
+
+/* zoom: pequeno, discreto e ACIMA da barra inferior */
+.zoom-ctl { right: max(8px, env(safe-area-inset-right,0)); bottom: 74px; gap: 5px; }
+.zoom-ctl button { width: 30px; height: 30px; border-radius: 9px; font-size: 15px; opacity: .55;
+  background: rgba(16,16,34,.5); border: 1px solid rgba(255,255,255,.08); }
+.zoom-ctl button::after { content: ""; position: absolute; inset: -6px; }  /* hit-slop */
+.zoom-ctl #zoomReset { font-size: 12px; }
+
+/* relíquias: canto inferior-esquerdo, acima da barra */
+.relic-strip { bottom: 78px; left: max(8px, env(safe-area-inset-left,0)); }
+
 </style>
 
   <div id="app">
@@ -2717,8 +2757,10 @@ window.MT = window.MT || {};
   // autorados nesse mesmo espaço no Unity, então batem com a arte.
   const ART = { hw: 11.95, hh: 6.72 };
 
+  // zoom padrão >1 aproxima o framing (unidades maiores, "câmera na batalha").
+  const HOME_ZOOM = 1.22;
   const cam = {
-    U: 60, baseU: 60, w: 0, h: 0, zoom: 1, panX: 0, panY: 0, minZoom: 1, maxZoom: 4.5, ART,
+    U: 60, baseU: 60, w: 0, h: 0, zoom: HOME_ZOOM, panX: 0, panY: 0, minZoom: 1, maxZoom: 4.5, ART, HOME_ZOOM,
     fit(pxW, pxH) {
       this.w = pxW; this.h = pxH;
       // COVER (max): a arte preenche o tabuleiro inteiro — um único mapa, sem
@@ -2744,7 +2786,7 @@ window.MT = window.MT || {};
       const maxX = Math.max(0, halfW - this.w / 2), maxY = Math.max(0, halfH - this.h / 2);
       this.panX = U.clamp(this.panX, -maxX, maxX); this.panY = U.clamp(this.panY, -maxY, maxY);
     },
-    reset() { this.zoom = 1; this.panX = 0; this.panY = 0; this.apply(); },
+    reset() { this.zoom = HOME_ZOOM; this.panX = 0; this.panY = 0; this.apply(); },
     sx(wx) { return this.w / 2 + this.panX + wx * this.U; },
     sy(wy) { return this.h / 2 + this.panY - wy * this.U; },
     wx(sx) { return (sx - (this.w / 2 + this.panX)) / this.U; },
@@ -3692,7 +3734,7 @@ window.MT = window.MT || {};
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(W(h.wx), H(h.wy), rng * cam.U, 0, 7); ctx.fill(); ctx.stroke();
       ctx.restore();
-      drawUnitSprite(g.selected.cat.data.sprite, h.wx, h.wy, 0.62, g.selected.cat.data);
+      drawUnitSprite(g.selected.cat.data.sprite, h.wx, h.wy, 0.84, g.selected.cat.data);
     }
   }
 
@@ -3709,33 +3751,33 @@ window.MT = window.MT || {};
       // sombra + base
       ctx.save(); ctx.translate(x, y);
       ctx.fillStyle = 'rgba(0,0,0,.28)';
-      ctx.beginPath(); ctx.ellipse(0, 0.16 * cam.U, 0.32 * cam.U, 0.16 * cam.U, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, 0.22 * cam.U, 0.42 * cam.U, 0.20 * cam.U, 0, 0, 7); ctx.fill();
       const dragging = MT.input && MT.input.dragging === cat;
       const dok = !dragging || MT.api.placeValid(cat.x, cat.y, cat);
       ctx.fillStyle = 'rgba(43,40,86,.95)';
       ctx.strokeStyle = sel ? '#ffd24f' : dragging ? (dok ? '#4fc76e' : '#ee6b6e') : 'rgba(255,210,79,.5)';
       ctx.lineWidth = (sel || dragging) ? 3 : 2;
-      ctx.beginPath(); ctx.arc(0, 0, 0.34 * cam.U, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 0.46 * cam.U, 0, 7); ctx.fill(); ctx.stroke();
       // seta de direção
       ctx.rotate(cat.ang); ctx.fillStyle = '#ffd24f';
-      ctx.beginPath(); ctx.moveTo(0.32 * cam.U, 0); ctx.lineTo(0.2 * cam.U, -0.08 * cam.U); ctx.lineTo(0.2 * cam.U, 0.08 * cam.U); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0.43 * cam.U, 0); ctx.lineTo(0.27 * cam.U, -0.11 * cam.U); ctx.lineTo(0.27 * cam.U, 0.11 * cam.U); ctx.fill();
       ctx.restore();
       // sprite
-      drawUnitSprite(cat.data.sprite, cat.x, cat.y - 0.04, 0.58 * sc, cat.data);
+      drawUnitSprite(cat.data.sprite, cat.x, cat.y - 0.05, 0.80 * sc, cat.data);
       // símbolo de tipo (canto superior direito)
-      ctx.font = '900 ' + (0.22 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '900 ' + (0.28 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = DMGCOL[cat.data.type];
-      ctx.fillText(SYM[cat.data.type], x + 0.26 * cam.U, y - 0.26 * cam.U);
+      ctx.fillText(SYM[cat.data.type], x + 0.35 * cam.U, y - 0.35 * cam.U);
       // indicador de prioridade de alvo (canto superior esquerdo)
-      ctx.font = (0.17 * cam.U) + 'px serif';
-      ctx.globalAlpha = 0.9; ctx.fillText(PRIO_ICON[cat.priority || 'first'], x - 0.25 * cam.U, y - 0.25 * cam.U); ctx.globalAlpha = 1;
+      ctx.font = (0.22 * cam.U) + 'px serif';
+      ctx.globalAlpha = 0.9; ctx.fillText(PRIO_ICON[cat.priority || 'first'], x - 0.34 * cam.U, y - 0.34 * cam.U); ctx.globalAlpha = 1;
     }
   }
 
   function drawEnemies() {
     for (const en of MT.game.enemies) {
       if (en.d < 0) continue;
-      const x = W(en.x), y = H(en.y), big = en.boss ? 1.5 : 1, Sz = 0.56 * big;
+      const x = W(en.x), y = H(en.y), big = en.boss ? 1.5 : 1, Sz = 0.76 * big;
       // rastro nos velozes
       if (en.data.speed >= 1.5 && en.slowT <= 0) {
         for (let k = 1; k <= 2; k++) {
@@ -3745,15 +3787,15 @@ window.MT = window.MT || {};
       }
       // sombra sob o personagem
       ctx.fillStyle = 'rgba(0,0,0,.34)';
-      ctx.beginPath(); ctx.ellipse(x, y + 0.17 * cam.U * big, 0.26 * cam.U * big, 0.12 * cam.U * big, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x, y + 0.22 * cam.U * big, 0.34 * cam.U * big, 0.16 * cam.U * big, 0, 0, 7); ctx.fill();
       // aura por tipo (boss dourado, mágico roxo, blindado aço)
       let aura = null, ring = false;
       if (en.boss) aura = 'rgba(255,210,79,.9)';
       else if (en.data.mr >= 30) aura = 'rgba(185,140,255,.9)';
       else if (en.data.armor >= 30) { aura = 'rgba(170,190,220,.9)'; ring = true; }
       if (aura) {
-        if (ring) { ctx.strokeStyle = aura; ctx.lineWidth = 2; ctx.globalAlpha = .8; ctx.beginPath(); ctx.arc(x, y, 0.32 * big * cam.U, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
-        else { ctx.globalAlpha = 0.16; ctx.fillStyle = aura; ctx.beginPath(); ctx.arc(x, y, 0.42 * big * cam.U, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+        if (ring) { ctx.strokeStyle = aura; ctx.lineWidth = 2; ctx.globalAlpha = .8; ctx.beginPath(); ctx.arc(x, y, 0.44 * big * cam.U, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+        else { ctx.globalAlpha = 0.16; ctx.fillStyle = aura; ctx.beginPath(); ctx.arc(x, y, 0.56 * big * cam.U, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
       }
       // sprite com glow de estado
       ctx.save();
@@ -3764,8 +3806,8 @@ window.MT = window.MT || {};
       ctx.restore();
       // barra de vida (boss mais destacada)
       if (en.hp < en.hpMax || en.boss) {
-        const w = (en.boss ? 0.9 : 0.56) * cam.U * big, hp = Math.max(0, en.hp / en.hpMax);
-        const bx = x - w / 2, by = y - (en.boss ? 0.44 : 0.34) * cam.U * big, h = en.boss ? 6 : 4;
+        const w = (en.boss ? 1.1 : 0.72) * cam.U * big, hp = Math.max(0, en.hp / en.hpMax);
+        const bx = x - w / 2, by = y - (en.boss ? 0.58 : 0.46) * cam.U * big, h = en.boss ? 6 : 4;
         ctx.fillStyle = 'rgba(0,0,0,.6)'; rr(bx - 1, by - 1, w + 2, h + 2, 3); ctx.fill();
         ctx.fillStyle = hp > 0.5 ? '#4fc76e' : hp > 0.25 ? '#ffd24f' : '#ee6b6e'; rr(bx, by, w * hp, h, 2); ctx.fill();
       }
