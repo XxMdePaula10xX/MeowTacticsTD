@@ -1,9 +1,14 @@
 # Codemagic CI/CD — build iOS do Meow Tactics (Capacitor) e envio ao TestFlight.
 # Requisitos (no painel do Codemagic / App Store Connect):
 #   1. Integração App Store Connect API key com o nome "quantum_asc" (Key 4UQMCZZJ95).
-#   2. Um app criado no App Store Connect com o Bundle ID com.meowtactics.td (App ID já registrado).
-#   3. A API key com papel "App Manager" ou "Admin" (para CRIAR o provisioning profile e subir builds).
+#   2. Um app criado no App Store Connect com o Bundle ID com.meowtactics.td (App ID registrado).
+#   3. A API key com papel "App Manager" ou "Admin".
 # Team ID: 249VTHN4GQ
+#
+# Assinatura MANUAL: "app-store-connect fetch-signing-files --create" CRIA o
+# certificado + provisioning profile (o bloco automático ios_signing só busca
+# existentes e falhava com "no matching profiles"). Depois um passo força o
+# bundle id do target e "xcode-project use-profiles" aplica ao projeto.
 workflows:
   ios-testflight:
     name: Meow Tactics — iOS (TestFlight)
@@ -12,12 +17,6 @@ workflows:
     integrations:
       app_store_connect: quantum_asc
     environment:
-      # Assinatura AUTOMÁTICA: o Codemagic busca OU CRIA o certificado e o
-      # provisioning profile (App Store) para este bundle id usando a API key,
-      # e os instala no lugar certo para o "xcode-project use-profiles" aplicar.
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.meowtactics.td
       vars:
         BUNDLE_ID: "com.meowtactics.td"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -43,7 +42,6 @@ workflows:
       - name: Garantir o Bundle ID no projeto Xcode
         script: |
           cd web/ios/App
-          # força PRODUCT_BUNDLE_IDENTIFIER do target App para casar com o profile
           sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = ${BUNDLE_ID};/g" App.xcodeproj/project.pbxproj
           echo "Bundle IDs no projeto:"; grep PRODUCT_BUNDLE_IDENTIFIER App.xcodeproj/project.pbxproj
       - name: Gerar ícone e splash a partir de resources/
@@ -58,8 +56,14 @@ workflows:
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist
           plutil -replace "UISupportedInterfaceOrientations~ipad" -json \
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist || true
-      - name: Aplicar perfis de assinatura ao projeto
+      - name: Assinatura — cria certificado/profile e aplica ao projeto
         script: |
+          keychain initialize
+          # cria (ou reutiliza) o certificado de distribuição + provisioning profile App Store
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
           cd web
           xcode-project use-profiles
       - name: Definir número do build
