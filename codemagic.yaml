@@ -67,13 +67,20 @@ workflows:
       - name: Assinar e compilar (.ipa)   # tudo numa etapa — o log traz o --verbose junto do erro
         script: |
           set -e
-          echo "===== 0) GERAR CHAVE PRIVADA DO CERTIFICADO ====="
-          # A Apple gera o certificado, mas a CHAVE PRIVADA tem de ser nossa.
-          # Sem passar --certificate-key, o --create estoura em
-          # "Cannot save Signing Certificates without certificate private key".
+          echo "===== 0) CHAVE PRIVADA DO CERTIFICADO (FIXA) ====="
+          # A Apple guarda o certificado mas NUNCA a chave privada — a chave é nossa.
+          # Se a chave for gerada nova a cada build, nenhum cert existente "casa" com
+          # ela e o --create tenta criar outro -> estoura o limite (409). A solução é
+          # usar UMA chave fixa (env CERT_KEY_B64, base64) reaproveitada em todo build.
           CERT_KEY="$CM_BUILD_DIR/cert_private_key.pem"
-          openssl genrsa -out "$CERT_KEY" 2048
-          echo "Chave privada gerada em: $CERT_KEY"
+          if [ -n "$CERT_KEY_B64" ]; then
+            echo "$CERT_KEY_B64" | base64 --decode > "$CERT_KEY"
+            echo "Usando chave privada FIXA do env CERT_KEY_B64 (reaproveita o certificado)."
+          else
+            openssl genrsa -out "$CERT_KEY" 2048
+            echo "AVISO: CERT_KEY_B64 ausente — gerei chave nova. Adicione CERT_KEY_B64 no"
+            echo "Codemagic p/ reaproveitar o mesmo certificado nos próximos builds."
+          fi
           echo "===== 1) FETCH SIGNING FILES (verbose) ====="
           keychain initialize
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
