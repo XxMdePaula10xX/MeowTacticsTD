@@ -56,16 +56,22 @@ workflows:
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist
           plutil -replace "UISupportedInterfaceOrientations~ipad" -json \
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist || true
-      - name: Assinatura — cria certificado/profile e aplica ao projeto
+      - name: Assinatura + diagnóstico (cria/aplica o profile)
         script: |
+          set +e
           keychain initialize
-          # cria (ou reutiliza) o certificado de distribuição + provisioning profile App Store
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
+          echo "===== FETCH SIGNING FILES ====="
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          echo "===== PROVISIONING PROFILES BAIXADOS ====="
+          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" 2>/dev/null
           keychain add-certificates
-          cd web
+          echo "===== USE-PROFILES ====="
           xcode-project use-profiles
+          echo "===== SETTINGS DE ASSINATURA DO TARGET App ====="
+          cd web
+          xcodebuild -workspace "$XCODE_WORKSPACE" -scheme "$XCODE_SCHEME" -showBuildSettings 2>/dev/null \
+            | grep -iE "PRODUCT_BUNDLE_IDENTIFIER|CODE_SIGN_STYLE|PROVISIONING_PROFILE|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY" | sort -u
+          echo "===== FIM DIAGNÓSTICO ====="
       - name: Definir número do build
         script: |
           cd web/ios/App
