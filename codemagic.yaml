@@ -63,9 +63,19 @@ workflows:
       - name: Assinar e compilar (.ipa)   # tudo numa etapa — o log traz o --verbose junto do erro
         script: |
           set -e
+          echo "===== 0) GERAR CHAVE PRIVADA DO CERTIFICADO ====="
+          # A Apple gera o certificado, mas a CHAVE PRIVADA tem de ser nossa.
+          # Sem passar --certificate-key, o --create estoura em
+          # "Cannot save Signing Certificates without certificate private key".
+          CERT_KEY="$CM_BUILD_DIR/cert_private_key.pem"
+          openssl genrsa -out "$CERT_KEY" 2048
+          echo "Chave privada gerada em: $CERT_KEY"
           echo "===== 1) FETCH SIGNING FILES (verbose) ====="
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --verbose
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key @file:"$CERT_KEY" \
+            --create --verbose
           echo "===== 2) PROCURA .mobileprovision NO SISTEMA ====="
           find "$CM_BUILD_DIR" "$HOME" -name "*.mobileprovision" 2>/dev/null || true
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
