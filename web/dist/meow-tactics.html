@@ -489,6 +489,83 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .end-best b { font-size: 13px; } .end-best span { font-size: 11px; color: var(--ink-dim); }
 .end-synrow { font-size: 12px; color: var(--ink-dim); font-weight: 700; max-width: 40ch; }
 
+/* ============================================================
+   CORREÇÃO LANDSCAPE — tela curta (celular na horizontal)
+   O dock empilhado engolia a altura toda e o mapa ficava com ~55px.
+   Aqui compactamos o dock e damos ao tabuleiro o espaço que ele precisa.
+   ============================================================ */
+
+/* safe-area lateral (notch/ilha) — mantém UI longe das bordas do iPhone */
+#app { padding-left: env(safe-area-inset-left, 0); padding-right: env(safe-area-inset-right, 0); }
+.screen, .draft { padding-left: max(24px, env(safe-area-inset-left, 0)); padding-right: max(24px, env(safe-area-inset-right, 0)); }
+.menu-top, .menu-bottom { padding-left: max(20px, env(safe-area-inset-left, 0)); padding-right: max(20px, env(safe-area-inset-right, 0)); }
+
+/* piso de segurança pro tabuleiro (sem forçar overflow do dock) */
+.board-wrap { min-height: 92px; }
+
+/* --- botão recolher/expandir o painel --- */
+.dock { position: relative; }
+.dock-toggle { position: absolute; top: -19px; left: 50%; transform: translateX(-50%); z-index: 8;
+  display: flex; align-items: center; gap: 5px; height: 21px; padding: 0 14px;
+  background: linear-gradient(180deg, rgba(34,32,64,.96), rgba(20,20,40,.96)); color: var(--ink-dim);
+  border: 1px solid var(--line); border-bottom: none; border-radius: 12px 12px 0 0;
+  font-family: inherit; font-weight: 900; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+  box-shadow: 0 -3px 10px rgba(0,0,0,.3); }
+.dock-toggle .dt-ico { font-size: 12px; line-height: 1; transition: transform .2s; }
+.dock-toggle:active { transform: translateX(-50%) translateY(1px); }
+.dock.collapsed .dock-toggle .dt-ico { transform: rotate(180deg); }
+
+/* estado recolhido: some banco + loja, sobra só o botão INICIAR (mapa cresce) */
+.dock.collapsed .bench-sec, .dock.collapsed .shop-sec { display: none; }
+.dock.collapsed .controls { margin-top: 2px; }
+
+/* ao posicionar um gato: esconde a loja pra abrir espaço no mapa (mantém o banco à vista) */
+.dock.placing .shop-sec { display: none; }
+.dock.placing .dock-toggle { display: none; }
+
+/* --- compactação para telas curtas (celular em paisagem) --- */
+@media (max-height: 560px) {
+  .hud { padding-top: calc(var(--sp-2) + env(safe-area-inset-top, 0)); padding-bottom: var(--sp-1); }
+  .hud .title { font-size: var(--t-sm); }
+
+  .dock { gap: 4px; padding-top: var(--sp-1); }
+  .dock-section { gap: 2px; }
+  .dock-label { font-size: 8px; letter-spacing: 1.2px; }
+  .shop-sec { padding: 4px 5px; }
+
+  /* banco: fileira fina */
+  .bench-slot { width: 40px; height: 40px; border-radius: 10px; }
+  .bench-slot img { width: 32px; height: 32px; }
+
+  /* loja: cartas menores e mais baixas (tags escondidas — o selo de dano já mostra o tipo) */
+  .cat-card { width: 74px; padding: 5px 5px 6px; border-radius: 12px; }
+  .cat-art { height: 32px; }
+  .cat-art img, .cat-card .cat-art img { width: 32px; height: 32px; }
+  .cat-name { font-size: 10.5px; margin-top: 2px; }
+  .cat-cost { font-size: 10.5px; margin-top: 1px; }
+  .cat-tags { display: none; }
+  .cat-card .syn-hint { font-size: 8.5px; margin-top: 2px; line-height: 1; }
+  .dmg-badge { width: 16px; height: 16px; font-size: 10px; top: 4px; right: 4px; }
+
+  /* controles compactos */
+  .controls { gap: var(--sp-2); }
+  .btn { padding: 10px 14px; font-size: var(--t-sm); }
+  .btn.start { padding: 11px 14px; }
+
+  /* painéis flutuantes menores pra não cobrir o mapa curto */
+  .synergy-panel { width: 140px; padding: 5px 8px; top: 8px; left: 8px; }
+  .sel-panel { width: 188px; top: 8px; right: 8px; }
+  .zoom-ctl button { width: 32px; height: 32px; font-size: 17px; }
+}
+
+/* telas muito baixas (paisagem apertada): ainda mais enxuto */
+@media (max-height: 430px) {
+  .cat-card { width: 70px; }
+  .bench-slot { width: 36px; height: 36px; }
+  .bench-slot img { width: 29px; height: 29px; }
+  .btn { padding: 9px 12px; }
+}
+
 </style>
 
   <div id="app">
@@ -525,6 +602,7 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
     </div>
 
     <div class="dock">
+      <button class="dock-toggle" id="dockToggle" aria-label="Recolher painel"><span class="dt-ico">▾</span><span class="dt-txt">painel</span></button>
       <div class="dock-section bench-sec">
         <span class="dock-label">BANCO</span>
         <div class="bench-rail" id="bench"></div>
@@ -3713,6 +3791,12 @@ window.MT = window.MT || {};
     };
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
+    // recolher/expandir o painel (banco+loja) — dá espaço ao mapa
+    const dockToggle = $('dockToggle');
+    if (dockToggle) dockToggle.addEventListener('click', () => {
+      const dk = document.querySelector('.dock'); if (!dk) return;
+      dk.classList.toggle('collapsed'); dockManual = true;
+    });
     refs.speed.addEventListener('click', () => { const g = MT.game; g.speed = g.speed === 1 ? 2 : g.speed === 2 ? 3 : 1; refs.speed.textContent = '⏩ ' + g.speed + '×'; });
 
     // ícones de HUD (arte real)
@@ -3815,10 +3899,21 @@ window.MT = window.MT || {};
   function stat(v, label) { return '<div class="st"><b>' + U.fmt(v) + '</b><span>' + label + '</span></div>'; }
 
   // ---------- REFRESH ----------
-  let lastCoins = null, lastLives = null;
+  let lastCoins = null, lastLives = null, lastPhase = null, dockManual = false;
+  function setDockCollapsed(on) {
+    const dk = document.querySelector('.dock');
+    if (dk) dk.classList.toggle('collapsed', on);
+  }
   function refresh() {
     const g = MT.game;
     if (g.phase === 'menu') return;
+    // auto-recolher na onda (loja fica travada mesmo) e reabrir na preparação.
+    // O toque manual manda até a próxima troca de fase.
+    if (g.phase !== lastPhase) {
+      dockManual = false;
+      setDockCollapsed(g.phase === 'wave');
+      lastPhase = g.phase;
+    }
     if (g.freshRun) { lastCoins = null; lastLives = null; g.freshRun = false; } // run nova: sem delta falso
     // feedback de economia (pop + flutuante +X/-X)
     if (lastCoins != null && g.coins !== lastCoins) { bumpChip('coins'); coinFloat(g.coins - lastCoins); }

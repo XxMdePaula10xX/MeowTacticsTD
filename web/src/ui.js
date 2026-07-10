@@ -35,6 +35,12 @@
     };
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
+    // recolher/expandir o painel (banco+loja) — dá espaço ao mapa
+    const dockToggle = $('dockToggle');
+    if (dockToggle) dockToggle.addEventListener('click', () => {
+      const dk = document.querySelector('.dock'); if (!dk) return;
+      dk.classList.toggle('collapsed'); dockManual = true;
+    });
     refs.speed.addEventListener('click', () => { const g = MT.game; g.speed = g.speed === 1 ? 2 : g.speed === 2 ? 3 : 1; refs.speed.textContent = '⏩ ' + g.speed + '×'; });
 
     // ícones de HUD (arte real)
@@ -137,10 +143,21 @@
   function stat(v, label) { return '<div class="st"><b>' + U.fmt(v) + '</b><span>' + label + '</span></div>'; }
 
   // ---------- REFRESH ----------
-  let lastCoins = null, lastLives = null;
+  let lastCoins = null, lastLives = null, lastPhase = null, dockManual = false;
+  function setDockCollapsed(on) {
+    const dk = document.querySelector('.dock');
+    if (dk) dk.classList.toggle('collapsed', on);
+  }
   function refresh() {
     const g = MT.game;
     if (g.phase === 'menu') return;
+    // auto-recolher na onda (loja fica travada mesmo) e reabrir na preparação.
+    // O toque manual manda até a próxima troca de fase.
+    if (g.phase !== lastPhase) {
+      dockManual = false;
+      setDockCollapsed(g.phase === 'wave');
+      lastPhase = g.phase;
+    }
     if (g.freshRun) { lastCoins = null; lastLives = null; g.freshRun = false; } // run nova: sem delta falso
     // feedback de economia (pop + flutuante +X/-X)
     if (lastCoins != null && g.coins !== lastCoins) { bumpChip('coins'); coinFloat(g.coins - lastCoins); }
