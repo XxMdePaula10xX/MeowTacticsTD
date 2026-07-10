@@ -337,3 +337,105 @@
   .map-thumb { width: 110px; height: 70px; }
   .coll-body { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
+
+/* ============================================================
+   RODADA 2 DE POLISH — HUD, escolha de mapa e menu
+   Consistência de design system: pílulas, painéis, botões, cards.
+   ============================================================ */
+
+/* ---------- HUD superior: pílulas consistentes ---------- */
+.hud .chip { min-height: 40px; border-radius: 13px; border: 1px solid rgba(255,255,255,.09);
+  box-shadow: 0 4px 14px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05); }
+.hud .title { padding-right: 2px; }
+.chip.wave { position: relative; }
+.chip.speed { background: linear-gradient(180deg, rgba(45,42,80,.78), var(--glass)); color: var(--ink); }
+.chip.speed::before { content: ""; }
+
+/* ---------- Painel de sinergias: compacto e elegante ---------- */
+.synergy-panel { width: 150px; padding: 8px 9px 9px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(28,26,54,.72), rgba(16,16,34,.72));
+  border: 1px solid rgba(154,140,255,.20); }
+.syn-title { display: flex; align-items: center; gap: 5px; font-size: 10px; letter-spacing: 1.4px;
+  color: var(--ink-dim); margin-bottom: 7px; opacity: .95; }
+.syn-empty { padding: 10px 4px; text-align: center; }
+.syn-empty { font-size: 12px; color: var(--ink-dim); font-weight: 800; }
+.syn-empty small { display: block; margin-top: 3px; font-size: 10px; font-weight: 700; color: var(--ink-mut); }
+.syn-row { padding: 4px 3px; border-radius: 8px; }
+.syn-ico { font-size: 13px; width: 15px; text-align: center; }
+.syn-count { min-width: 17px; height: 17px; font-size: 10px; }
+.syn-name { font-size: 11.5px; }
+.syn-row.near { opacity: .85; } .syn-row.near .syn-count { background: var(--azure); color: #06122b; }
+.syn-row.far { opacity: .5; }
+
+/* ---------- Controles de zoom: menores e discretos ---------- */
+.zoom-ctl { gap: 5px; right: 8px; bottom: 8px; }
+.zoom-ctl button { width: 32px; height: 32px; border-radius: 10px; font-size: 16px;
+  opacity: .6; background: rgba(20,20,40,.55); border: 1px solid rgba(255,255,255,.08); }
+.zoom-ctl button:hover, .zoom-ctl button:active { opacity: .95; }
+.zoom-ctl #zoomReset { font-size: 13px; }
+
+/* ---------- Aba LOJA/MAPA: cara de aba retrátil de verdade ---------- */
+.dock-toggle { top: -20px; height: 22px; padding: 0 16px 0 12px; gap: 6px;
+  background: linear-gradient(180deg, rgba(40,37,74,.98), rgba(24,23,46,.98));
+  border: 1px solid rgba(154,140,255,.28); border-bottom: none;
+  border-radius: 13px 13px 0 0; color: var(--ink-dim); box-shadow: 0 -4px 14px rgba(0,0,0,.35); }
+.dock-toggle .dt-ico { color: var(--gold); }
+.dock-toggle .dt-txt { letter-spacing: 1.4px; }
+
+/* ---------- Board: vinheta + moldura pra o mapa virar protagonista ---------- */
+.board-wrap::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: radial-gradient(120% 90% at 50% 48%, transparent 52%, rgba(9,9,20,.28) 82%, rgba(9,9,20,.55) 100%); }
+
+/* ---------- Botão INICIAR ONDA: mais presença ---------- */
+.btn.start { box-shadow: 0 8px 22px rgba(224,169,48,.28), inset 0 1px 0 rgba(255,255,255,.4); letter-spacing: .5px; }
+
+/* ============================================================
+   ESCOLHA DE MAPA — cards padronizados + CTA JOGAR
+   ============================================================ */
+.map-head { text-align: center; }
+.map-head .screen-title { font-size: var(--t-xl); line-height: 1; }
+.screen-sub { font-size: var(--t-sm); color: var(--ink-dim); font-weight: 700; margin-top: 3px; }
+
+.map-list { display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start;
+  gap: 10px; width: min(940px, 95vw); }
+.map-card { flex: 0 1 288px; min-height: 92px; align-items: center; padding: 10px 12px; gap: 11px;
+  border: 1px solid rgba(154,140,255,.18); transition: transform .14s, border-color .14s, box-shadow .14s; }
+.map-thumb { width: 82px; height: 54px; flex: 0 0 82px; }
+.map-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.map-name { font-size: var(--t-md); font-weight: 900; line-height: 1.12; text-wrap: balance;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.24em; }
+.map-meta { font-size: 11.5px; color: var(--ink-dim); font-weight: 700; }
+.map-best { font-size: 11px; color: var(--gold); font-weight: 800; opacity: .92; }
+.map-card.selected { border-color: var(--gold); transform: translateY(-3px);
+  box-shadow: 0 0 0 2px var(--gold), 0 10px 26px rgba(255,210,79,.30); }
+.map-card.selected .map-thumb { box-shadow: inset 0 0 0 1px rgba(255,210,79,.5); }
+
+.map-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: min(940px, 95vw); margin-top: 2px; }
+.btn.map-back { flex: 0 0 auto; padding: 12px 22px; }
+.btn.map-play { flex: 0 0 auto; min-width: 180px; padding: 14px 30px; transition: opacity .15s, filter .15s, transform .1s; }
+.btn.map-play:disabled { opacity: .4; filter: grayscale(.5); cursor: default; }
+.btn.map-play.ready { animation: startPulse 2.2s ease-in-out infinite; }
+
+/* ============================================================
+   MENU PRINCIPAL — hierarquia + grid 2x2 + pílula de recorde
+   ============================================================ */
+.menu-scrim { background: linear-gradient(180deg, rgba(9,9,20,.72) 0%, rgba(9,9,20,.12) 26%,
+  rgba(9,9,20,.10) 48%, rgba(9,9,20,.78) 74%, rgba(9,9,20,.97) 100%); }
+.menu-top .sub { max-width: 30ch; font-size: var(--t-sm); color: #cfd2ff; opacity: .92; }
+.menu-btns { gap: 11px; }
+.btn.continue { background: linear-gradient(180deg, rgba(60,56,104,.96), rgba(38,36,70,.96));
+  color: var(--ink); border: 1px solid rgba(255,210,79,.42); box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 2px; }
+.menu-grid .btn { width: 100%; }
+.menu-records { margin-top: 8px; }
+.rec-pill { display: inline-block; background: rgba(26,26,48,.7); border: 1px solid rgba(154,140,255,.22);
+  border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 800; color: var(--ink-dim);
+  box-shadow: var(--shadow-sm); backdrop-filter: blur(6px); }
+
+/* iPad/telas grandes: cards de mapa e ações maiores */
+@media (min-width: 768px) and (min-height: 600px) {
+  .map-card { flex-basis: 300px; min-height: 104px; }
+  .map-thumb { width: 100px; height: 64px; flex-basis: 100px; }
+  .btn.map-play { min-width: 220px; }
+}

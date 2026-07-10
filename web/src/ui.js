@@ -39,7 +39,7 @@
     const dockToggle = $('dockToggle');
     if (dockToggle) dockToggle.addEventListener('click', () => {
       const dk = document.querySelector('.dock'); if (!dk) return;
-      dk.classList.toggle('collapsed'); dockManual = true;
+      dk.classList.toggle('collapsed'); dockManual = true; updateDockToggleLabel();
     });
     refs.speed.addEventListener('click', () => { const g = MT.game; g.speed = g.speed === 1 ? 2 : g.speed === 2 ? 3 : 1; refs.speed.textContent = '⏩ ' + g.speed + '×'; });
 
@@ -88,13 +88,16 @@
     m.style.backgroundImage = 'url(' + asset('assets/ui/menu_bg.png') + ')';
     show('menu'); hide('mapSelect'); hide('endScreen');
     const c = $('btnContinue'); c.style.display = MT.save.has() ? '' : 'none';
-    // recordes no menu
+    // recordes no menu (pílula discreta)
     const rec = $('menuRecords');
-    if (rec) rec.textContent = 'Melhor (Jardim): onda ' + MT.progress.bestFor('normal', 'jardim');
+    if (rec) rec.innerHTML = '<span class="rec-pill">🏆 Melhor: Jardim Místico · Onda ' + MT.progress.bestFor('normal', 'jardim') + '</span>';
   }
+  let mapPick = { mode: 'normal', id: null };
   function showMapSelect(mode) {
     hide('menu');
+    mapPick = { mode, id: null };
     const wrap = $('mapList'); wrap.innerHTML = '';
+    const playBtn = $('mapPlay');
     D.maps.forEach(m => {
       const best = MT.progress.bestFor(mode, m.id);
       const card = el('div', 'map-card');
@@ -103,12 +106,25 @@
         ? '<div class="map-thumb" style="background:' + th.grad + '"><span class="map-thumb-ico">' + th.ico + '</span></div>'
         : '<div class="map-thumb" style="background-image:url(' + asset(m.bg) + ')"></div>';
       card.innerHTML = thumb +
-        '<div class="map-info"><b>' + m.name + '</b><span>' + laneLabel(m.lanes) + '</span>' +
-        '<span class="map-best">Recorde: onda ' + best + '</span></div>';
-      card.addEventListener('click', () => startRun(mode, m.id));
+        '<div class="map-info"><b class="map-name">' + m.name + '</b>' +
+        '<span class="map-meta">' + laneLabel(m.lanes) + '</span>' +
+        '<span class="map-best">🏆 Recorde: onda ' + best + '</span></div>';
+      const pick = () => {
+        if (mapPick.id === m.id) { startRun(mode, m.id); return; } // 2º toque = jogar
+        mapPick.id = m.id;
+        [...wrap.children].forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        if (playBtn) { playBtn.disabled = false; playBtn.classList.add('ready'); }
+      };
+      card.addEventListener('click', pick);
       wrap.appendChild(card);
     });
-    $('mapTitle').textContent = mode === 'endless' ? 'INFINITO — escolha o mapa' : 'NOVO JOGO — escolha o mapa';
+    const t = $('mapHeadTitle'); if (t) t.textContent = mode === 'endless' ? 'Infinito' : 'Novo Jogo';
+    const st = $('mapTitle'); if (st) st.textContent = 'Escolha o mapa';
+    if (playBtn) {
+      playBtn.disabled = true; playBtn.classList.remove('ready');
+      playBtn.onclick = () => { if (mapPick.id) startRun(mapPick.mode, mapPick.id); };
+    }
     show('mapSelect');
     $('mapBack').onclick = showMenu;
   }
@@ -147,6 +163,12 @@
   function setDockCollapsed(on) {
     const dk = document.querySelector('.dock');
     if (dk) dk.classList.toggle('collapsed', on);
+    updateDockToggleLabel();
+  }
+  function updateDockToggleLabel() {
+    const dk = document.querySelector('.dock'); const t = $('dockToggle'); if (!dk || !t) return;
+    const collapsed = dk.classList.contains('collapsed');
+    const txt = t.querySelector('.dt-txt'); if (txt) txt.textContent = collapsed ? 'LOJA' : 'MAPA';
   }
   function refresh() {
     const g = MT.game;
@@ -262,8 +284,8 @@
   function buildSyn() {
     const g = MT.game, wrap = refs.syn; if (!wrap) return; wrap.innerHTML = '';
     const active = g.synergies.filter(s => s.count > 0);
-    if (active.length === 0) { wrap.innerHTML = '<div class="syn-empty">Sem sinergias<br><small>combine tipos de gato</small></div>'; lastSynKey = ''; return; }
     wrap.appendChild(el('div', 'syn-title', '✨ SINERGIAS'));
+    if (active.length === 0) { wrap.insertAdjacentHTML('beforeend', '<div class="syn-empty">Sem sinergias ativas<small>combine tipos de gato</small></div>'); lastSynKey = ''; return; }
     const changedKey = active.map(s => s.tag + s.count).join('|');
     const changed = changedKey !== lastSynKey; lastSynKey = changedKey;
     active.slice(0, 8).forEach(s => {

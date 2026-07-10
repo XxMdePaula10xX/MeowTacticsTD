@@ -45,7 +45,7 @@
     </div>
 
     <div class="dock">
-      <button class="dock-toggle" id="dockToggle" aria-label="Recolher painel"><span class="dt-ico">▾</span><span class="dt-txt">painel</span></button>
+      <button class="dock-toggle" id="dockToggle" aria-label="Abrir ou fechar a loja"><span class="dt-ico">▾</span><span class="dt-txt">LOJA</span></button>
       <div class="dock-section bench-sec">
         <span class="dock-label">BANCO</span>
         <div class="bench-rail" id="bench"></div>
@@ -69,19 +69,12 @@
       <div class="sub">Torres-gato, sinergias e pesadelos — defenda o reino.</div>
     </div>
     <div class="menu-bottom">
-      <div class="legend">
-        <span style="color:var(--dmg-phys)"><b>▲</b> Físico</span>
-        <span style="color:var(--dmg-magic)"><b>★</b> Mágico</span>
-        <span style="color:var(--dmg-true)"><b>◆</b> Verdadeiro</span>
-      </div>
       <div class="menu-btns">
         <button class="btn primary" id="btnNormal">🗺️ NOVO JOGO</button>
-        <button class="btn ghost" id="btnContinue" style="display:none">▶️ CONTINUAR</button>
-        <div class="menu-row">
+        <button class="btn continue" id="btnContinue" style="display:none">▶️ CONTINUAR</button>
+        <div class="menu-grid">
           <button class="btn alt" id="btnEndless">♾️ INFINITO</button>
           <button class="btn alt2" id="btnDaily">📅 DIÁRIO</button>
-        </div>
-        <div class="menu-row">
           <button class="btn ghost" id="btnCollection">📖 COLEÇÃO</button>
           <button class="btn ghost" id="btnSound">🔊 SOM</button>
         </div>
@@ -93,9 +86,15 @@
 
   <!-- SELEÇÃO DE MAPA -->
   <div class="screen hide" id="mapSelect">
-    <div class="screen-title" id="mapTitle">ESCOLHA O MAPA</div>
+    <div class="map-head">
+      <div class="screen-title" id="mapHeadTitle">Novo Jogo</div>
+      <div class="screen-sub" id="mapTitle">Escolha o mapa</div>
+    </div>
     <div class="map-list" id="mapList"></div>
-    <button class="link-back" id="mapBack">◂ Voltar</button>
+    <div class="map-actions">
+      <button class="btn ghost map-back" id="mapBack">◂ Voltar</button>
+      <button class="btn primary map-play" id="mapPlay" disabled>▶ JOGAR</button>
+    </div>
   </div>
 
   <!-- DRAFT (itens / relíquias) -->
