@@ -98,10 +98,13 @@ img { max-width: 100%; }
 .chip.lives { color: var(--red); }
 .chip.coins { color: var(--gold); }
 .chip.wave { color: var(--azure); margin-left: auto; }
+/* botão de velocidade: mantém a pílula pequena mas amplia a área de toque (hit-slop) */
+button.chip.speed { position: relative; }
+button.chip.speed::after { content: ""; position: absolute; inset: -8px -6px; }
 
 /* controles de zoom */
 .zoom-ctl { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
-.zoom-ctl button { width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass);
+.zoom-ctl button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass);
   color: var(--ink); font-size: 20px; font-weight: 900; cursor: pointer; backdrop-filter: blur(8px); box-shadow: var(--shadow-sm); display: grid; place-items: center; line-height: 1; }
 .zoom-ctl button:active { transform: translateY(1px); }
 .zoom-ctl #zoomReset { font-size: 16px; }
@@ -151,7 +154,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .sel-head b { display: block; font-size: var(--t-sm); font-weight: 900; }
 .sel-type { font-size: 11px; font-weight: 800; }
 .sel-type.phys { color: var(--dmg-phys); } .sel-type.magic { color: var(--dmg-magic); } .sel-type.true { color: var(--dmg-true); }
-.sel-x { margin-left: auto; background: none; border: none; color: var(--ink-mut); font-size: 15px; cursor: pointer; }
+.sel-x { margin-left: auto; background: none; border: none; color: var(--ink-mut); font-size: 15px; cursor: pointer;
+  min-width: 34px; min-height: 34px; display: grid; place-items: center; border-radius: 8px; }
 .sel-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 8px 0; }
 .ss { background: var(--card); border-radius: 8px; padding: 5px 7px; display: flex; justify-content: space-between; align-items: center; }
 .ss span { font-size: 9px; font-weight: 800; color: var(--ink-mut); letter-spacing: .5px; }
@@ -159,7 +163,7 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .sel-tags { font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-bottom: 8px; }
 .sel-actions { display: flex; align-items: center; gap: 6px; }
 .sel-hint { font-size: 10px; color: var(--ink-mut); flex: 1; }
-.btn-sell { background: linear-gradient(180deg, #ff8f92, var(--red)); color: #2a0a0b; border: none; border-radius: 10px; font-weight: 900; font-size: 12px; padding: 8px 10px; cursor: pointer; }
+.btn-sell { background: linear-gradient(180deg, #ff8f92, var(--red)); color: #2a0a0b; border: none; border-radius: 10px; font-weight: 900; font-size: 12px; padding: 10px 12px; min-height: 40px; cursor: pointer; }
 
 /* ---------- DOCK ---------- */
 .dock { padding: var(--sp-2) var(--sp-2) calc(var(--sp-2) + env(safe-area-inset-bottom, 0));
@@ -182,8 +186,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .cat-card.cant { opacity: .45; filter: grayscale(.4); }
 .cat-card.empty { background: rgba(20,20,40,.4); border-style: dashed; display: grid; place-items: center; cursor: default; }
 .cat-card.empty span { font-size: 10px; color: var(--ink-mut); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-.cat-art { height: 42px; display: grid; place-items: center; }
-.cat-art img { width: 42px; height: 42px; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0,0,0,.55)); }
+.cat-art { height: 46px; display: grid; place-items: center; }
+.cat-art img { width: 46px; height: 46px; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0,0,0,.55)); }
 .cat-name { font-weight: 900; font-size: 12px; text-align: center; margin-top: 3px; }
 .cat-cost { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 4px; font-weight: 900; font-size: 12px; color: var(--gold); font-variant-numeric: tabular-nums; }
 .dmg-badge { position: absolute; top: 6px; right: 6px; width: 19px; height: 19px; border-radius: 7px; display: grid; place-items: center; font-size: 11px; font-weight: 900; background: rgba(0,0,0,.3); }
@@ -229,7 +233,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; color: var(--ink-dim); font-size: 12px; font-weight: 700; margin-top: 2px; }
 .legend b { font-size: 14px; }
 
-.map-list { display: flex; flex-direction: column; gap: 10px; width: min(400px, 90vw); max-height: 64vh; overflow-y: auto; padding: 2px; scrollbar-width: thin; }
+.map-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px;
+  width: min(880px, 94vw); max-height: 76vh; overflow-y: auto; padding: 2px; scrollbar-width: thin; }
 .map-thumb-ico { display: grid; place-items: center; width: 100%; height: 100%; font-size: 30px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
 .map-card { display: flex; gap: 12px; align-items: center; background: linear-gradient(180deg, var(--card-2), var(--card));
   border: 1px solid var(--line); border-radius: var(--r-lg); padding: 10px; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform .12s, border-color .12s; text-align: left; }
@@ -244,7 +249,9 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .st { display: flex; flex-direction: column; gap: 2px; }
 .st b { font-size: var(--t-xl); font-variant-numeric: tabular-nums; }
 .st span { font-size: 10px; color: var(--ink-mut); text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
-.link-back { background: none; border: none; color: var(--ink-dim); font-weight: 800; font-size: 13px; cursor: pointer; margin-top: 6px; font-family: inherit; }
+.link-back { background: none; border: none; color: var(--ink-dim); font-weight: 800; font-size: 13px; cursor: pointer; margin-top: 6px;
+  font-family: inherit; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 18px; border-radius: 10px; }
+.link-back:active { transform: translateY(1px); }
 
 /* ---------- RELÍQUIAS (strip) ---------- */
 .relic-strip { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap; max-width: 180px; z-index: 4; }
@@ -392,7 +399,7 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .sel-buff .bi { font-size: 12px; }
 .sel-actions { gap: 5px; }
 .sel-actions .mini-btn { background: var(--card); border: 1px solid var(--line); color: var(--ink-dim); border-radius: 9px;
-  font-weight: 800; font-size: 11px; padding: 8px 9px; cursor: pointer; font-family: inherit; }
+  font-weight: 800; font-size: 11px; padding: 10px 9px; min-height: 40px; cursor: pointer; font-family: inherit; }
 .sel-actions .mini-btn:active { transform: translateY(1px); }
 
 /* ---------- Prioridade de alvo (painel do gato) ---------- */
@@ -418,7 +425,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 
 /* ---------- link Style Guide ---------- */
 .ui-guide-link { background: none; border: none; color: rgba(255,255,255,.5); font-weight: 700; font-size: 11px; cursor: pointer;
-  font-family: inherit; text-shadow: 0 1px 4px rgba(0,0,0,.8); margin-top: 2px; }
+  font-family: inherit; text-shadow: 0 1px 4px rgba(0,0,0,.8); margin-top: 2px;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 6px 12px; border-radius: 8px; }
 .ui-guide-link:hover { color: var(--gold); }
 
 /* ---------- STYLE GUIDE ---------- */
@@ -513,6 +521,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
   box-shadow: 0 -3px 10px rgba(0,0,0,.3); }
 .dock-toggle .dt-ico { font-size: 12px; line-height: 1; transition: transform .2s; }
 .dock-toggle:active { transform: translateX(-50%) translateY(1px); }
+/* hit-slop: mantém a aba visual pequena, mas o alvo de toque sobe ~16px */
+.dock-toggle::after { content: ""; position: absolute; inset: -16px -12px 0 -12px; }
 .dock.collapsed .dock-toggle .dt-ico { transform: rotate(180deg); }
 
 /* estado recolhido: some banco + loja, sobra só o botão INICIAR (mapa cresce) */
@@ -530,7 +540,7 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 
   .dock { gap: 4px; padding-top: var(--sp-1); }
   .dock-section { gap: 2px; }
-  .dock-label { font-size: 8px; letter-spacing: 1.2px; }
+  .dock-label { font-size: 10px; letter-spacing: .8px; }
   .shop-sec { padding: 4px 5px; }
 
   /* banco: fileira fina */
@@ -555,15 +565,83 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
   /* painéis flutuantes menores pra não cobrir o mapa curto */
   .synergy-panel { width: 140px; padding: 5px 8px; top: 8px; left: 8px; }
   .sel-panel { width: 188px; top: 8px; right: 8px; }
-  .zoom-ctl button { width: 32px; height: 32px; font-size: 17px; }
+  .zoom-ctl button { width: 36px; height: 36px; font-size: 17px; }
+  .zoom-ctl button::after { content: ""; position: absolute; inset: -5px; }
 }
 
-/* telas muito baixas (paisagem apertada): ainda mais enxuto */
+/* telas baixas (iPhone Pro/Max em paisagem): mais enxuto */
 @media (max-height: 430px) {
   .cat-card { width: 70px; }
-  .bench-slot { width: 36px; height: 36px; }
-  .bench-slot img { width: 29px; height: 29px; }
+  .bench-slot { width: 40px; height: 40px; }
+  .bench-slot img { width: 31px; height: 31px; }
   .btn { padding: 9px 12px; }
+  /* menu não pode transbordar quando "CONTINUAR" aparece */
+  .menu-btns { gap: 7px; }
+  .menu-btns .btn, .menu-row .btn { padding: 9px 14px; }
+  .menu-top { padding-top: calc(14px + env(safe-area-inset-top, 0)); }
+  .menu-top .big { font-size: clamp(22px, 6vw, 32px); }
+  .menu-top .sub { font-size: 12px; }
+  .menu-bottom { gap: 7px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0)); }
+  .menu-records { margin-top: 0; }
+  .ui-guide-link { display: none; } /* link de dev — esconde em tela curta */
+}
+
+/* iPhone SE / mini (altura ~375px): a mais apertada — encolhe o dock ao máximo */
+@media (max-height: 390px) {
+  .hud { padding-top: calc(var(--sp-1) + env(safe-area-inset-top, 0)); }
+  .cat-card { width: 66px; padding: 4px 5px 5px; }
+  .cat-art { height: 30px; }
+  .cat-art img, .cat-card .cat-art img { width: 30px; height: 30px; }
+  .cat-card .syn-hint { display: none; }
+  .bench-slot { width: 38px; height: 38px; }
+  .bench-slot img { width: 30px; height: 30px; }
+  .btn { padding: 8px 12px; }
+  .btn.start { padding: 9px 12px; }
+}
+
+/* ============================================================
+   SELEÇÃO DE MAPA — grade responsiva (auto-fill) já vem do ui.css.
+   Aqui só alinhamos ao topo pra rolar sem cortar, e compactamos
+   os cards em telas curtas (a lista de 10 mapas cabia só ~3 antes).
+   ============================================================ */
+#mapSelect { justify-content: flex-start; padding-top: calc(16px + env(safe-area-inset-top, 0)); gap: 10px; }
+@media (max-height: 560px) {
+  #mapSelect { padding-top: calc(10px + env(safe-area-inset-top, 0)); gap: 7px; }
+  #mapSelect .screen-title { font-size: var(--t-md); }
+  .map-list { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; max-height: 78vh; }
+  .map-card { padding: 7px; gap: 9px; }
+  .map-thumb { width: 66px; height: 42px; }
+  .map-info b { font-size: var(--t-sm); }
+  .map-info span { font-size: 10.5px; }
+}
+
+/* ============================================================
+   ESCALA PARA CIMA — iPad / telas grandes em paisagem.
+   Sem isto, tudo ficava no tamanho-base (cartas 96px) e "perdido"
+   numa tela de 1024px+ de altura. Aumenta tokens e componentes.
+   ============================================================ */
+@media (min-width: 768px) and (min-height: 600px) {
+  :root {
+    --t-xs: 13px; --t-sm: 15px; --t-md: 17px; --t-lg: 22px; --t-xl: 28px; --t-2xl: 38px;
+  }
+  #app { max-width: 1120px; }
+  .cat-card { width: 120px; padding: 12px; }
+  .cat-art { height: 58px; }
+  .cat-art img, .cat-card .cat-art img { width: 58px; height: 58px; }
+  .cat-name { font-size: 15px; }
+  .cat-cost { font-size: 15px; }
+  .bench-slot { width: 58px; height: 58px; border-radius: 14px; }
+  .bench-slot img { width: 48px; height: 48px; }
+  .dock-label { font-size: 11px; }
+  .dock-toggle { height: 26px; font-size: 11px; }
+  .zoom-ctl button { width: 46px; height: 46px; font-size: 22px; }
+  .synergy-panel { width: 210px; }
+  .sel-panel { width: 250px; }
+  .chip { padding: 10px 14px; }
+  .chip .ico-img { width: 22px; height: 22px; }
+  .btn.start { padding: 18px 16px; }
+  .map-thumb { width: 110px; height: 70px; }
+  .coll-body { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
 
 </style>

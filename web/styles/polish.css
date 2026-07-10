@@ -93,7 +93,7 @@
 .sel-buff .bi { font-size: 12px; }
 .sel-actions { gap: 5px; }
 .sel-actions .mini-btn { background: var(--card); border: 1px solid var(--line); color: var(--ink-dim); border-radius: 9px;
-  font-weight: 800; font-size: 11px; padding: 8px 9px; cursor: pointer; font-family: inherit; }
+  font-weight: 800; font-size: 11px; padding: 10px 9px; min-height: 40px; cursor: pointer; font-family: inherit; }
 .sel-actions .mini-btn:active { transform: translateY(1px); }
 
 /* ---------- Prioridade de alvo (painel do gato) ---------- */
@@ -119,7 +119,8 @@
 
 /* ---------- link Style Guide ---------- */
 .ui-guide-link { background: none; border: none; color: rgba(255,255,255,.5); font-weight: 700; font-size: 11px; cursor: pointer;
-  font-family: inherit; text-shadow: 0 1px 4px rgba(0,0,0,.8); margin-top: 2px; }
+  font-family: inherit; text-shadow: 0 1px 4px rgba(0,0,0,.8); margin-top: 2px;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 6px 12px; border-radius: 8px; }
 .ui-guide-link:hover { color: var(--gold); }
 
 /* ---------- STYLE GUIDE ---------- */
@@ -214,6 +215,8 @@
   box-shadow: 0 -3px 10px rgba(0,0,0,.3); }
 .dock-toggle .dt-ico { font-size: 12px; line-height: 1; transition: transform .2s; }
 .dock-toggle:active { transform: translateX(-50%) translateY(1px); }
+/* hit-slop: mantém a aba visual pequena, mas o alvo de toque sobe ~16px */
+.dock-toggle::after { content: ""; position: absolute; inset: -16px -12px 0 -12px; }
 .dock.collapsed .dock-toggle .dt-ico { transform: rotate(180deg); }
 
 /* estado recolhido: some banco + loja, sobra só o botão INICIAR (mapa cresce) */
@@ -231,7 +234,7 @@
 
   .dock { gap: 4px; padding-top: var(--sp-1); }
   .dock-section { gap: 2px; }
-  .dock-label { font-size: 8px; letter-spacing: 1.2px; }
+  .dock-label { font-size: 10px; letter-spacing: .8px; }
   .shop-sec { padding: 4px 5px; }
 
   /* banco: fileira fina */
@@ -256,13 +259,81 @@
   /* painéis flutuantes menores pra não cobrir o mapa curto */
   .synergy-panel { width: 140px; padding: 5px 8px; top: 8px; left: 8px; }
   .sel-panel { width: 188px; top: 8px; right: 8px; }
-  .zoom-ctl button { width: 32px; height: 32px; font-size: 17px; }
+  .zoom-ctl button { width: 36px; height: 36px; font-size: 17px; }
+  .zoom-ctl button::after { content: ""; position: absolute; inset: -5px; }
 }
 
-/* telas muito baixas (paisagem apertada): ainda mais enxuto */
+/* telas baixas (iPhone Pro/Max em paisagem): mais enxuto */
 @media (max-height: 430px) {
   .cat-card { width: 70px; }
-  .bench-slot { width: 36px; height: 36px; }
-  .bench-slot img { width: 29px; height: 29px; }
+  .bench-slot { width: 40px; height: 40px; }
+  .bench-slot img { width: 31px; height: 31px; }
   .btn { padding: 9px 12px; }
+  /* menu não pode transbordar quando "CONTINUAR" aparece */
+  .menu-btns { gap: 7px; }
+  .menu-btns .btn, .menu-row .btn { padding: 9px 14px; }
+  .menu-top { padding-top: calc(14px + env(safe-area-inset-top, 0)); }
+  .menu-top .big { font-size: clamp(22px, 6vw, 32px); }
+  .menu-top .sub { font-size: 12px; }
+  .menu-bottom { gap: 7px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0)); }
+  .menu-records { margin-top: 0; }
+  .ui-guide-link { display: none; } /* link de dev — esconde em tela curta */
+}
+
+/* iPhone SE / mini (altura ~375px): a mais apertada — encolhe o dock ao máximo */
+@media (max-height: 390px) {
+  .hud { padding-top: calc(var(--sp-1) + env(safe-area-inset-top, 0)); }
+  .cat-card { width: 66px; padding: 4px 5px 5px; }
+  .cat-art { height: 30px; }
+  .cat-art img, .cat-card .cat-art img { width: 30px; height: 30px; }
+  .cat-card .syn-hint { display: none; }
+  .bench-slot { width: 38px; height: 38px; }
+  .bench-slot img { width: 30px; height: 30px; }
+  .btn { padding: 8px 12px; }
+  .btn.start { padding: 9px 12px; }
+}
+
+/* ============================================================
+   SELEÇÃO DE MAPA — grade responsiva (auto-fill) já vem do ui.css.
+   Aqui só alinhamos ao topo pra rolar sem cortar, e compactamos
+   os cards em telas curtas (a lista de 10 mapas cabia só ~3 antes).
+   ============================================================ */
+#mapSelect { justify-content: flex-start; padding-top: calc(16px + env(safe-area-inset-top, 0)); gap: 10px; }
+@media (max-height: 560px) {
+  #mapSelect { padding-top: calc(10px + env(safe-area-inset-top, 0)); gap: 7px; }
+  #mapSelect .screen-title { font-size: var(--t-md); }
+  .map-list { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; max-height: 78vh; }
+  .map-card { padding: 7px; gap: 9px; }
+  .map-thumb { width: 66px; height: 42px; }
+  .map-info b { font-size: var(--t-sm); }
+  .map-info span { font-size: 10.5px; }
+}
+
+/* ============================================================
+   ESCALA PARA CIMA — iPad / telas grandes em paisagem.
+   Sem isto, tudo ficava no tamanho-base (cartas 96px) e "perdido"
+   numa tela de 1024px+ de altura. Aumenta tokens e componentes.
+   ============================================================ */
+@media (min-width: 768px) and (min-height: 600px) {
+  :root {
+    --t-xs: 13px; --t-sm: 15px; --t-md: 17px; --t-lg: 22px; --t-xl: 28px; --t-2xl: 38px;
+  }
+  #app { max-width: 1120px; }
+  .cat-card { width: 120px; padding: 12px; }
+  .cat-art { height: 58px; }
+  .cat-art img, .cat-card .cat-art img { width: 58px; height: 58px; }
+  .cat-name { font-size: 15px; }
+  .cat-cost { font-size: 15px; }
+  .bench-slot { width: 58px; height: 58px; border-radius: 14px; }
+  .bench-slot img { width: 48px; height: 48px; }
+  .dock-label { font-size: 11px; }
+  .dock-toggle { height: 26px; font-size: 11px; }
+  .zoom-ctl button { width: 46px; height: 46px; font-size: 22px; }
+  .synergy-panel { width: 210px; }
+  .sel-panel { width: 250px; }
+  .chip { padding: 10px 14px; }
+  .chip .ico-img { width: 22px; height: 22px; }
+  .btn.start { padding: 18px 16px; }
+  .map-thumb { width: 110px; height: 70px; }
+  .coll-body { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
