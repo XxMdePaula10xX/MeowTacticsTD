@@ -56,6 +56,10 @@ workflows:
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist
           plutil -replace "UISupportedInterfaceOrientations~ipad" -json \
             '["UIInterfaceOrientationLandscapeLeft","UIInterfaceOrientationLandscapeRight"]' Info.plist || true
+          # A Apple exige as 4 orientações no iPad SE o app entra no multitarefa.
+          # Como o jogo é só paisagem, optamos por tela cheia (sai do multitarefa)
+          # e o landscape-only passa a ser válido — corrige o erro 90474 no upload.
+          plutil -replace UIRequiresFullScreen -bool true Info.plist
       - name: Definir número do build
         script: |
           cd web/ios/App
