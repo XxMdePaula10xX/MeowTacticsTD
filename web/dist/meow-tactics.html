@@ -3086,8 +3086,8 @@ window.MT = window.MT || {};
   }
 
   // ---------- COLOCAÇÃO ----------
-  function pick(cat, from) { game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
-  function deselect() { game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function pick(cat, from) { game.moveMode = false; game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function deselect() { game.moveMode = false; game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
   function placeValid(wx, wy, except) {
     except = except || (game.selected && game.selected.cat) || null;
     if (wx < -11.6 || wx > 11.6 || wy < -6.2 || wy > 6.2) return false;
@@ -3277,15 +3277,17 @@ window.MT = window.MT || {};
   function toast(m) { game.toast = m; game.toastT = 1.5; }
 
   // ---------- FIM ----------
+  // só o modo Normal tem save; limpar em outros modos apagaria o progresso Normal.
+  function clearSaveIfNormal() { if (game.mode === 'normal') MT.save && MT.save.clear && MT.save.clear(); }
   function win() {
-    game.phase = 'win'; recordBest(); MT.save && MT.save.clear && MT.save.clear();
+    game.phase = 'win'; recordBest(); clearSaveIfNormal();
     MT.stats && MT.stats.add('wins', 1); MT.sfx && MT.sfx.play('win'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(true);
   }
   function lose() {
     if (game.phase === 'over' || game.phase === 'win') return; // evita disparo múltiplo no mesmo frame
     game.phase = 'over'; game.waveRunning = false; shakeCam(0.4, 0.5);
-    recordBest(); MT.save && MT.save.clear && MT.save.clear();
+    recordBest(); clearSaveIfNormal();
     MT.sfx && MT.sfx.play('lose'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(false);
   }
@@ -3907,6 +3909,13 @@ window.MT = window.MT || {};
       if (g.phase === 'wave') { const hit = pickCat(p.wx, p.wy); if (hit) { const mode = MT.api.cyclePriority(hit); MT.ui && MT.ui.priorityToast && MT.ui.priorityToast(hit, mode); } return; }
       if (g.phase !== 'prep') return;
       if (g.selected && g.selected.kind === 'bench') { input.hover = p; MT.api.placeAt(p.wx, p.wy); input.hover = null; return; }
+      // modo "Mover": tocar no gramado reposiciona o gato selecionado do tabuleiro
+      if (g.moveMode && g.selected && g.selected.kind === 'board') {
+        const cat = g.selected.cat;
+        if (MT.api.placeValid(p.wx, p.wy, cat)) { MT.api.repositionCat(cat, p.wx, p.wy); g.moveMode = false; MT.api.deselect(); }
+        else { g.toast = 'Local inválido (perto do caminho/gato)'; g.toastT = 1.4; }
+        return;
+      }
       const hit = pickCat(p.wx, p.wy);
       if (hit) MT.api.selectBoard(hit); else MT.api.deselect();
     }
@@ -4013,8 +4022,10 @@ window.MT = window.MT || {};
     $('btnDaily').addEventListener('click', () => startRun('daily', null));
     $('btnCollection').addEventListener('click', showCollection);
     $('btnSound').addEventListener('click', toggleSound);
+    // Continuar: liga o handler SEMPRE (a visibilidade é controlada em showMenu).
     const cont = $('btnContinue');
-    if (MT.save.has()) { cont.style.display = ''; cont.addEventListener('click', continueRun); }
+    cont.addEventListener('click', continueRun);
+    cont.style.display = MT.save.has() ? '' : 'none';
     // coleção
     $('collBack').addEventListener('click', () => { hide('collection'); showMenu(); });
     [...$('collTabs').children].forEach(t => t.addEventListener('click', () => selectCollTab(t.dataset.tab)));
@@ -4046,9 +4057,15 @@ window.MT = window.MT || {};
     m.style.backgroundImage = 'url(' + asset('assets/ui/menu_bg.png') + ')';
     show('menu'); hide('mapSelect'); hide('endScreen');
     const c = $('btnContinue'); c.style.display = MT.save.has() ? '' : 'none';
-    // recordes no menu (pílula discreta)
+    // recordes no menu (pílula discreta): melhor resultado entre TODOS os mapas
     const rec = $('menuRecords');
-    if (rec) rec.innerHTML = '<span class="rec-pill">🏆 Melhor: Jardim Místico · Onda ' + MT.progress.bestFor('normal', 'jardim') + '</span>';
+    if (rec) {
+      let bestMap = null, bestWave = 0;
+      D.maps.forEach(mp => { const w = MT.progress.bestFor('normal', mp.id); if (w > bestWave) { bestWave = w; bestMap = mp; } });
+      rec.innerHTML = bestWave > 0
+        ? '<span class="rec-pill">🏆 Melhor: ' + bestMap.name + ' · Onda ' + bestWave + '</span>'
+        : '<span class="rec-pill">🐾 Sua aventura começa aqui</span>';
+    }
   }
   let mapPick = { mode: 'normal', id: null };
   function showMapSelect(mode) {
@@ -4095,7 +4112,11 @@ window.MT = window.MT || {};
     if (mode === 'daily') MT.game.speed = MT.game.speed || 1;
     refresh();
   }
-  function continueRun() { hide('menu'); hide('mapSelect'); MT.save.restore(); refresh(); }
+  function continueRun() {
+    // se o save estiver corrompido, volta ao menu em vez de deixar a tela morta
+    if (!MT.save.restore()) { showMenu(); return; }
+    hide('menu'); hide('mapSelect'); refresh();
+  }
 
   function showEnd(won) {
     const g = MT.game;
@@ -4335,7 +4356,7 @@ window.MT = window.MT || {};
     $('selPrio').onclick = () => MT.api.cyclePriority(cat);
     $('selClose').onclick = () => MT.api.deselect();
     $('selCloseB').onclick = () => MT.api.deselect();
-    $('selMove').onclick = () => { MT.game.toast = 'Toque no gramado para reposicionar'; MT.game.toastT = 1.6; };
+    $('selMove').onclick = () => { MT.game.moveMode = true; MT.game.toast = 'Toque no gramado para mover o gato'; MT.game.toastT = 1.8; };
     $('selSell').onclick = () => MT.api.sell(cat);
     wrap.querySelectorAll('.inv-item').forEach(node => node.onclick = () => {
       const i = +node.dataset.inv, itemId = g.inventory[i];

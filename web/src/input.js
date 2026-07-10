@@ -98,6 +98,13 @@
       if (g.phase === 'wave') { const hit = pickCat(p.wx, p.wy); if (hit) { const mode = MT.api.cyclePriority(hit); MT.ui && MT.ui.priorityToast && MT.ui.priorityToast(hit, mode); } return; }
       if (g.phase !== 'prep') return;
       if (g.selected && g.selected.kind === 'bench') { input.hover = p; MT.api.placeAt(p.wx, p.wy); input.hover = null; return; }
+      // modo "Mover": tocar no gramado reposiciona o gato selecionado do tabuleiro
+      if (g.moveMode && g.selected && g.selected.kind === 'board') {
+        const cat = g.selected.cat;
+        if (MT.api.placeValid(p.wx, p.wy, cat)) { MT.api.repositionCat(cat, p.wx, p.wy); g.moveMode = false; MT.api.deselect(); }
+        else { g.toast = 'Local inválido (perto do caminho/gato)'; g.toastT = 1.4; }
+        return;
+      }
       const hit = pickCat(p.wx, p.wy);
       if (hit) MT.api.selectBoard(hit); else MT.api.deselect();
     }

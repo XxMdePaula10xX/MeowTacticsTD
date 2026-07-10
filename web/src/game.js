@@ -134,8 +134,8 @@
   }
 
   // ---------- COLOCAÇÃO ----------
-  function pick(cat, from) { game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
-  function deselect() { game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function pick(cat, from) { game.moveMode = false; game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function deselect() { game.moveMode = false; game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
   function placeValid(wx, wy, except) {
     except = except || (game.selected && game.selected.cat) || null;
     if (wx < -11.6 || wx > 11.6 || wy < -6.2 || wy > 6.2) return false;
@@ -325,15 +325,17 @@
   function toast(m) { game.toast = m; game.toastT = 1.5; }
 
   // ---------- FIM ----------
+  // só o modo Normal tem save; limpar em outros modos apagaria o progresso Normal.
+  function clearSaveIfNormal() { if (game.mode === 'normal') MT.save && MT.save.clear && MT.save.clear(); }
   function win() {
-    game.phase = 'win'; recordBest(); MT.save && MT.save.clear && MT.save.clear();
+    game.phase = 'win'; recordBest(); clearSaveIfNormal();
     MT.stats && MT.stats.add('wins', 1); MT.sfx && MT.sfx.play('win'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(true);
   }
   function lose() {
     if (game.phase === 'over' || game.phase === 'win') return; // evita disparo múltiplo no mesmo frame
     game.phase = 'over'; game.waveRunning = false; shakeCam(0.4, 0.5);
-    recordBest(); MT.save && MT.save.clear && MT.save.clear();
+    recordBest(); clearSaveIfNormal();
     MT.sfx && MT.sfx.play('lose'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(false);
   }

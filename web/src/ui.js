@@ -60,8 +60,10 @@
     $('btnDaily').addEventListener('click', () => startRun('daily', null));
     $('btnCollection').addEventListener('click', showCollection);
     $('btnSound').addEventListener('click', toggleSound);
+    // Continuar: liga o handler SEMPRE (a visibilidade é controlada em showMenu).
     const cont = $('btnContinue');
-    if (MT.save.has()) { cont.style.display = ''; cont.addEventListener('click', continueRun); }
+    cont.addEventListener('click', continueRun);
+    cont.style.display = MT.save.has() ? '' : 'none';
     // coleção
     $('collBack').addEventListener('click', () => { hide('collection'); showMenu(); });
     [...$('collTabs').children].forEach(t => t.addEventListener('click', () => selectCollTab(t.dataset.tab)));
@@ -93,9 +95,15 @@
     m.style.backgroundImage = 'url(' + asset('assets/ui/menu_bg.png') + ')';
     show('menu'); hide('mapSelect'); hide('endScreen');
     const c = $('btnContinue'); c.style.display = MT.save.has() ? '' : 'none';
-    // recordes no menu (pílula discreta)
+    // recordes no menu (pílula discreta): melhor resultado entre TODOS os mapas
     const rec = $('menuRecords');
-    if (rec) rec.innerHTML = '<span class="rec-pill">🏆 Melhor: Jardim Místico · Onda ' + MT.progress.bestFor('normal', 'jardim') + '</span>';
+    if (rec) {
+      let bestMap = null, bestWave = 0;
+      D.maps.forEach(mp => { const w = MT.progress.bestFor('normal', mp.id); if (w > bestWave) { bestWave = w; bestMap = mp; } });
+      rec.innerHTML = bestWave > 0
+        ? '<span class="rec-pill">🏆 Melhor: ' + bestMap.name + ' · Onda ' + bestWave + '</span>'
+        : '<span class="rec-pill">🐾 Sua aventura começa aqui</span>';
+    }
   }
   let mapPick = { mode: 'normal', id: null };
   function showMapSelect(mode) {
@@ -142,7 +150,11 @@
     if (mode === 'daily') MT.game.speed = MT.game.speed || 1;
     refresh();
   }
-  function continueRun() { hide('menu'); hide('mapSelect'); MT.save.restore(); refresh(); }
+  function continueRun() {
+    // se o save estiver corrompido, volta ao menu em vez de deixar a tela morta
+    if (!MT.save.restore()) { showMenu(); return; }
+    hide('menu'); hide('mapSelect'); refresh();
+  }
 
   function showEnd(won) {
     const g = MT.game;
@@ -382,7 +394,7 @@
     $('selPrio').onclick = () => MT.api.cyclePriority(cat);
     $('selClose').onclick = () => MT.api.deselect();
     $('selCloseB').onclick = () => MT.api.deselect();
-    $('selMove').onclick = () => { MT.game.toast = 'Toque no gramado para reposicionar'; MT.game.toastT = 1.6; };
+    $('selMove').onclick = () => { MT.game.moveMode = true; MT.game.toast = 'Toque no gramado para mover o gato'; MT.game.toastT = 1.8; };
     $('selSell').onclick = () => MT.api.sell(cat);
     wrap.querySelectorAll('.inv-item').forEach(node => node.onclick = () => {
       const i = +node.dataset.inv, itemId = g.inventory[i];
