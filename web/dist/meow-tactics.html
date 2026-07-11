@@ -2763,11 +2763,15 @@ window.MT = window.MT || {};
     U: 60, baseU: 60, w: 0, h: 0, zoom: HOME_ZOOM, panX: 0, panY: 0, minZoom: 1, maxZoom: 4.5, ART, HOME_ZOOM,
     fit(pxW, pxH) {
       this.w = pxW; this.h = pxH;
-      // COVER (max): a arte preenche o tabuleiro inteiro — um único mapa, sem
-      // colunas escuras nem duplicata. Os caminhos seguem a mesma transformação,
-      // então continuam alinhados. O excedente vertical/horizontal fica cortável
-      // via pan/zoom.
-      this.baseU = Math.max(pxW / (ART.hw * 2), pxH / (ART.hh * 2));
+      // baseU = COVER (max): no zoom padrão a arte preenche o tabuleiro — um
+      // único mapa, sem colunas nem duplicata, caminhos alinhados.
+      const cover = Math.max(pxW / (ART.hw * 2), pxH / (ART.hh * 2));
+      const contain = Math.min(pxW / (ART.hw * 2), pxH / (ART.hh * 2));
+      this.baseU = cover;
+      // permite dar zoom OUT até o mapa caber INTEIRO na tela (+ pequena folga),
+      // mas não mais que isso ("nao muito"). minZoom < 1 = abaixo do cover.
+      this.minZoom = (contain / cover) * 0.9;
+      this.zoom = U.clamp(this.zoom, this.minZoom, this.maxZoom);
       this.apply();
     },
     apply() { this.U = this.baseU * this.zoom; this.clampPan(); },
