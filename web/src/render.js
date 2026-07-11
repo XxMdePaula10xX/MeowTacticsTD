@@ -54,9 +54,9 @@
     const g = MT.game, A = cam.ART;
     if (g.map && g.map.proc && MT.mapart) { MT.mapart.draw(g.map, ctx, cam, t); return; }
     const bg = g.map ? img(g.map.bg) : null;
-    // fundo escuro de segurança (some sob a arte quando ela cobre tudo)
-    const th = THEME[g.mapId] || THEME.jardim;
-    ctx.fillStyle = th.b || '#0a0a16'; ctx.fillRect(0, 0, cam.w, cam.h);
+    // fundo neutro escuro nas áreas fora da arte (quando o jogador arrasta o
+    // mapa além das bordas pra alcançar um gato no canto).
+    ctx.fillStyle = '#0a0a16'; ctx.fillRect(0, 0, cam.w, cam.h);
     // arte ÚNICA, alinhada ao mundo (cover: preenche o tabuleiro). Um só mapa,
     // sem duplicata nem colunas. Segue zoom/pan e bate com os caminhos.
     if (bg) {

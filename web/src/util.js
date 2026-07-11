@@ -44,8 +44,11 @@ window.MT = window.MT || {};
     zoomBy(factor, ox, oy) { this.setZoom(this.zoom * factor, ox, oy); },
     panBy(dx, dy) { this.panX += dx; this.panY += dy; this.clampPan(); },
     clampPan() {
+      // Limite frouxo: dá pra arrastar até QUALQUER canto/borda da arte cruzar o
+      // centro da tela (com uma folga extra), pra alcançar e dar zoom em gatos nos
+      // cantos — mesmo que apareça área escura além da arte do mapa.
       const halfW = ART.hw * this.U, halfH = ART.hh * this.U;
-      const maxX = Math.max(0, halfW - this.w / 2), maxY = Math.max(0, halfH - this.h / 2);
+      const maxX = halfW + this.w * 0.15, maxY = halfH + this.h * 0.15;
       this.panX = U.clamp(this.panX, -maxX, maxX); this.panY = U.clamp(this.panY, -maxY, maxY);
     },
     reset() { this.zoom = HOME_ZOOM; this.panX = 0; this.panY = 0; this.apply(); },
