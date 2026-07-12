@@ -219,8 +219,9 @@
 .dock-toggle::after { content: ""; position: absolute; inset: -16px -12px 0 -12px; }
 .dock.collapsed .dock-toggle .dt-ico { transform: rotate(180deg); }
 
-/* estado recolhido: some banco + loja, sobra só o botão INICIAR (mapa cresce) */
-.dock.collapsed .bench-sec, .dock.collapsed .shop-sec { display: none; }
+/* estado recolhido: some só a LOJA; o BANCO fica sempre visível pra facilitar
+   pegar e arrastar o gato do banco até o mapa. */
+.dock.collapsed .shop-sec { display: none; }
 .dock.collapsed .controls { margin-top: 2px; }
 
 /* ao posicionar um gato: esconde a loja pra abrir espaço no mapa (mantém o banco à vista) */

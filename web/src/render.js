@@ -148,19 +148,24 @@
     for (const cat of MT.game.board) {
       const x = W(cat.x), y = H(cat.y), sc = 0.9 + 0.2 * cat.pop;
       const sel = MT.game.selected && MT.game.selected.cat === cat;
-      // sombra + base
+      // sombra + base (pad translúcido, não um disco preto)
       ctx.save(); ctx.translate(x, y);
-      ctx.fillStyle = 'rgba(0,0,0,.28)';
-      ctx.beginPath(); ctx.ellipse(0, 0.22 * cam.U, 0.42 * cam.U, 0.20 * cam.U, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,.24)';
+      ctx.beginPath(); ctx.ellipse(0, 0.24 * cam.U, 0.40 * cam.U, 0.18 * cam.U, 0, 0, 7); ctx.fill();
       const dragging = MT.input && MT.input.dragging === cat;
       const dok = !dragging || MT.api.placeValid(cat.x, cat.y, cat);
-      ctx.fillStyle = 'rgba(43,40,86,.95)';
-      ctx.strokeStyle = sel ? '#ffd24f' : dragging ? (dok ? '#4fc76e' : '#ee6b6e') : 'rgba(255,210,79,.5)';
+      const r = 0.46 * cam.U;
+      const grad = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r);
+      grad.addColorStop(0, 'rgba(52,47,104,.48)');
+      grad.addColorStop(0.72, 'rgba(44,40,88,.22)');
+      grad.addColorStop(1, 'rgba(44,40,88,0)');
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+      ctx.strokeStyle = sel ? '#ffd24f' : dragging ? (dok ? '#4fc76e' : '#ee6b6e') : 'rgba(255,210,79,.40)';
       ctx.lineWidth = (sel || dragging) ? 3 : 2;
-      ctx.beginPath(); ctx.arc(0, 0, 0.46 * cam.U, 0, 7); ctx.fill(); ctx.stroke();
-      // seta de direção
-      ctx.rotate(cat.ang); ctx.fillStyle = '#ffd24f';
-      ctx.beginPath(); ctx.moveTo(0.43 * cam.U, 0); ctx.lineTo(0.27 * cam.U, -0.11 * cam.U); ctx.lineTo(0.27 * cam.U, 0.11 * cam.U); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.84, 0, 7); ctx.stroke();
+      // seta de direção — aponta pro alvo (nega o ângulo: mundo y-cima -> tela y-baixo)
+      ctx.rotate(-cat.ang); ctx.fillStyle = '#ffd24f';
+      ctx.beginPath(); ctx.moveTo(0.50 * cam.U, 0); ctx.lineTo(0.34 * cam.U, -0.11 * cam.U); ctx.lineTo(0.34 * cam.U, 0.11 * cam.U); ctx.fill();
       ctx.restore();
       // sprite
       drawUnitSprite(cat.data.sprite, cat.x, cat.y - 0.05, 0.80 * sc, cat.data);
