@@ -511,8 +511,8 @@
 .chip.pause { cursor: pointer; font-family: inherit; font-size: 15px; padding: 8px 12px; line-height: 1; }
 .chip.pause:active { transform: translateY(1px); }
 .chip.pause.on { background: linear-gradient(180deg, #ffe27a, var(--gold)); color: #241a04; border-color: var(--gold); }
-.pause-overlay { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
-  background: rgba(9,9,20,.52); backdrop-filter: blur(2px); }
+.pause-overlay { position: absolute; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center;
+  background: rgba(9,9,20,.62); backdrop-filter: blur(3px); }
 .pause-overlay.hide { display: none; }
 .pause-card { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
   padding: 22px 34px; border-radius: 18px; background: linear-gradient(180deg, rgba(30,28,58,.9), rgba(16,16,34,.92));
@@ -520,3 +520,5 @@
 .pause-emoji { font-size: 40px; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
 .pause-card b { font-size: 22px; font-weight: 900; letter-spacing: 3px; }
 .pause-sub { font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+.pause-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; width: min(260px, 66vw); }
+.pause-btns .btn { width: 100%; padding: 12px 16px; }

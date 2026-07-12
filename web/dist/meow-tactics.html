@@ -824,8 +824,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .chip.pause { cursor: pointer; font-family: inherit; font-size: 15px; padding: 8px 12px; line-height: 1; }
 .chip.pause:active { transform: translateY(1px); }
 .chip.pause.on { background: linear-gradient(180deg, #ffe27a, var(--gold)); color: #241a04; border-color: var(--gold); }
-.pause-overlay { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
-  background: rgba(9,9,20,.52); backdrop-filter: blur(2px); }
+.pause-overlay { position: absolute; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center;
+  background: rgba(9,9,20,.62); backdrop-filter: blur(3px); }
 .pause-overlay.hide { display: none; }
 .pause-card { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
   padding: 22px 34px; border-radius: 18px; background: linear-gradient(180deg, rgba(30,28,58,.9), rgba(16,16,34,.92));
@@ -833,6 +833,8 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .pause-emoji { font-size: 40px; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
 .pause-card b { font-size: 22px; font-weight: 900; letter-spacing: 3px; }
 .pause-sub { font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+.pause-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; width: min(260px, 66vw); }
+.pause-btns .btn { width: 100%; padding: 12px 16px; }
 
 </style>
 
@@ -851,7 +853,14 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
       <div class="coin-float" id="coinFloat"></div>
     </header>
     <div class="pause-overlay hide" id="pauseOverlay">
-      <div class="pause-card"><span class="pause-emoji">⏸</span><b>PAUSADO</b><span class="pause-sub">Toque para continuar</span></div>
+      <div class="pause-card">
+        <span class="pause-emoji">⏸</span><b>PAUSADO</b>
+        <div class="pause-btns">
+          <button class="btn primary" id="pauseResume">▶ CONTINUAR</button>
+          <button class="btn ghost" id="pauseRestart">🔁 REINICIAR</button>
+          <button class="btn ghost" id="pauseQuit">☰ SAIR PRO MENU</button>
+        </div>
+      </div>
     </div>
 
     <div class="board-wrap">
@@ -4090,9 +4099,13 @@ window.MT = window.MT || {};
     };
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
-    // pausa (congela a onda)
+    // pausa (congela a onda) + menu de pausa
     if (refs.pause) refs.pause.addEventListener('click', togglePause);
-    const pov = $('pauseOverlay'); if (pov) pov.addEventListener('click', () => setPaused(false));
+    const pov = $('pauseOverlay'); if (pov) pov.addEventListener('click', (e) => { if (e.target === pov) setPaused(false); });
+    const bz2 = (id, fn) => { const el2 = $(id); if (el2) el2.addEventListener('click', fn); };
+    bz2('pauseResume', () => setPaused(false));
+    bz2('pauseRestart', () => { setPaused(false); MT.api.newRun(MT.game.mode, MT.game.mapId); refresh(); });
+    bz2('pauseQuit', () => { setPaused(false); showMenu(); });
     // recolher/expandir o painel (banco+loja) — dá espaço ao mapa
     const dockToggle = $('dockToggle');
     if (dockToggle) dockToggle.addEventListener('click', () => {

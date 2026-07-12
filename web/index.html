@@ -26,7 +26,14 @@
       <div class="coin-float" id="coinFloat"></div>
     </header>
     <div class="pause-overlay hide" id="pauseOverlay">
-      <div class="pause-card"><span class="pause-emoji">⏸</span><b>PAUSADO</b><span class="pause-sub">Toque para continuar</span></div>
+      <div class="pause-card">
+        <span class="pause-emoji">⏸</span><b>PAUSADO</b>
+        <div class="pause-btns">
+          <button class="btn primary" id="pauseResume">▶ CONTINUAR</button>
+          <button class="btn ghost" id="pauseRestart">🔁 REINICIAR</button>
+          <button class="btn ghost" id="pauseQuit">☰ SAIR PRO MENU</button>
+        </div>
+      </div>
     </div>
 
     <div class="board-wrap">

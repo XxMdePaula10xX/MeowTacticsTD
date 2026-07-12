@@ -35,9 +35,13 @@
     };
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
-    // pausa (congela a onda)
+    // pausa (congela a onda) + menu de pausa
     if (refs.pause) refs.pause.addEventListener('click', togglePause);
-    const pov = $('pauseOverlay'); if (pov) pov.addEventListener('click', () => setPaused(false));
+    const pov = $('pauseOverlay'); if (pov) pov.addEventListener('click', (e) => { if (e.target === pov) setPaused(false); });
+    const bz2 = (id, fn) => { const el2 = $(id); if (el2) el2.addEventListener('click', fn); };
+    bz2('pauseResume', () => setPaused(false));
+    bz2('pauseRestart', () => { setPaused(false); MT.api.newRun(MT.game.mode, MT.game.mapId); refresh(); });
+    bz2('pauseQuit', () => { setPaused(false); showMenu(); });
     // recolher/expandir o painel (banco+loja) — dá espaço ao mapa
     const dockToggle = $('dockToggle');
     if (dockToggle) dockToggle.addEventListener('click', () => {
