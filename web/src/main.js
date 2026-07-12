@@ -20,8 +20,9 @@
     const g = MT.game;
     let scale = g.phase === 'wave' ? g.speed : 1;
     if (g.slowmoT > 0) { g.slowmoT -= dtReal; scale *= 0.4; } // slow-mo na entrada do chefe
-    const dt = dtReal * scale;
-    MT.api.update(dt, dtReal);
+    // pausa: congela a simulação (mantém render/UI vivos)
+    const dt = g.paused ? 0 : dtReal * scale;
+    MT.api.update(dt, g.paused ? 0 : dtReal);
     MT.render.draw(ts / 1000);
     MT.ui.frameUI();
     requestAnimationFrame(frame);

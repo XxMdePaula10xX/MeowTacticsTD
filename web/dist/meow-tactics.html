@@ -820,6 +820,20 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .dock.collapsed .reroll { display: none; }                 /* reroll recolhe com a loja */
 .dock.collapsed .btn.start { min-width: 168px; max-width: 240px; padding: 12px 20px; }
 
+/* ---------- Botão de PAUSE + overlay ---------- */
+.chip.pause { cursor: pointer; font-family: inherit; font-size: 15px; padding: 8px 12px; line-height: 1; }
+.chip.pause:active { transform: translateY(1px); }
+.chip.pause.on { background: linear-gradient(180deg, #ffe27a, var(--gold)); color: #241a04; border-color: var(--gold); }
+.pause-overlay { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+  background: rgba(9,9,20,.52); backdrop-filter: blur(2px); }
+.pause-overlay.hide { display: none; }
+.pause-card { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  padding: 22px 34px; border-radius: 18px; background: linear-gradient(180deg, rgba(30,28,58,.9), rgba(16,16,34,.92));
+  border: 1px solid rgba(154,140,255,.3); box-shadow: var(--shadow); }
+.pause-emoji { font-size: 40px; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
+.pause-card b { font-size: 22px; font-weight: 900; letter-spacing: 3px; }
+.pause-sub { font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+
 </style>
 
   <div id="app">
@@ -832,9 +846,13 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
       <div class="hud-group right">
         <div class="chip wave" data-tip="wave"><span class="ico">🌊</span><span id="wave">1/50</span></div>
         <button class="chip speed" id="speedBtn" data-tip="speed">⏩ 1×</button>
+        <button class="chip pause" id="pauseBtn" aria-label="Pausar">⏸</button>
       </div>
       <div class="coin-float" id="coinFloat"></div>
     </header>
+    <div class="pause-overlay hide" id="pauseOverlay">
+      <div class="pause-card"><span class="pause-emoji">⏸</span><b>PAUSADO</b><span class="pause-sub">Toque para continuar</span></div>
+    </div>
 
     <div class="board-wrap">
       <canvas id="game"></canvas>
@@ -4068,10 +4086,13 @@ window.MT = window.MT || {};
       lives: $('lives'), coins: $('coins'), wave: $('wave'),
       shop: $('shop'), bench: $('bench'), syn: $('synPanel'), sel: $('selPanel'),
       hint: $('placeHint'), banner: $('banner'), toast: $('toast'), relicStrip: $('relicStrip'),
-      start: $('startBtn'), reroll: $('rerollBtn'), speed: $('speedBtn'),
+      start: $('startBtn'), reroll: $('rerollBtn'), speed: $('speedBtn'), pause: $('pauseBtn'),
     };
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
+    // pausa (congela a onda)
+    if (refs.pause) refs.pause.addEventListener('click', togglePause);
+    const pov = $('pauseOverlay'); if (pov) pov.addEventListener('click', () => setPaused(false));
     // recolher/expandir o painel (banco+loja) — dá espaço ao mapa
     const dockToggle = $('dockToggle');
     if (dockToggle) dockToggle.addEventListener('click', () => {
@@ -4128,6 +4149,7 @@ window.MT = window.MT || {};
   function show(id) { $(id).classList.remove('hide'); }
   function showMenu() {
     MT.game.phase = 'menu';
+    setPaused(false);
     const m = $('menu');
     m.style.backgroundImage = 'url(' + asset('assets/ui/menu_bg.png') + ')';
     show('menu'); hide('mapSelect'); hide('endScreen');
@@ -4181,7 +4203,7 @@ window.MT = window.MT || {};
   function laneLabel(n) { return n === 1 ? '1 caminho · Fácil' : n === 2 ? '2 caminhos · Médio' : '3 caminhos · Difícil'; }
 
   function startRun(mode, mapId) {
-    hide('menu'); hide('mapSelect'); hide('endScreen');
+    hide('menu'); hide('mapSelect'); hide('endScreen'); setPaused(false);
     MT.api.newRun(mode, mapId);
     tutorial.maybeStart();
     if (mode === 'daily') MT.game.speed = MT.game.speed || 1;
@@ -4190,7 +4212,7 @@ window.MT = window.MT || {};
   function continueRun() {
     // se o save estiver corrompido, volta ao menu em vez de deixar a tela morta
     if (!MT.save.restore()) { showMenu(); return; }
-    hide('menu'); hide('mapSelect'); refresh();
+    hide('menu'); hide('mapSelect'); setPaused(false); refresh();
   }
 
   function showEnd(won) {
@@ -4224,6 +4246,12 @@ window.MT = window.MT || {};
     const collapsed = dk.classList.contains('collapsed');
     const txt = t.querySelector('.dt-txt'); if (txt) txt.textContent = collapsed ? 'LOJA' : 'MAPA';
   }
+  function setPaused(on) {
+    MT.game.paused = !!on;
+    const btn = $('pauseBtn'); if (btn) { btn.textContent = on ? '▶' : '⏸'; btn.classList.toggle('on', on); btn.setAttribute('aria-label', on ? 'Continuar' : 'Pausar'); }
+    const ov = $('pauseOverlay'); if (ov) ov.classList.toggle('hide', !on);
+  }
+  function togglePause() { setPaused(!MT.game.paused); }
   function refresh() {
     const g = MT.game;
     if (g.phase === 'menu') return;
@@ -4661,8 +4689,9 @@ window.MT=window.MT||{};MT.ASSETS={"assets/cats/gato_witch.png": "data:image/png
     const g = MT.game;
     let scale = g.phase === 'wave' ? g.speed : 1;
     if (g.slowmoT > 0) { g.slowmoT -= dtReal; scale *= 0.4; } // slow-mo na entrada do chefe
-    const dt = dtReal * scale;
-    MT.api.update(dt, dtReal);
+    // pausa: congela a simulação (mantém render/UI vivos)
+    const dt = g.paused ? 0 : dtReal * scale;
+    MT.api.update(dt, g.paused ? 0 : dtReal);
     MT.render.draw(ts / 1000);
     MT.ui.frameUI();
     requestAnimationFrame(frame);

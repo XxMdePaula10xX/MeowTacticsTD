@@ -506,3 +506,17 @@
 .dock.collapsed .controls { flex: 0 0 auto; margin-top: 0; justify-content: flex-end; }
 .dock.collapsed .reroll { display: none; }                 /* reroll recolhe com a loja */
 .dock.collapsed .btn.start { min-width: 168px; max-width: 240px; padding: 12px 20px; }
+
+/* ---------- Botão de PAUSE + overlay ---------- */
+.chip.pause { cursor: pointer; font-family: inherit; font-size: 15px; padding: 8px 12px; line-height: 1; }
+.chip.pause:active { transform: translateY(1px); }
+.chip.pause.on { background: linear-gradient(180deg, #ffe27a, var(--gold)); color: #241a04; border-color: var(--gold); }
+.pause-overlay { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+  background: rgba(9,9,20,.52); backdrop-filter: blur(2px); }
+.pause-overlay.hide { display: none; }
+.pause-card { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  padding: 22px 34px; border-radius: 18px; background: linear-gradient(180deg, rgba(30,28,58,.9), rgba(16,16,34,.92));
+  border: 1px solid rgba(154,140,255,.3); box-shadow: var(--shadow); }
+.pause-emoji { font-size: 40px; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
+.pause-card b { font-size: 22px; font-weight: 900; letter-spacing: 3px; }
+.pause-sub { font-size: 12px; font-weight: 700; color: var(--ink-dim); }

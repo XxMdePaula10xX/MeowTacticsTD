@@ -21,9 +21,13 @@
       <div class="hud-group right">
         <div class="chip wave" data-tip="wave"><span class="ico">🌊</span><span id="wave">1/50</span></div>
         <button class="chip speed" id="speedBtn" data-tip="speed">⏩ 1×</button>
+        <button class="chip pause" id="pauseBtn" aria-label="Pausar">⏸</button>
       </div>
       <div class="coin-float" id="coinFloat"></div>
     </header>
+    <div class="pause-overlay hide" id="pauseOverlay">
+      <div class="pause-card"><span class="pause-emoji">⏸</span><b>PAUSADO</b><span class="pause-sub">Toque para continuar</span></div>
+    </div>
 
     <div class="board-wrap">
       <canvas id="game"></canvas>

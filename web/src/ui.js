@@ -31,10 +31,13 @@
       lives: $('lives'), coins: $('coins'), wave: $('wave'),
       shop: $('shop'), bench: $('bench'), syn: $('synPanel'), sel: $('selPanel'),
       hint: $('placeHint'), banner: $('banner'), toast: $('toast'), relicStrip: $('relicStrip'),
-      start: $('startBtn'), reroll: $('rerollBtn'), speed: $('speedBtn'),
+      start: $('startBtn'), reroll: $('rerollBtn'), speed: $('speedBtn'), pause: $('pauseBtn'),
     };
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
+    // pausa (congela a onda)
+    if (refs.pause) refs.pause.addEventListener('click', togglePause);
+    const pov = $('pauseOverlay'); if (pov) pov.addEventListener('click', () => setPaused(false));
     // recolher/expandir o painel (banco+loja) — dá espaço ao mapa
     const dockToggle = $('dockToggle');
     if (dockToggle) dockToggle.addEventListener('click', () => {
@@ -91,6 +94,7 @@
   function show(id) { $(id).classList.remove('hide'); }
   function showMenu() {
     MT.game.phase = 'menu';
+    setPaused(false);
     const m = $('menu');
     m.style.backgroundImage = 'url(' + asset('assets/ui/menu_bg.png') + ')';
     show('menu'); hide('mapSelect'); hide('endScreen');
@@ -144,7 +148,7 @@
   function laneLabel(n) { return n === 1 ? '1 caminho · Fácil' : n === 2 ? '2 caminhos · Médio' : '3 caminhos · Difícil'; }
 
   function startRun(mode, mapId) {
-    hide('menu'); hide('mapSelect'); hide('endScreen');
+    hide('menu'); hide('mapSelect'); hide('endScreen'); setPaused(false);
     MT.api.newRun(mode, mapId);
     tutorial.maybeStart();
     if (mode === 'daily') MT.game.speed = MT.game.speed || 1;
@@ -153,7 +157,7 @@
   function continueRun() {
     // se o save estiver corrompido, volta ao menu em vez de deixar a tela morta
     if (!MT.save.restore()) { showMenu(); return; }
-    hide('menu'); hide('mapSelect'); refresh();
+    hide('menu'); hide('mapSelect'); setPaused(false); refresh();
   }
 
   function showEnd(won) {
@@ -187,6 +191,12 @@
     const collapsed = dk.classList.contains('collapsed');
     const txt = t.querySelector('.dt-txt'); if (txt) txt.textContent = collapsed ? 'LOJA' : 'MAPA';
   }
+  function setPaused(on) {
+    MT.game.paused = !!on;
+    const btn = $('pauseBtn'); if (btn) { btn.textContent = on ? '▶' : '⏸'; btn.classList.toggle('on', on); btn.setAttribute('aria-label', on ? 'Continuar' : 'Pausar'); }
+    const ov = $('pauseOverlay'); if (ov) ov.classList.toggle('hide', !on);
+  }
+  function togglePause() { setPaused(!MT.game.paused); }
   function refresh() {
     const g = MT.game;
     if (g.phase === 'menu') return;
