@@ -491,3 +491,18 @@
 
 /* relíquias: canto inferior-esquerdo, acima da barra */
 .relic-strip { bottom: 78px; left: max(8px, env(safe-area-inset-left,0)); }
+
+/* ============================================================
+   BARRA INFERIOR enxuta
+   - START não precisa ser gigante/full-width: tamanho confortável, centrado.
+   - reroll (🎲) faz parte da loja: some quando a loja está recolhida.
+   - recolhido: BANCO à esquerda + INICIAR à direita, lado a lado.
+   ============================================================ */
+.controls { justify-content: center; gap: 10px; }
+.btn.start { flex: 0 1 auto; min-width: 200px; max-width: 440px; padding: 13px 30px; }
+
+.dock.collapsed { flex-direction: row; align-items: center; gap: 10px; }
+.dock.collapsed .bench-sec { flex: 1 1 auto; min-width: 0; }
+.dock.collapsed .controls { flex: 0 0 auto; margin-top: 0; justify-content: flex-end; }
+.dock.collapsed .reroll { display: none; }                 /* reroll recolhe com a loja */
+.dock.collapsed .btn.start { min-width: 168px; max-width: 240px; padding: 12px 20px; }
