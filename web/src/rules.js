@@ -181,7 +181,7 @@
 
   // Recompensa de onda (mesma fórmula em todos os modos).
   function waveReward(waveNumber, bonusReward, run) {
-    return B.coinsPerWaveBase + Math.floor(waveNumber / 2) + (bonusReward || 0) + (run.coinsPerWave || 0);
+    return B.coinsPerWaveBase + Math.floor(waveNumber / 3) + (bonusReward || 0) + (run.coinsPerWave || 0);
   }
 
   MT.rules = {

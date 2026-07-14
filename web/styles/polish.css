@@ -522,3 +522,28 @@
 .pause-sub { font-size: 12px; font-weight: 700; color: var(--ink-dim); }
 .pause-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; width: min(260px, 66vw); }
 .pause-btns .btn { width: 100%; padding: 12px 16px; }
+
+/* ---------- Sinergias: título clicável (recolher) ---------- */
+.syn-title { pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.syn-caret { margin-left: auto; color: var(--ink-mut); font-size: 11px; }
+
+/* ---------- Painel de detalhes do gato: cabe na tela + rolável ---------- */
+.sel-panel { top: 54px; right: max(8px, env(safe-area-inset-right, 0)); width: 208px;
+  max-height: calc(100% - 128px); overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.sel-panel::-webkit-scrollbar { width: 5px; }
+.sel-panel::-webkit-scrollbar-thumb { background: rgba(154,140,255,.4); border-radius: 3px; }
+.sel-panel .sel-sep { margin: 6px 0; }
+.sel-panel .sel-stats { gap: 4px; margin: 6px 0; }
+.sel-panel .inv-title { margin-top: 5px; }
+/* botões de ação fixos no rodapé do painel, sempre acessíveis */
+.sel-actions { position: sticky; bottom: -1px; background: linear-gradient(180deg, transparent, rgba(18,18,38,.96) 30%);
+  padding-top: 8px; margin-top: 4px; }
+
+/* ---------- Banco: slots maiores (alvo de toque melhor) ---------- */
+.bench-slot { width: 48px; height: 48px; }
+.bench-slot img { width: 40px; height: 40px; }
+@media (max-height: 430px) { .bench-slot { width: 46px; height: 46px; } .bench-slot img { width: 38px; height: 38px; } }
+/* itens ganhos: chip no HUD */
+.chip.items { color: var(--gold); cursor: pointer; }
+.chip.items.hide { display: none; }

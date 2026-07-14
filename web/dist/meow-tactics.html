@@ -836,6 +836,31 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .pause-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; width: min(260px, 66vw); }
 .pause-btns .btn { width: 100%; padding: 12px 16px; }
 
+/* ---------- Sinergias: título clicável (recolher) ---------- */
+.syn-title { pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.syn-caret { margin-left: auto; color: var(--ink-mut); font-size: 11px; }
+
+/* ---------- Painel de detalhes do gato: cabe na tela + rolável ---------- */
+.sel-panel { top: 54px; right: max(8px, env(safe-area-inset-right, 0)); width: 208px;
+  max-height: calc(100% - 128px); overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.sel-panel::-webkit-scrollbar { width: 5px; }
+.sel-panel::-webkit-scrollbar-thumb { background: rgba(154,140,255,.4); border-radius: 3px; }
+.sel-panel .sel-sep { margin: 6px 0; }
+.sel-panel .sel-stats { gap: 4px; margin: 6px 0; }
+.sel-panel .inv-title { margin-top: 5px; }
+/* botões de ação fixos no rodapé do painel, sempre acessíveis */
+.sel-actions { position: sticky; bottom: -1px; background: linear-gradient(180deg, transparent, rgba(18,18,38,.96) 30%);
+  padding-top: 8px; margin-top: 4px; }
+
+/* ---------- Banco: slots maiores (alvo de toque melhor) ---------- */
+.bench-slot { width: 48px; height: 48px; }
+.bench-slot img { width: 40px; height: 40px; }
+@media (max-height: 430px) { .bench-slot { width: 46px; height: 46px; } .bench-slot img { width: 38px; height: 38px; } }
+/* itens ganhos: chip no HUD */
+.chip.items { color: var(--gold); cursor: pointer; }
+.chip.items.hide { display: none; }
+
 </style>
 
   <div id="app">
@@ -844,6 +869,7 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
       <div class="hud-group">
         <div class="chip lives" data-tip="lives"><img class="ico-img" id="icoLife" alt="vidas"><span id="lives">20</span></div>
         <div class="chip coins" data-tip="coins"><img class="ico-img" id="icoCoin" alt="moedas"><span id="coins">7</span></div>
+        <button class="chip items hide" id="itemsChip" aria-label="Itens no inventário">🎒 <span id="itemCount">0</span></button>
       </div>
       <div class="hud-group right">
         <div class="chip wave" data-tip="wave"><span class="ico">🌊</span><span id="wave">1/50</span></div>
@@ -3036,7 +3062,7 @@ window.MT = window.MT || {};
 
   // Recompensa de onda (mesma fórmula em todos os modos).
   function waveReward(waveNumber, bonusReward, run) {
-    return B.coinsPerWaveBase + Math.floor(waveNumber / 2) + (bonusReward || 0) + (run.coinsPerWave || 0);
+    return B.coinsPerWaveBase + Math.floor(waveNumber / 3) + (bonusReward || 0) + (run.coinsPerWave || 0);
   }
 
   MT.rules = {
@@ -3148,14 +3174,16 @@ window.MT = window.MT || {};
     game.shop = [];
     for (let i = 0; i < B.shopSize; i++) game.shop.push(U.pick(D.cats).id);
   }
+  // custo escala com o avanço das rondas (fica mais caro, mais desafiador).
+  function costOf(data) { return data.cost + Math.floor(game.waveIndex / 4); }
   function buy(slot) {
     if (game.phase !== 'prep') return;
     const id = game.shop[slot]; if (!id) return;
-    const cost = R.CAT[id].cost;
+    const cost = costOf(R.CAT[id]);
     if (!canAfford(cost)) { toast('Moedas insuficientes'); return; }
     if (game.bench.filter(Boolean).length >= B.benchSize) { toast('Banco cheio'); return; }
     game.coins -= cost;
-    game.bench.push(makeCat(id));
+    const c = makeCat(id); c.invested = cost; game.bench.push(c);
     game.shop[slot] = null;
     MT.stats && MT.stats.add('catsBought', 1);
     MT.sfx && MT.sfx.play('place');
@@ -3322,7 +3350,7 @@ window.MT = window.MT || {};
     game.enemies.splice(i, 1);
     game.aliveCount = Math.max(0, game.aliveCount - 1);
     game.removedThisWave++;
-    addCoins(en.bounty);
+    addCoins(Math.max(1, Math.round(en.bounty * 0.5))); // recompensa por abate reduzida (economia mais apertada)
     game.enemiesKilled++;
     if (MT.stats) { MT.stats.add('kills', 1); if (en.boss) MT.stats.add('bossKills', 1); }
     fxBurst(en.x, en.y, en.boss ? '#ffd24f' : '#b98cff', en.boss ? 24 : 7);
@@ -3514,7 +3542,7 @@ window.MT = window.MT || {};
     newRun, update, buy, reroll, sell, pick, deselect, placeAt, selectBoard,
     startWave, recompute, resolveMap, distToPaths, placeValid, posAlong, addCoins,
     takeItem, takeRelic, equipItem, canEquip, maxSlots, getItemChoices, getRelicChoices,
-    cyclePriority, repositionCat,
+    cyclePriority, repositionCat, costOf,
   };
 })(window.MT);
 
@@ -3693,7 +3721,8 @@ window.MT = window.MT || {};
     drawPaths(t);
     // preview de alcance ao posicionar / selecionar
     if (g.selected) drawPlacePreview();
-    for (const c of g.board) drawRange(c);
+    // alcance só do gato selecionado (não poluir o mapa)
+    if (g.selected && g.selected.kind === 'board') drawRange(g.selected.cat);
     drawEnemies();
     drawCats(t);
     drawShots();
@@ -3922,7 +3951,7 @@ window.MT = window.MT || {};
 
   function rectXY(cx, cy) { const r = canvasEl.getBoundingClientRect(); return { x: cx - r.left, y: cy - r.top }; }
   function toWorld(sx, sy) { return { wx: MT.cam.wx(sx), wy: MT.cam.wy(sy), sx, sy }; }
-  function pickCat(wx, wy) { let best = null, bd = 0.6; for (const c of MT.game.board) { const d = MT.util.dist(c.x, c.y, wx, wy); if (d < bd) { bd = d; best = c; } } return best; }
+  function pickCat(wx, wy) { let best = null, bd = 0.95; for (const c of MT.game.board) { const d = MT.util.dist(c.x, c.y, wx, wy); if (d < bd) { bd = d; best = c; } } return best; }
   function overCanvas(cx, cy) { const r = canvasEl.getBoundingClientRect(); return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom; }
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
@@ -3950,7 +3979,7 @@ window.MT = window.MT || {};
         if (g.phase === 'prep') {
           const w = toWorld(p.x, p.y);
           if (g.selected && g.selected.kind === 'bench') input.hover = w; // carregando gato do banco (modo toque)
-          else { const hit = pickCat(w.wx, w.wy); if (hit) { single.dragCat = hit; single.origX = hit.x; single.origY = hit.y; } }
+          // gatos já posicionados NÃO são reposicionáveis: só selecionam no toque (via tap()).
         }
       }
     });
@@ -3986,19 +4015,8 @@ window.MT = window.MT || {};
       pointers.delete(e.pointerId);
       if (pointers.size < 2) pinch = null;
       if (wasSingle) {
-        if (single.dragCat) {
-          const cat = single.dragCat;
-          if (single.moved) {
-            if (MT.api.placeValid(cat.x, cat.y, cat)) MT.api.repositionCat(cat, cat.x, cat.y);
-            else { cat.x = single.origX; cat.y = single.origY; MT.api.recompute(); }
-          } else {
-            MT.api.selectBoard(cat); // toque simples abre o painel
-          }
-          input.dragging = null;
-        } else {
-          if (!single.moved) tap(single.sx, single.sy);
-          if (e.pointerType !== 'mouse') input.hover = null;
-        }
+        if (!single.moved) tap(single.sx, single.sy); // toque simples: coloca/seleciona
+        if (e.pointerType !== 'mouse') input.hover = null;
         single = null;
       }
       if (!single && pointers.size === 1) { const id = [...pointers.keys()][0], q = pointers.get(id); single = { id, sx: q.x, sy: q.y, lastX: q.x, lastY: q.y, moved: true, dragCat: null }; }
@@ -4011,13 +4029,6 @@ window.MT = window.MT || {};
       if (g.phase === 'wave') { const hit = pickCat(p.wx, p.wy); if (hit) { const mode = MT.api.cyclePriority(hit); MT.ui && MT.ui.priorityToast && MT.ui.priorityToast(hit, mode); } return; }
       if (g.phase !== 'prep') return;
       if (g.selected && g.selected.kind === 'bench') { input.hover = p; MT.api.placeAt(p.wx, p.wy); input.hover = null; return; }
-      // modo "Mover": tocar no gramado reposiciona o gato selecionado do tabuleiro
-      if (g.moveMode && g.selected && g.selected.kind === 'board') {
-        const cat = g.selected.cat;
-        if (MT.api.placeValid(p.wx, p.wy, cat)) { MT.api.repositionCat(cat, p.wx, p.wy); g.moveMode = false; MT.api.deselect(); }
-        else { g.toast = 'Local inválido (perto do caminho/gato)'; g.toastT = 1.4; }
-        return;
-      }
       const hit = pickCat(p.wx, p.wy);
       if (hit) MT.api.selectBoard(hit); else MT.api.deselect();
     }
@@ -4096,7 +4107,9 @@ window.MT = window.MT || {};
       shop: $('shop'), bench: $('bench'), syn: $('synPanel'), sel: $('selPanel'),
       hint: $('placeHint'), banner: $('banner'), toast: $('toast'), relicStrip: $('relicStrip'),
       start: $('startBtn'), reroll: $('rerollBtn'), speed: $('speedBtn'), pause: $('pauseBtn'),
+      items: $('itemsChip'), itemCount: $('itemCount'),
     };
+    if (refs.items) refs.items.addEventListener('click', () => { MT.game.toast = 'Toque num gato posicionado para equipar itens 🎒'; MT.game.toastT = 2; });
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
     // pausa (congela a onda) + menu de pausa
@@ -4293,6 +4306,8 @@ window.MT = window.MT || {};
     refs.hint.classList.toggle('show', !!(g.selected && g.selected.kind === 'bench'));
     const dock = document.querySelector('.dock');
     if (dock) { dock.classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench')); dock.classList.toggle('wave-lock', running); }
+    if (refs.syn) refs.syn.style.display = running ? 'none' : ''; // sinergias ocultas durante a onda
+    if (refs.items) { const n = g.inventory.length; refs.items.classList.toggle('hide', n === 0); if (refs.itemCount) refs.itemCount.textContent = n; }
     const sh = $('shopHint'); if (sh) sh.textContent = '· reroll ' + B.rerollCost + '🪙';
 
     buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
@@ -4320,7 +4335,8 @@ window.MT = window.MT || {};
     g.shop.forEach((id, i) => {
       if (!id) { wrap.appendChild(el('div', 'cat-card empty', '<span>vendido</span>')); return; }
       const c = R.CAT[id], card = el('div', 'cat-card');
-      if (c.cost > g.coins) card.classList.add('cant');
+      const cost = MT.api.costOf(c);
+      if (cost > g.coins) card.classList.add('cant');
       card.dataset.tip = 'cat'; card.dataset.arg = c.id;
       const tags = c.tags.slice(0, 2).map(t => '<span title="' + t + '">' + (TAG_ICON[t] || '•') + '</span>').join('');
       const hint = synHintFor(c);
@@ -4328,7 +4344,7 @@ window.MT = window.MT || {};
         '<div class="dmg-badge ' + c.type + '">' + SYM[c.type] + '</div>' +
         '<div class="cat-art"><img src="' + asset(c.sprite) + '" alt="" draggable="false"></div>' +
         '<div class="cat-name">' + shortName(c.name) + '</div>' +
-        '<div class="cat-cost">🪙 ' + c.cost + '</div>' +
+        '<div class="cat-cost">🪙 ' + cost + '</div>' +
         '<div class="cat-tags">' + tags + '</div>' +
         (hint ? '<div class="syn-hint' + (hint.activates ? '' : ' dim') + '">' + hint.text + '</div>' : '');
       if (hint && hint.activates) card.classList.add('syn-boost');
@@ -4345,7 +4361,7 @@ window.MT = window.MT || {};
       card.addEventListener('click', () => {
         if (lpFired) { lpFired = false; return; }   // já mostrou detalhes: não compra
         if (MT.game.phase !== 'prep') return;       // loja travada durante a onda
-        if (c.cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
+        if (cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
         card.classList.add('pop'); MT.api.buy(i);
       });
       wrap.appendChild(card);
@@ -4386,11 +4402,14 @@ window.MT = window.MT || {};
     lastBench = count;
   }
 
-  let lastSynKey = '';
+  let lastSynKey = '', synCollapsed = false;
   function buildSyn() {
     const g = MT.game, wrap = refs.syn; if (!wrap) return; wrap.innerHTML = '';
     const active = g.synergies.filter(s => s.count > 0);
-    wrap.appendChild(el('div', 'syn-title', '✨ SINERGIAS'));
+    const title = el('div', 'syn-title', '✨ SINERGIAS <span class="syn-caret">' + (synCollapsed ? '▸' : '▾') + '</span>');
+    title.addEventListener('click', () => { synCollapsed = !synCollapsed; buildSyn(); });
+    wrap.appendChild(title);
+    if (synCollapsed) return; // recolhido: só o título
     if (active.length === 0) { wrap.insertAdjacentHTML('beforeend', '<div class="syn-empty">Sem sinergias ativas<small>combine tipos de gato</small></div>'); lastSynKey = ''; return; }
     const changedKey = active.map(s => s.tag + s.count).join('|');
     const changed = changedKey !== lastSynKey; lastSynKey = changedKey;
@@ -4445,7 +4464,8 @@ window.MT = window.MT || {};
     if (cur.truePerHit > 0) buffs.push('👻 +' + cur.truePerHit + ' dano verdadeiro');
     const buffsHtml = buffs.length ? '<div class="sel-sep"></div><div class="inv-title">BUFFS ATIVOS</div><div class="sel-buffs">' +
       buffs.map(t => '<div class="sel-buff">' + t + '</div>').join('') + '</div>' : '';
-    const tagsIco = cat.data.tags.map(t => (TAG_ICON[t] || '') + ' ' + t).join(' · ');
+    const tagName = (t) => (R.SYN_BY_TAG[t] && R.SYN_BY_TAG[t].name) ? R.SYN_BY_TAG[t].name : t;
+    const tagsIco = cat.data.tags.map(t => (TAG_ICON[t] || '') + ' ' + tagName(t)).join(' · ');
     wrap.innerHTML =
       '<div class="sel-head"><img src="' + asset(cat.data.sprite) + '"><div><b>' + cat.data.name + '</b>' +
       '<span class="sel-type ' + cat.data.type + '">' + SYM[cat.data.type] + ' ' + typeName(cat.data.type) + '</span></div>' +
@@ -4466,13 +4486,11 @@ window.MT = window.MT || {};
       '<div class="sel-sep"></div>' +
       '<div class="sel-actions">' +
         '<button class="btn-sell" id="selSell">Vender 🪙' + sellVal + '</button>' +
-        '<button class="mini-btn" id="selMove">Mover</button>' +
         '<button class="mini-btn" id="selCloseB">Fechar</button>' +
       '</div>';
     $('selPrio').onclick = () => MT.api.cyclePriority(cat);
     $('selClose').onclick = () => MT.api.deselect();
     $('selCloseB').onclick = () => MT.api.deselect();
-    $('selMove').onclick = () => { MT.game.moveMode = true; MT.game.toast = 'Toque no gramado para mover o gato'; MT.game.toastT = 1.8; };
     $('selSell').onclick = () => MT.api.sell(cat);
     wrap.querySelectorAll('.inv-item').forEach(node => node.onclick = () => {
       const i = +node.dataset.inv, itemId = g.inventory[i];
@@ -4515,10 +4533,12 @@ window.MT = window.MT || {};
   }
   function pickDraft(id) {
     const g = MT.game, d = g.pendingDraft; if (!d) { hide('draft'); return; }
-    if (d.type === 'relic') MT.api.takeRelic(id); else MT.api.takeItem(id);
+    if (d.type === 'relic') { MT.api.takeRelic(id); }
+    else { MT.api.takeItem(id); showBanner('🎒 ITEM NO INVENTÁRIO', 'Toque num gato posicionado para equipar'); }
     MT.sfx && MT.sfx.play('coin');
     hide('draft'); refresh();
   }
+  function showBanner(t1, t2) { MT.game.banner = { t1, t2 }; MT.game.bannerT = 2.4; }
 
   // ---------- COLEÇÃO ----------
   function showCollection() { hide('menu'); collTab = 'cats'; setActiveTab(); buildColl(); show('collection'); }

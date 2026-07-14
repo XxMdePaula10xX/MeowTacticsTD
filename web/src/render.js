@@ -38,7 +38,8 @@
     drawPaths(t);
     // preview de alcance ao posicionar / selecionar
     if (g.selected) drawPlacePreview();
-    for (const c of g.board) drawRange(c);
+    // alcance só do gato selecionado (não poluir o mapa)
+    if (g.selected && g.selected.kind === 'board') drawRange(g.selected.cat);
     drawEnemies();
     drawCats(t);
     drawShots();

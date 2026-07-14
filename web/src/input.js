@@ -9,7 +9,7 @@
 
   function rectXY(cx, cy) { const r = canvasEl.getBoundingClientRect(); return { x: cx - r.left, y: cy - r.top }; }
   function toWorld(sx, sy) { return { wx: MT.cam.wx(sx), wy: MT.cam.wy(sy), sx, sy }; }
-  function pickCat(wx, wy) { let best = null, bd = 0.6; for (const c of MT.game.board) { const d = MT.util.dist(c.x, c.y, wx, wy); if (d < bd) { bd = d; best = c; } } return best; }
+  function pickCat(wx, wy) { let best = null, bd = 0.95; for (const c of MT.game.board) { const d = MT.util.dist(c.x, c.y, wx, wy); if (d < bd) { bd = d; best = c; } } return best; }
   function overCanvas(cx, cy) { const r = canvasEl.getBoundingClientRect(); return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom; }
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
@@ -37,7 +37,7 @@
         if (g.phase === 'prep') {
           const w = toWorld(p.x, p.y);
           if (g.selected && g.selected.kind === 'bench') input.hover = w; // carregando gato do banco (modo toque)
-          else { const hit = pickCat(w.wx, w.wy); if (hit) { single.dragCat = hit; single.origX = hit.x; single.origY = hit.y; } }
+          // gatos já posicionados NÃO são reposicionáveis: só selecionam no toque (via tap()).
         }
       }
     });
@@ -73,19 +73,8 @@
       pointers.delete(e.pointerId);
       if (pointers.size < 2) pinch = null;
       if (wasSingle) {
-        if (single.dragCat) {
-          const cat = single.dragCat;
-          if (single.moved) {
-            if (MT.api.placeValid(cat.x, cat.y, cat)) MT.api.repositionCat(cat, cat.x, cat.y);
-            else { cat.x = single.origX; cat.y = single.origY; MT.api.recompute(); }
-          } else {
-            MT.api.selectBoard(cat); // toque simples abre o painel
-          }
-          input.dragging = null;
-        } else {
-          if (!single.moved) tap(single.sx, single.sy);
-          if (e.pointerType !== 'mouse') input.hover = null;
-        }
+        if (!single.moved) tap(single.sx, single.sy); // toque simples: coloca/seleciona
+        if (e.pointerType !== 'mouse') input.hover = null;
         single = null;
       }
       if (!single && pointers.size === 1) { const id = [...pointers.keys()][0], q = pointers.get(id); single = { id, sx: q.x, sy: q.y, lastX: q.x, lastY: q.y, moved: true, dragCat: null }; }
@@ -98,13 +87,6 @@
       if (g.phase === 'wave') { const hit = pickCat(p.wx, p.wy); if (hit) { const mode = MT.api.cyclePriority(hit); MT.ui && MT.ui.priorityToast && MT.ui.priorityToast(hit, mode); } return; }
       if (g.phase !== 'prep') return;
       if (g.selected && g.selected.kind === 'bench') { input.hover = p; MT.api.placeAt(p.wx, p.wy); input.hover = null; return; }
-      // modo "Mover": tocar no gramado reposiciona o gato selecionado do tabuleiro
-      if (g.moveMode && g.selected && g.selected.kind === 'board') {
-        const cat = g.selected.cat;
-        if (MT.api.placeValid(p.wx, p.wy, cat)) { MT.api.repositionCat(cat, p.wx, p.wy); g.moveMode = false; MT.api.deselect(); }
-        else { g.toast = 'Local inválido (perto do caminho/gato)'; g.toastT = 1.4; }
-        return;
-      }
       const hit = pickCat(p.wx, p.wy);
       if (hit) MT.api.selectBoard(hit); else MT.api.deselect();
     }

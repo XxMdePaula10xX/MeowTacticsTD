@@ -32,7 +32,9 @@
       shop: $('shop'), bench: $('bench'), syn: $('synPanel'), sel: $('selPanel'),
       hint: $('placeHint'), banner: $('banner'), toast: $('toast'), relicStrip: $('relicStrip'),
       start: $('startBtn'), reroll: $('rerollBtn'), speed: $('speedBtn'), pause: $('pauseBtn'),
+      items: $('itemsChip'), itemCount: $('itemCount'),
     };
+    if (refs.items) refs.items.addEventListener('click', () => { MT.game.toast = 'Toque num gato posicionado para equipar itens 🎒'; MT.game.toastT = 2; });
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
     // pausa (congela a onda) + menu de pausa
@@ -229,6 +231,8 @@
     refs.hint.classList.toggle('show', !!(g.selected && g.selected.kind === 'bench'));
     const dock = document.querySelector('.dock');
     if (dock) { dock.classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench')); dock.classList.toggle('wave-lock', running); }
+    if (refs.syn) refs.syn.style.display = running ? 'none' : ''; // sinergias ocultas durante a onda
+    if (refs.items) { const n = g.inventory.length; refs.items.classList.toggle('hide', n === 0); if (refs.itemCount) refs.itemCount.textContent = n; }
     const sh = $('shopHint'); if (sh) sh.textContent = '· reroll ' + B.rerollCost + '🪙';
 
     buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
@@ -256,7 +260,8 @@
     g.shop.forEach((id, i) => {
       if (!id) { wrap.appendChild(el('div', 'cat-card empty', '<span>vendido</span>')); return; }
       const c = R.CAT[id], card = el('div', 'cat-card');
-      if (c.cost > g.coins) card.classList.add('cant');
+      const cost = MT.api.costOf(c);
+      if (cost > g.coins) card.classList.add('cant');
       card.dataset.tip = 'cat'; card.dataset.arg = c.id;
       const tags = c.tags.slice(0, 2).map(t => '<span title="' + t + '">' + (TAG_ICON[t] || '•') + '</span>').join('');
       const hint = synHintFor(c);
@@ -264,7 +269,7 @@
         '<div class="dmg-badge ' + c.type + '">' + SYM[c.type] + '</div>' +
         '<div class="cat-art"><img src="' + asset(c.sprite) + '" alt="" draggable="false"></div>' +
         '<div class="cat-name">' + shortName(c.name) + '</div>' +
-        '<div class="cat-cost">🪙 ' + c.cost + '</div>' +
+        '<div class="cat-cost">🪙 ' + cost + '</div>' +
         '<div class="cat-tags">' + tags + '</div>' +
         (hint ? '<div class="syn-hint' + (hint.activates ? '' : ' dim') + '">' + hint.text + '</div>' : '');
       if (hint && hint.activates) card.classList.add('syn-boost');
@@ -281,7 +286,7 @@
       card.addEventListener('click', () => {
         if (lpFired) { lpFired = false; return; }   // já mostrou detalhes: não compra
         if (MT.game.phase !== 'prep') return;       // loja travada durante a onda
-        if (c.cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
+        if (cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
         card.classList.add('pop'); MT.api.buy(i);
       });
       wrap.appendChild(card);
@@ -322,11 +327,14 @@
     lastBench = count;
   }
 
-  let lastSynKey = '';
+  let lastSynKey = '', synCollapsed = false;
   function buildSyn() {
     const g = MT.game, wrap = refs.syn; if (!wrap) return; wrap.innerHTML = '';
     const active = g.synergies.filter(s => s.count > 0);
-    wrap.appendChild(el('div', 'syn-title', '✨ SINERGIAS'));
+    const title = el('div', 'syn-title', '✨ SINERGIAS <span class="syn-caret">' + (synCollapsed ? '▸' : '▾') + '</span>');
+    title.addEventListener('click', () => { synCollapsed = !synCollapsed; buildSyn(); });
+    wrap.appendChild(title);
+    if (synCollapsed) return; // recolhido: só o título
     if (active.length === 0) { wrap.insertAdjacentHTML('beforeend', '<div class="syn-empty">Sem sinergias ativas<small>combine tipos de gato</small></div>'); lastSynKey = ''; return; }
     const changedKey = active.map(s => s.tag + s.count).join('|');
     const changed = changedKey !== lastSynKey; lastSynKey = changedKey;
@@ -381,7 +389,8 @@
     if (cur.truePerHit > 0) buffs.push('👻 +' + cur.truePerHit + ' dano verdadeiro');
     const buffsHtml = buffs.length ? '<div class="sel-sep"></div><div class="inv-title">BUFFS ATIVOS</div><div class="sel-buffs">' +
       buffs.map(t => '<div class="sel-buff">' + t + '</div>').join('') + '</div>' : '';
-    const tagsIco = cat.data.tags.map(t => (TAG_ICON[t] || '') + ' ' + t).join(' · ');
+    const tagName = (t) => (R.SYN_BY_TAG[t] && R.SYN_BY_TAG[t].name) ? R.SYN_BY_TAG[t].name : t;
+    const tagsIco = cat.data.tags.map(t => (TAG_ICON[t] || '') + ' ' + tagName(t)).join(' · ');
     wrap.innerHTML =
       '<div class="sel-head"><img src="' + asset(cat.data.sprite) + '"><div><b>' + cat.data.name + '</b>' +
       '<span class="sel-type ' + cat.data.type + '">' + SYM[cat.data.type] + ' ' + typeName(cat.data.type) + '</span></div>' +
@@ -402,13 +411,11 @@
       '<div class="sel-sep"></div>' +
       '<div class="sel-actions">' +
         '<button class="btn-sell" id="selSell">Vender 🪙' + sellVal + '</button>' +
-        '<button class="mini-btn" id="selMove">Mover</button>' +
         '<button class="mini-btn" id="selCloseB">Fechar</button>' +
       '</div>';
     $('selPrio').onclick = () => MT.api.cyclePriority(cat);
     $('selClose').onclick = () => MT.api.deselect();
     $('selCloseB').onclick = () => MT.api.deselect();
-    $('selMove').onclick = () => { MT.game.moveMode = true; MT.game.toast = 'Toque no gramado para mover o gato'; MT.game.toastT = 1.8; };
     $('selSell').onclick = () => MT.api.sell(cat);
     wrap.querySelectorAll('.inv-item').forEach(node => node.onclick = () => {
       const i = +node.dataset.inv, itemId = g.inventory[i];
@@ -451,10 +458,12 @@
   }
   function pickDraft(id) {
     const g = MT.game, d = g.pendingDraft; if (!d) { hide('draft'); return; }
-    if (d.type === 'relic') MT.api.takeRelic(id); else MT.api.takeItem(id);
+    if (d.type === 'relic') { MT.api.takeRelic(id); }
+    else { MT.api.takeItem(id); showBanner('🎒 ITEM NO INVENTÁRIO', 'Toque num gato posicionado para equipar'); }
     MT.sfx && MT.sfx.play('coin');
     hide('draft'); refresh();
   }
+  function showBanner(t1, t2) { MT.game.banner = { t1, t2 }; MT.game.bannerT = 2.4; }
 
   // ---------- COLEÇÃO ----------
   function showCollection() { hide('menu'); collTab = 'cats'; setActiveTab(); buildColl(); show('collection'); }

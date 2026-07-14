@@ -99,14 +99,16 @@
     game.shop = [];
     for (let i = 0; i < B.shopSize; i++) game.shop.push(U.pick(D.cats).id);
   }
+  // custo escala com o avanço das rondas (fica mais caro, mais desafiador).
+  function costOf(data) { return data.cost + Math.floor(game.waveIndex / 4); }
   function buy(slot) {
     if (game.phase !== 'prep') return;
     const id = game.shop[slot]; if (!id) return;
-    const cost = R.CAT[id].cost;
+    const cost = costOf(R.CAT[id]);
     if (!canAfford(cost)) { toast('Moedas insuficientes'); return; }
     if (game.bench.filter(Boolean).length >= B.benchSize) { toast('Banco cheio'); return; }
     game.coins -= cost;
-    game.bench.push(makeCat(id));
+    const c = makeCat(id); c.invested = cost; game.bench.push(c);
     game.shop[slot] = null;
     MT.stats && MT.stats.add('catsBought', 1);
     MT.sfx && MT.sfx.play('place');
@@ -273,7 +275,7 @@
     game.enemies.splice(i, 1);
     game.aliveCount = Math.max(0, game.aliveCount - 1);
     game.removedThisWave++;
-    addCoins(en.bounty);
+    addCoins(Math.max(1, Math.round(en.bounty * 0.5))); // recompensa por abate reduzida (economia mais apertada)
     game.enemiesKilled++;
     if (MT.stats) { MT.stats.add('kills', 1); if (en.boss) MT.stats.add('bossKills', 1); }
     fxBurst(en.x, en.y, en.boss ? '#ffd24f' : '#b98cff', en.boss ? 24 : 7);
@@ -465,6 +467,6 @@
     newRun, update, buy, reroll, sell, pick, deselect, placeAt, selectBoard,
     startWave, recompute, resolveMap, distToPaths, placeValid, posAlong, addCoins,
     takeItem, takeRelic, equipItem, canEquip, maxSlots, getItemChoices, getRelicChoices,
-    cyclePriority, repositionCat,
+    cyclePriority, repositionCat, costOf,
   };
 })(window.MT);
