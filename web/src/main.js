@@ -18,12 +18,15 @@
   function frame(ts) {
     const dtReal = Math.min(0.05, (ts - last) / 1000) || 0; last = ts;
     const g = MT.game;
-    let scale = g.phase === 'wave' ? g.speed : 1;
-    if (g.slowmoT > 0) { g.slowmoT -= dtReal; scale *= 0.4; } // slow-mo na entrada do chefe
-    // pausa: congela a simulação (mantém render/UI vivos)
-    const dt = g.paused ? 0 : dtReal * scale;
-    MT.api.update(dt, g.paused ? 0 : dtReal);
-    MT.render.draw(ts / 1000);
+    // no menu / fim de jogo (tela cheia sobre o mapa) não gasta bateria desenhando o canvas
+    const idle = g.phase === 'menu' || g.phase === 'win' || g.phase === 'over';
+    if (!idle) {
+      let scale = g.phase === 'wave' ? g.speed : 1;
+      if (g.slowmoT > 0) { g.slowmoT -= dtReal; scale *= 0.4; } // slow-mo na entrada do chefe
+      const dt = g.paused ? 0 : dtReal * scale; // pausa congela a simulação
+      MT.api.update(dt, g.paused ? 0 : dtReal);
+      MT.render.draw(ts / 1000);
+    }
     MT.ui.frameUI();
     requestAnimationFrame(frame);
   }

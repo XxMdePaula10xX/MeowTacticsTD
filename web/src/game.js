@@ -199,11 +199,14 @@
   function endWave() {
     game.waveRunning = false;
     const waveNumber = game.waveIndex + 1;
-    const reward = R.waveReward(waveNumber, game.curWave ? game.curWave.bonusReward : 0, game.run);
+    let reward = R.waveReward(waveNumber, game.curWave ? game.curWave.bonusReward : 0, game.run);
+    // JUROS: +1 por 10 de ouro guardado (teto 5) — dá função a poupar gold.
+    const interest = Math.min(5, Math.floor(game.coins / 10));
+    reward += interest;
     addCoins(reward);
     MT.sfx && MT.sfx.play('coin');
     MT.progress && MT.progress.onWave && MT.progress.onWave(waveNumber, game.enemiesKilled);
-    if (MT.stats) { MT.stats.add('waves', 1); MT.stats.max('bestWave', waveNumber); MT.stats.add('synergiesActivated', game.synergies.filter(s => s.tier >= 0).length); }
+    if (MT.stats) { MT.stats.add('waves', 1); MT.stats.max('bestWave', waveNumber); MT.stats.add('synergiesActivated', game.synergies.filter(s => s.tier >= 0).length); MT.stats.flush(); }
 
     const wasLast = game.mode !== 'endless' && game.waveIndex >= R.TOTAL_WAVES - 1;
     if (wasLast) { win(); return; }
@@ -211,7 +214,7 @@
     game.phase = 'prep';
     generateShop();
     recompute();
-    banner('ONDA VENCIDA!  +' + reward + ' 🪙', 'Prepare a próxima defesa');
+    banner('ONDA VENCIDA!  +' + reward + ' 🪙', interest > 0 ? ('inclui +' + interest + ' de juros · prepare a defesa') : 'Prepare a próxima defesa');
     if (game.mode === 'normal') MT.save && MT.save.write && MT.save.write();
     MT.ui && MT.ui.refresh && MT.ui.refresh();
     checkAch();
@@ -331,13 +334,14 @@
   function clearSaveIfNormal() { if (game.mode === 'normal') MT.save && MT.save.clear && MT.save.clear(); }
   function win() {
     game.phase = 'win'; recordBest(); clearSaveIfNormal();
-    MT.stats && MT.stats.add('wins', 1); MT.sfx && MT.sfx.play('win'); checkAch();
+    MT.stats && (MT.stats.add('wins', 1), MT.stats.flush()); MT.sfx && MT.sfx.play('win'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(true);
   }
   function lose() {
     if (game.phase === 'over' || game.phase === 'win') return; // evita disparo múltiplo no mesmo frame
     game.phase = 'over'; game.waveRunning = false; shakeCam(0.4, 0.5);
     recordBest(); clearSaveIfNormal();
+    MT.stats && MT.stats.flush();
     MT.sfx && MT.sfx.play('lose'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(false);
   }
@@ -450,6 +454,7 @@
     game.bench = []; game.board = []; game.inventory = [];
     game.enemies = []; game.shots = []; game.floats = []; game.parts = [];
     game.selected = null; game.phase = 'prep'; game.pendingDraft = null;
+    game.speed = 1; game.slowmoT = 0; game.paused = false; // começa limpo (não herda a partida anterior)
     // zera TODO o estado de onda (senão startWave pode ficar travado por waveRunning obsoleto)
     game.waveRunning = false; game.finishedSpawning = false; game.spawnQueue = [];
     game.aliveCount = 0; game.removedThisWave = 0; game.enemiesTotal = 0; game.spawnTimer = 0; game.curWave = null;

@@ -11,7 +11,9 @@
     const im = imgs[path];
     return (im.complete && im.naturalWidth) ? im : null;
   }
-  MT.preload = function () { MT.DATA.cats.forEach(c => img(c.sprite)); MT.DATA.enemies.forEach(e => img(e.sprite)); MT.DATA.maps.forEach(m => img(m.bg)); };
+  // pré-carrega só os sprites (leves); o mapa da partida carrega sob demanda no
+  // primeiro draw (não decodificar os 10 mapas full-res no boot = menos memória).
+  MT.preload = function () { MT.DATA.cats.forEach(c => img(c.sprite)); MT.DATA.enemies.forEach(e => img(e.sprite)); };
 
   // temas de chão por mapa
   const THEME = {

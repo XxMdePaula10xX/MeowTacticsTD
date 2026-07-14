@@ -26,20 +26,27 @@
 
   // ---------- SAVE (só modo normal) ----------
   const SKEY = 'mt_save';
+  const SAVE_V = 2; // versão do formato do save (bump quebra compat -> descarta)
   const save = {
     has() { return get(SKEY, null) != null; },
     clear() { try { LS.removeItem(SKEY); } catch (e) {} },
     write() {
       const g = MT.game;
       if (g.mode !== 'normal') return;
+      if (g.phase !== 'prep') return; // só salva na preparação (não no meio da onda)
       const enc = (c) => ({ id: c.data.id, x: c.x, y: c.y, items: c.items.slice(), invested: c.invested, priority: c.priority });
-      const d = { mapId: g.mapId, coins: g.coins, lives: g.lives, waveIndex: g.waveIndex,
-        board: g.board.map(enc), bench: g.bench.map(enc), inventory: g.inventory.slice(), run: g.run };
+      const d = { v: SAVE_V, mapId: g.mapId, coins: g.coins, lives: g.lives, waveIndex: g.waveIndex,
+        board: g.board.map(enc), bench: g.bench.map(enc), inventory: g.inventory.slice(), run: g.run,
+        pendingDraft: g.pendingDraft || null };
       set(SKEY, JSON.stringify(d));
     },
     restore() {
       const raw = get(SKEY, null); if (!raw) return false;
-      let d; try { d = JSON.parse(raw); } catch (e) { return false; }
+      let d; try { d = JSON.parse(raw); } catch (e) { this.clear(); return false; }
+      const v = d.v || 1; // saves antigos (v1) têm o mesmo formato — carregam
+      if (v > SAVE_V) { this.clear(); return false; } // save de versão futura: descarta
+      // validação numérica: save corrompido não pode travar o jogo
+      if (![d.coins, d.lives, d.waveIndex].every(x => typeof x === 'number' && isFinite(x))) { this.clear(); return false; }
       const g = MT.game;
       MT.api.newRun('normal', d.mapId, { restoring: true });
       if (d.run) Object.assign(g.run, d.run);
@@ -53,6 +60,7 @@
       (d.bench || []).forEach(s => build(s, false));
       (d.board || []).forEach(s => build(s, true));
       g.inventory = d.inventory || [];
+      g.pendingDraft = (d.pendingDraft && d.pendingDraft.choices) ? d.pendingDraft : null; // recompensa pendente
       MT.api.recompute();
       return true;
     },
@@ -79,9 +87,11 @@
   };
 
   // ---------- ESTATÍSTICAS & CONQUISTAS ----------
+  const _statBuf = {}; // acumula em memória; flush no fim da onda (fora do loop de combate)
   const stats = {
-    get(m) { return parseInt(get('mt_stat_' + m, '0'), 10) || 0; },
-    add(m, n) { set('mt_stat_' + m, String(this.get(m) + (n == null ? 1 : n))); },
+    get(m) { return (parseInt(get('mt_stat_' + m, '0'), 10) || 0) + (_statBuf[m] || 0); },
+    add(m, n) { _statBuf[m] = (_statBuf[m] || 0) + (n == null ? 1 : n); }, // sem localStorage no hot-path
+    flush() { for (const m in _statBuf) { const cur = parseInt(get('mt_stat_' + m, '0'), 10) || 0; set('mt_stat_' + m, String(cur + _statBuf[m])); delete _statBuf[m]; } },
     max(m, n) { if (n > this.get(m)) set('mt_stat_' + m, String(n)); },
     unlocked(a) { return this.get(a.metric) >= a.threshold; },
     unlockedCount() { return D.achievements.filter(a => this.unlocked(a)).length; },

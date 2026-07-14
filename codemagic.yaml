@@ -31,11 +31,16 @@ workflows:
         script: |
           cd web
           npm install
-      - name: Montar a pasta web (www) sem node_modules
+      - name: Montar a pasta web (www) — bundle único comprimido (~2.3MB)
         script: |
           cd web
           rm -rf www && mkdir www
-          cp -R index.html src styles assets www/
+          # www = só o dist auto-contido (HTML+CSS+JS+assets em base64/JPEG),
+          # commitado no repo. Evita copiar os 36MB de assets crus pro .ipa.
+          cp dist/meow-tactics.html www/index.html
+          echo "Tamanho do www:"; du -sh www; ls -la www
+          # trava de segurança: aborta se o www passar de 6MB (bloat voltou)
+          SZ=$(du -sm www | cut -f1); if [ "$SZ" -gt 6 ]; then echo "www muito grande (${SZ}MB) — abortando"; exit 1; fi
       - name: Adicionar/sincronizar plataforma iOS
         script: |
           cd web

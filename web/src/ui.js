@@ -168,6 +168,7 @@
     // se o save estiver corrompido, volta ao menu em vez de deixar a tela morta
     if (!MT.save.restore()) { showMenu(); return; }
     hide('menu'); hide('mapSelect'); setPaused(false); refresh();
+    if (MT.game.pendingDraft) showDraft(); // recompensa pendente que ficou salva
   }
 
   function showEnd(won) {
@@ -237,7 +238,7 @@
     if (dock) { dock.classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench')); dock.classList.toggle('wave-lock', running); }
     if (refs.syn) refs.syn.style.display = running ? 'none' : ''; // sinergias ocultas durante a onda
     if (refs.items) { const n = g.inventory.length; refs.items.classList.toggle('hide', n === 0); if (refs.itemCount) refs.itemCount.textContent = n; }
-    const sh = $('shopHint'); if (sh) sh.textContent = '· reroll ' + B.rerollCost + '🪙';
+    const sh = $('shopHint'); if (sh) sh.textContent = '· trocar ' + B.rerollCost + '🪙';
 
     buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
   }
@@ -613,6 +614,11 @@
     const g = MT.game;
     // HUD ao vivo durante a partida (vidas/moedas mudam no combate sem passar por refresh)
     if ((g.phase === 'wave' || g.phase === 'prep') && refs.lives) { refs.lives.textContent = g.lives; refs.coins.textContent = g.coins; }
+    // pílula de onda: durante a onda mostra inimigos restantes (feedback de progresso)
+    if (refs.wave) {
+      if (g.phase === 'wave') { const left = (g.aliveCount || 0) + (g.spawnQueue ? g.spawnQueue.length : 0); refs.wave.textContent = '👾 ' + left; }
+      else refs.wave.textContent = (g.waveIndex + 1) + (g.mode === 'endless' ? ' ∞' : '/' + R.TOTAL_WAVES);
+    }
     // última defesa (vinheta + batimento)
     const danger = g.lives > 0 && g.lives <= 3 && (g.phase === 'wave' || g.phase === 'prep');
     const dv = $('dangerVignette'); if (dv) dv.classList.toggle('show', danger);

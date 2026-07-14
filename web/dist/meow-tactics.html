@@ -3320,11 +3320,14 @@ window.MT = window.MT || {};
   function endWave() {
     game.waveRunning = false;
     const waveNumber = game.waveIndex + 1;
-    const reward = R.waveReward(waveNumber, game.curWave ? game.curWave.bonusReward : 0, game.run);
+    let reward = R.waveReward(waveNumber, game.curWave ? game.curWave.bonusReward : 0, game.run);
+    // JUROS: +1 por 10 de ouro guardado (teto 5) — dá função a poupar gold.
+    const interest = Math.min(5, Math.floor(game.coins / 10));
+    reward += interest;
     addCoins(reward);
     MT.sfx && MT.sfx.play('coin');
     MT.progress && MT.progress.onWave && MT.progress.onWave(waveNumber, game.enemiesKilled);
-    if (MT.stats) { MT.stats.add('waves', 1); MT.stats.max('bestWave', waveNumber); MT.stats.add('synergiesActivated', game.synergies.filter(s => s.tier >= 0).length); }
+    if (MT.stats) { MT.stats.add('waves', 1); MT.stats.max('bestWave', waveNumber); MT.stats.add('synergiesActivated', game.synergies.filter(s => s.tier >= 0).length); MT.stats.flush(); }
 
     const wasLast = game.mode !== 'endless' && game.waveIndex >= R.TOTAL_WAVES - 1;
     if (wasLast) { win(); return; }
@@ -3332,7 +3335,7 @@ window.MT = window.MT || {};
     game.phase = 'prep';
     generateShop();
     recompute();
-    banner('ONDA VENCIDA!  +' + reward + ' 🪙', 'Prepare a próxima defesa');
+    banner('ONDA VENCIDA!  +' + reward + ' 🪙', interest > 0 ? ('inclui +' + interest + ' de juros · prepare a defesa') : 'Prepare a próxima defesa');
     if (game.mode === 'normal') MT.save && MT.save.write && MT.save.write();
     MT.ui && MT.ui.refresh && MT.ui.refresh();
     checkAch();
@@ -3452,13 +3455,14 @@ window.MT = window.MT || {};
   function clearSaveIfNormal() { if (game.mode === 'normal') MT.save && MT.save.clear && MT.save.clear(); }
   function win() {
     game.phase = 'win'; recordBest(); clearSaveIfNormal();
-    MT.stats && MT.stats.add('wins', 1); MT.sfx && MT.sfx.play('win'); checkAch();
+    MT.stats && (MT.stats.add('wins', 1), MT.stats.flush()); MT.sfx && MT.sfx.play('win'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(true);
   }
   function lose() {
     if (game.phase === 'over' || game.phase === 'win') return; // evita disparo múltiplo no mesmo frame
     game.phase = 'over'; game.waveRunning = false; shakeCam(0.4, 0.5);
     recordBest(); clearSaveIfNormal();
+    MT.stats && MT.stats.flush();
     MT.sfx && MT.sfx.play('lose'); checkAch();
     MT.ui && MT.ui.showEnd && MT.ui.showEnd(false);
   }
@@ -3571,6 +3575,7 @@ window.MT = window.MT || {};
     game.bench = []; game.board = []; game.inventory = [];
     game.enemies = []; game.shots = []; game.floats = []; game.parts = [];
     game.selected = null; game.phase = 'prep'; game.pendingDraft = null;
+    game.speed = 1; game.slowmoT = 0; game.paused = false; // começa limpo (não herda a partida anterior)
     // zera TODO o estado de onda (senão startWave pode ficar travado por waveRunning obsoleto)
     game.waveRunning = false; game.finishedSpawning = false; game.spawnQueue = [];
     game.aliveCount = 0; game.removedThisWave = 0; game.enemiesTotal = 0; game.spawnTimer = 0; game.curWave = null;
@@ -3621,20 +3626,27 @@ window.MT = window.MT || {};
 
   // ---------- SAVE (só modo normal) ----------
   const SKEY = 'mt_save';
+  const SAVE_V = 2; // versão do formato do save (bump quebra compat -> descarta)
   const save = {
     has() { return get(SKEY, null) != null; },
     clear() { try { LS.removeItem(SKEY); } catch (e) {} },
     write() {
       const g = MT.game;
       if (g.mode !== 'normal') return;
+      if (g.phase !== 'prep') return; // só salva na preparação (não no meio da onda)
       const enc = (c) => ({ id: c.data.id, x: c.x, y: c.y, items: c.items.slice(), invested: c.invested, priority: c.priority });
-      const d = { mapId: g.mapId, coins: g.coins, lives: g.lives, waveIndex: g.waveIndex,
-        board: g.board.map(enc), bench: g.bench.map(enc), inventory: g.inventory.slice(), run: g.run };
+      const d = { v: SAVE_V, mapId: g.mapId, coins: g.coins, lives: g.lives, waveIndex: g.waveIndex,
+        board: g.board.map(enc), bench: g.bench.map(enc), inventory: g.inventory.slice(), run: g.run,
+        pendingDraft: g.pendingDraft || null };
       set(SKEY, JSON.stringify(d));
     },
     restore() {
       const raw = get(SKEY, null); if (!raw) return false;
-      let d; try { d = JSON.parse(raw); } catch (e) { return false; }
+      let d; try { d = JSON.parse(raw); } catch (e) { this.clear(); return false; }
+      const v = d.v || 1; // saves antigos (v1) têm o mesmo formato — carregam
+      if (v > SAVE_V) { this.clear(); return false; } // save de versão futura: descarta
+      // validação numérica: save corrompido não pode travar o jogo
+      if (![d.coins, d.lives, d.waveIndex].every(x => typeof x === 'number' && isFinite(x))) { this.clear(); return false; }
       const g = MT.game;
       MT.api.newRun('normal', d.mapId, { restoring: true });
       if (d.run) Object.assign(g.run, d.run);
@@ -3648,6 +3660,7 @@ window.MT = window.MT || {};
       (d.bench || []).forEach(s => build(s, false));
       (d.board || []).forEach(s => build(s, true));
       g.inventory = d.inventory || [];
+      g.pendingDraft = (d.pendingDraft && d.pendingDraft.choices) ? d.pendingDraft : null; // recompensa pendente
       MT.api.recompute();
       return true;
     },
@@ -3674,9 +3687,11 @@ window.MT = window.MT || {};
   };
 
   // ---------- ESTATÍSTICAS & CONQUISTAS ----------
+  const _statBuf = {}; // acumula em memória; flush no fim da onda (fora do loop de combate)
   const stats = {
-    get(m) { return parseInt(get('mt_stat_' + m, '0'), 10) || 0; },
-    add(m, n) { set('mt_stat_' + m, String(this.get(m) + (n == null ? 1 : n))); },
+    get(m) { return (parseInt(get('mt_stat_' + m, '0'), 10) || 0) + (_statBuf[m] || 0); },
+    add(m, n) { _statBuf[m] = (_statBuf[m] || 0) + (n == null ? 1 : n); }, // sem localStorage no hot-path
+    flush() { for (const m in _statBuf) { const cur = parseInt(get('mt_stat_' + m, '0'), 10) || 0; set('mt_stat_' + m, String(cur + _statBuf[m])); delete _statBuf[m]; } },
     max(m, n) { if (n > this.get(m)) set('mt_stat_' + m, String(n)); },
     unlocked(a) { return this.get(a.metric) >= a.threshold; },
     unlockedCount() { return D.achievements.filter(a => this.unlocked(a)).length; },
@@ -3740,7 +3755,9 @@ window.MT = window.MT || {};
     const im = imgs[path];
     return (im.complete && im.naturalWidth) ? im : null;
   }
-  MT.preload = function () { MT.DATA.cats.forEach(c => img(c.sprite)); MT.DATA.enemies.forEach(e => img(e.sprite)); MT.DATA.maps.forEach(m => img(m.bg)); };
+  // pré-carrega só os sprites (leves); o mapa da partida carrega sob demanda no
+  // primeiro draw (não decodificar os 10 mapas full-res no boot = menos memória).
+  MT.preload = function () { MT.DATA.cats.forEach(c => img(c.sprite)); MT.DATA.enemies.forEach(e => img(e.sprite)); };
 
   // temas de chão por mapa
   const THEME = {
@@ -4289,6 +4306,7 @@ window.MT = window.MT || {};
     // se o save estiver corrompido, volta ao menu em vez de deixar a tela morta
     if (!MT.save.restore()) { showMenu(); return; }
     hide('menu'); hide('mapSelect'); setPaused(false); refresh();
+    if (MT.game.pendingDraft) showDraft(); // recompensa pendente que ficou salva
   }
 
   function showEnd(won) {
@@ -4358,7 +4376,7 @@ window.MT = window.MT || {};
     if (dock) { dock.classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench')); dock.classList.toggle('wave-lock', running); }
     if (refs.syn) refs.syn.style.display = running ? 'none' : ''; // sinergias ocultas durante a onda
     if (refs.items) { const n = g.inventory.length; refs.items.classList.toggle('hide', n === 0); if (refs.itemCount) refs.itemCount.textContent = n; }
-    const sh = $('shopHint'); if (sh) sh.textContent = '· reroll ' + B.rerollCost + '🪙';
+    const sh = $('shopHint'); if (sh) sh.textContent = '· trocar ' + B.rerollCost + '🪙';
 
     buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
   }
@@ -4734,6 +4752,11 @@ window.MT = window.MT || {};
     const g = MT.game;
     // HUD ao vivo durante a partida (vidas/moedas mudam no combate sem passar por refresh)
     if ((g.phase === 'wave' || g.phase === 'prep') && refs.lives) { refs.lives.textContent = g.lives; refs.coins.textContent = g.coins; }
+    // pílula de onda: durante a onda mostra inimigos restantes (feedback de progresso)
+    if (refs.wave) {
+      if (g.phase === 'wave') { const left = (g.aliveCount || 0) + (g.spawnQueue ? g.spawnQueue.length : 0); refs.wave.textContent = '👾 ' + left; }
+      else refs.wave.textContent = (g.waveIndex + 1) + (g.mode === 'endless' ? ' ∞' : '/' + R.TOTAL_WAVES);
+    }
     // última defesa (vinheta + batimento)
     const danger = g.lives > 0 && g.lives <= 3 && (g.phase === 'wave' || g.phase === 'prep');
     const dv = $('dangerVignette'); if (dv) dv.classList.toggle('show', danger);
@@ -4770,12 +4793,15 @@ window.MT=window.MT||{};MT.ASSETS={"assets/cats/gato_witch.png": "data:image/png
   function frame(ts) {
     const dtReal = Math.min(0.05, (ts - last) / 1000) || 0; last = ts;
     const g = MT.game;
-    let scale = g.phase === 'wave' ? g.speed : 1;
-    if (g.slowmoT > 0) { g.slowmoT -= dtReal; scale *= 0.4; } // slow-mo na entrada do chefe
-    // pausa: congela a simulação (mantém render/UI vivos)
-    const dt = g.paused ? 0 : dtReal * scale;
-    MT.api.update(dt, g.paused ? 0 : dtReal);
-    MT.render.draw(ts / 1000);
+    // no menu / fim de jogo (tela cheia sobre o mapa) não gasta bateria desenhando o canvas
+    const idle = g.phase === 'menu' || g.phase === 'win' || g.phase === 'over';
+    if (!idle) {
+      let scale = g.phase === 'wave' ? g.speed : 1;
+      if (g.slowmoT > 0) { g.slowmoT -= dtReal; scale *= 0.4; } // slow-mo na entrada do chefe
+      const dt = g.paused ? 0 : dtReal * scale; // pausa congela a simulação
+      MT.api.update(dt, g.paused ? 0 : dtReal);
+      MT.render.draw(ts / 1000);
+    }
     MT.ui.frameUI();
     requestAnimationFrame(frame);
   }
