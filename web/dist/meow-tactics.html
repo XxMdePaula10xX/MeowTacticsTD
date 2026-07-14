@@ -905,6 +905,14 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .chip { min-height: 40px; box-sizing: border-box; }
 .chip .ico-img { width: 16px; height: 16px; }
 
+/* ---------- Auditoria (2ª leva): mais correções ---------- */
+/* dica de posicionamento abaixo da HUD (não sobre os chips) */
+.place-hint { top: 56px; }
+/* legenda de tipos de dano na Coleção */
+.dmg-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; font-size: 12px;
+  color: var(--ink-dim); font-weight: 700; margin: 2px 0 6px; max-width: min(700px, 92vw); }
+.dmg-legend b { font-weight: 900; }
+
 </style>
 
   <div id="app">
@@ -1024,6 +1032,11 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
       <button class="coll-tab" data-tab="enemies">Inimigos</button>
       <button class="coll-tab" data-tab="synergies">Sinergias</button>
       <button class="coll-tab" data-tab="ach">Conquistas</button>
+    </div>
+    <div class="dmg-legend">
+      <span><b style="color:var(--dmg-phys)">▲ Físico</b> — reduzido por armadura</span>
+      <span><b style="color:var(--dmg-magic)">★ Mágico</b> — reduzido por resist. mágica</span>
+      <span><b style="color:var(--dmg-true)">◆ Verdadeiro</b> — ignora defesas</span>
     </div>
     <div class="coll-body" id="collBody"></div>
     <button class="link-back" id="collBack">◂ Voltar</button>
@@ -1151,7 +1164,8 @@ MT.DATA = {
    "tags": [
     "Mystic",
     "Elemental",
-    "Adventurer"
+    "Adventurer",
+    "Star"
    ],
    "area": 1.5,
    "slow": 0,
@@ -1172,7 +1186,8 @@ MT.DATA = {
    "tags": [
     "Support",
     "Elemental",
-    "Adventurer"
+    "Adventurer",
+    "Forest"
    ],
    "area": 0,
    "slow": 0.2,
@@ -1213,7 +1228,8 @@ MT.DATA = {
    "crit": 8,
    "tags": [
     "Hunter",
-    "Technology"
+    "Technology",
+    "Sniper"
    ],
    "area": 1.6,
    "slow": 0,
@@ -1255,7 +1271,8 @@ MT.DATA = {
    "tags": [
     "Hunter",
     "Shadow",
-    "Assassin"
+    "Assassin",
+    "Ninja"
    ],
    "area": 0,
    "slow": 0,
@@ -2945,7 +2962,7 @@ window.MT = window.MT || {};
   function buildWave(n) {
     if (n <= D.waves.length) {
       const w = D.waves[n - 1];
-      return { n, spawnInterval: w.spawnInterval, boss: false,
+      return { n, spawnInterval: w.spawnInterval, boss: !!w.boss, bonusReward: w.bonusReward || 0,
         groups: w.groups.map(g => ({ enemy: g.enemy, count: g.count, scale: g.scale })) };
     }
     // Procedural 11-50
@@ -2955,16 +2972,18 @@ window.MT = window.MT || {};
     let interval = Math.max(0.35, 0.72 - 0.006 * (n - 11));
     let groups = [];
     switch (n % 5) {
-      case 0: groups = [g('swift', big + 6), g('ghostling', mid)]; break;
+      case 0: groups = [g('swift', big + 3), g('ghostling', mid)]; break; // menos swift (era +6)
       case 1: groups = [g('armored', big), g('bulwark', small), g('swift', mid)]; break;
       case 2: groups = [g('shadow', big), g('wraith', mid), g('swift', small)]; break;
       case 3: groups = [g('warden', mid), g('bulwark', small), g('wraith', mid)]; break;
       case 4: groups = [g('armored', mid), g('shadow', mid), g('swift', mid), g('warden', small)]; break;
     }
     let boss = false;
-    if (n % 10 === 0) groups.unshift(g('king', 1, 0.38 + 0.05 * Math.floor(n / 10)));
+    // chefe procedural monotônico (>= chefe da onda 10, cresce a cada 10 ondas)
+    if (n % 10 === 0) groups.unshift(g('king', 1, 0.52 + 0.08 * Math.floor(n / 10)));
     if (n === 50) { groups = [g('king', 1, 1.15), g('warden', 12), g('bulwark', 8), g('swift', 14)]; boss = true; interval = 0.486; }
-    return { n, spawnInterval: interval, boss, groups };
+    const bonusReward = (n % 10 === 0) ? 8 : 0; // marco: recompensa extra a cada 10 ondas
+    return { n, spawnInterval: interval, boss, bonusReward, groups };
   }
   function g(enemy, count, scale) { return { enemy, count, scale: scale == null ? 1 : scale }; }
 
@@ -2987,7 +3006,9 @@ window.MT = window.MT || {};
   function enemyStats(enemyId, groupScale, w, run) {
     const e = ENEMY[enemyId];
     const hpScale = groupScale * (1 + 0.14 * w) * (run.hp || 1);
-    const defScale = groupScale * (w >= 3 ? 1 + 0.04 * (w - 2) : 1);
+    // armadura/resist com TETO (2x): evita que a onda 50 vire um muro só de dano
+    // verdadeiro (armadura chegava a ~187). Físico/mágico seguem viáveis no fim.
+    const defScale = groupScale * Math.min(2.0, (w >= 3 ? 1 + 0.04 * (w - 2) : 1));
     const spdScale = Math.min(1.3, 1 + 0.03 * w);
     return {
       data: e,
@@ -3257,8 +3278,8 @@ window.MT = window.MT || {};
   }
 
   // ---------- COLOCAÇÃO ----------
-  function pick(cat, from) { game.moveMode = false; game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
-  function deselect() { game.moveMode = false; game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function pick(cat, from) { game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function deselect() { game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
   function placeValid(wx, wy, except) {
     except = except || (game.selected && game.selected.cat) || null;
     if (wx < -11.6 || wx > 11.6 || wy < -6.2 || wy > 6.2) return false;
@@ -3266,7 +3287,6 @@ window.MT = window.MT || {};
     for (const c of game.board) if (c !== except && U.dist(c.x, c.y, wx, wy) < 0.85) return false;
     return true;
   }
-  function repositionCat(cat, wx, wy) { cat.x = wx; cat.y = wy; cat.pop = 0.7; recompute(); saveNow(); }
   function placeAt(wx, wy) {
     if (game.phase !== 'prep' || !game.selected) return;
     if (!placeValid(wx, wy)) { toast('Local inválido (perto do caminho/gato)'); SFXerr(); return; }
@@ -3403,7 +3423,7 @@ window.MT = window.MT || {};
     game.enemiesKilled++;
     if (MT.stats) { MT.stats.add('kills', 1); if (en.boss) MT.stats.add('bossKills', 1); }
     fxBurst(en.x, en.y, en.boss ? '#ffd24f' : '#b98cff', en.boss ? 24 : 7);
-    if (en.boss) banner('CHEFE DERROTADO! 👑', '+' + en.bounty + ' 🪙');
+    if (en.boss) banner('CHEFE DERROTADO! 👑', '+' + Math.max(1, Math.round(en.bounty * 0.5)) + ' 🪙');
     checkWaveEnd();
   }
   function leak(en) {
@@ -3593,7 +3613,7 @@ window.MT = window.MT || {};
     newRun, update, buy, reroll, sell, pick, deselect, placeAt, selectBoard,
     startWave, recompute, resolveMap, distToPaths, placeValid, posAlong, addCoins,
     takeItem, takeRelic, equipItem, canEquip, maxSlots, getItemChoices, getRelicChoices,
-    cyclePriority, repositionCat, costOf,
+    cyclePriority, costOf,
   };
 })(window.MT);
 
@@ -3812,14 +3832,6 @@ window.MT = window.MT || {};
     }
   }
   // desenha uma imagem cobrindo (dx,dy,dw,dh) preservando proporção (cover)
-  function coverDraw(im, dx, dy, dw, dh) {
-    const ir = im.width / im.height, dr = dw / dh;
-    let sw = im.width, sh = im.height, sx = 0, sy = 0;
-    if (ir > dr) { sw = im.height * dr; sx = (im.width - sw) / 2; }
-    else { sh = im.width / dr; sy = (im.height - sh) / 2; }
-    ctx.drawImage(im, sx, sy, sw, sh, dx, dy, dw, dh);
-  }
-
   function tracePath(lane) {
     ctx.beginPath();
     ctx.moveTo(W(lane[0].x), H(lane[0].y));
@@ -4316,7 +4328,7 @@ window.MT = window.MT || {};
     $('endTitle').textContent = won ? 'VITÓRIA!' : (g.mode === 'endless' ? 'FIM DA JORNADA' : 'DERROTA');
     $('endSub').textContent = won ? 'Você repeliu todos os pesadelos.' : 'Os pesadelos tomaram o reino.';
     $('endStats').innerHTML =
-      stat(g.waveIndex + (won ? 1 : 0), 'Ondas') + stat(g.enemiesKilled, 'Abates') +
+      stat(g.waveIndex + 1, 'Ondas') + stat(g.enemiesKilled, 'Abates') +
       stat(g.lives, 'Vidas') + stat(recBest, 'Recorde');
     let ex = '';
     const best = g.board.slice().sort((a, b) => (b.dmgDealt || 0) - (a.dmgDealt || 0))[0];
@@ -4379,6 +4391,12 @@ window.MT = window.MT || {};
     const sh = $('shopHint'); if (sh) sh.textContent = '· trocar ' + B.rerollCost + '🪙';
 
     buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
+    // dica única quando a 1ª sinergia ativa (descoberta da mecânica)
+    if (g.synergies.some(s => s.tier >= 0)) hintOnce('syn', '✨ SINERGIA ATIVADA!', 'Combine tipos de gato para bônus poderosos');
+  }
+  function hintOnce(key, t1, t2) {
+    try { if (localStorage.getItem('mt_hint_' + key)) return; localStorage.setItem('mt_hint_' + key, '1'); } catch (e) { return; }
+    showBanner(t1, t2);
   }
   function bumpChip(cls) { const c = document.querySelector('.chip.' + cls); if (!c) return; c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
   function coinFloat(delta) {
@@ -4762,7 +4780,8 @@ window.MT = window.MT || {};
     const dv = $('dangerVignette'); if (dv) dv.classList.toggle('show', danger);
     if (danger && g.phase === 'wave') { if (++heartAccum >= 48) { heartAccum = 0; MT.sfx && MT.sfx.play('heart'); } } else heartAccum = 0;
     tutorial.tick();
-    if (g.bannerT > 0 && g.banner) { refs.banner.querySelector('.b1').textContent = g.banner.t1; refs.banner.querySelector('.b2').textContent = g.banner.t2 || ''; refs.banner.classList.add('show'); }
+    // não empilhar banner sobre o tutorial (uma instrução por vez)
+    if (g.bannerT > 0 && g.banner && !tutorial.active) { refs.banner.querySelector('.b1').textContent = g.banner.t1; refs.banner.querySelector('.b2').textContent = g.banner.t2 || ''; refs.banner.classList.add('show'); }
     else refs.banner.classList.remove('show');
     if (g.toastT > 0) { refs.toast.textContent = g.toast; refs.toast.classList.add('show'); }
     else refs.toast.classList.remove('show');

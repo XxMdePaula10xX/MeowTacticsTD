@@ -67,6 +67,9 @@ workflows:
           # Como o jogo é só paisagem, optamos por tela cheia (sai do multitarefa)
           # e o landscape-only passa a ser válido — corrige o erro 90474 no upload.
           plutil -replace UIRequiresFullScreen -bool true Info.plist
+          # esconde a barra de status (senão pode sobrepor a linha de HUD no topo)
+          plutil -replace UIStatusBarHidden -bool true Info.plist
+          plutil -replace UIViewControllerBasedStatusBarAppearance -bool false Info.plist
       - name: Definir número do build
         script: |
           cd web/ios/App

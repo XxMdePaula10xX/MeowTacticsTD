@@ -68,14 +68,6 @@
     }
   }
   // desenha uma imagem cobrindo (dx,dy,dw,dh) preservando proporção (cover)
-  function coverDraw(im, dx, dy, dw, dh) {
-    const ir = im.width / im.height, dr = dw / dh;
-    let sw = im.width, sh = im.height, sx = 0, sy = 0;
-    if (ir > dr) { sw = im.height * dr; sx = (im.width - sw) / 2; }
-    else { sh = im.width / dr; sy = (im.height - sh) / 2; }
-    ctx.drawImage(im, sx, sy, sw, sh, dx, dy, dw, dh);
-  }
-
   function tracePath(lane) {
     ctx.beginPath();
     ctx.moveTo(W(lane[0].x), H(lane[0].y));

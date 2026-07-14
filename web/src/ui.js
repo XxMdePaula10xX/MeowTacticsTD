@@ -178,7 +178,7 @@
     $('endTitle').textContent = won ? 'VITÓRIA!' : (g.mode === 'endless' ? 'FIM DA JORNADA' : 'DERROTA');
     $('endSub').textContent = won ? 'Você repeliu todos os pesadelos.' : 'Os pesadelos tomaram o reino.';
     $('endStats').innerHTML =
-      stat(g.waveIndex + (won ? 1 : 0), 'Ondas') + stat(g.enemiesKilled, 'Abates') +
+      stat(g.waveIndex + 1, 'Ondas') + stat(g.enemiesKilled, 'Abates') +
       stat(g.lives, 'Vidas') + stat(recBest, 'Recorde');
     let ex = '';
     const best = g.board.slice().sort((a, b) => (b.dmgDealt || 0) - (a.dmgDealt || 0))[0];
@@ -241,6 +241,12 @@
     const sh = $('shopHint'); if (sh) sh.textContent = '· trocar ' + B.rerollCost + '🪙';
 
     buildShop(); buildBench(); buildSyn(); buildSel(); buildRelicStrip();
+    // dica única quando a 1ª sinergia ativa (descoberta da mecânica)
+    if (g.synergies.some(s => s.tier >= 0)) hintOnce('syn', '✨ SINERGIA ATIVADA!', 'Combine tipos de gato para bônus poderosos');
+  }
+  function hintOnce(key, t1, t2) {
+    try { if (localStorage.getItem('mt_hint_' + key)) return; localStorage.setItem('mt_hint_' + key, '1'); } catch (e) { return; }
+    showBanner(t1, t2);
   }
   function bumpChip(cls) { const c = document.querySelector('.chip.' + cls); if (!c) return; c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
   function coinFloat(delta) {
@@ -624,7 +630,8 @@
     const dv = $('dangerVignette'); if (dv) dv.classList.toggle('show', danger);
     if (danger && g.phase === 'wave') { if (++heartAccum >= 48) { heartAccum = 0; MT.sfx && MT.sfx.play('heart'); } } else heartAccum = 0;
     tutorial.tick();
-    if (g.bannerT > 0 && g.banner) { refs.banner.querySelector('.b1').textContent = g.banner.t1; refs.banner.querySelector('.b2').textContent = g.banner.t2 || ''; refs.banner.classList.add('show'); }
+    // não empilhar banner sobre o tutorial (uma instrução por vez)
+    if (g.bannerT > 0 && g.banner && !tutorial.active) { refs.banner.querySelector('.b1').textContent = g.banner.t1; refs.banner.querySelector('.b2').textContent = g.banner.t2 || ''; refs.banner.classList.add('show'); }
     else refs.banner.classList.remove('show');
     if (g.toastT > 0) { refs.toast.textContent = g.toast; refs.toast.classList.add('show'); }
     else refs.toast.classList.remove('show');

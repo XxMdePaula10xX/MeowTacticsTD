@@ -591,3 +591,11 @@
 /* [LOW] pílulas do HUD com altura uniforme */
 .chip { min-height: 40px; box-sizing: border-box; }
 .chip .ico-img { width: 16px; height: 16px; }
+
+/* ---------- Auditoria (2ª leva): mais correções ---------- */
+/* dica de posicionamento abaixo da HUD (não sobre os chips) */
+.place-hint { top: 56px; }
+/* legenda de tipos de dano na Coleção */
+.dmg-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; font-size: 12px;
+  color: var(--ink-dim); font-weight: 700; margin: 2px 0 6px; max-width: min(700px, 92vw); }
+.dmg-legend b { font-weight: 900; }

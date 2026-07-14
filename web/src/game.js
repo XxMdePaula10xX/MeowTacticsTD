@@ -136,8 +136,8 @@
   }
 
   // ---------- COLOCAÇÃO ----------
-  function pick(cat, from) { game.moveMode = false; game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
-  function deselect() { game.moveMode = false; game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function pick(cat, from) { game.selected = { kind: from, cat }; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
+  function deselect() { game.selected = null; MT.ui && MT.ui.refresh && MT.ui.refresh(); }
   function placeValid(wx, wy, except) {
     except = except || (game.selected && game.selected.cat) || null;
     if (wx < -11.6 || wx > 11.6 || wy < -6.2 || wy > 6.2) return false;
@@ -145,7 +145,6 @@
     for (const c of game.board) if (c !== except && U.dist(c.x, c.y, wx, wy) < 0.85) return false;
     return true;
   }
-  function repositionCat(cat, wx, wy) { cat.x = wx; cat.y = wy; cat.pop = 0.7; recompute(); saveNow(); }
   function placeAt(wx, wy) {
     if (game.phase !== 'prep' || !game.selected) return;
     if (!placeValid(wx, wy)) { toast('Local inválido (perto do caminho/gato)'); SFXerr(); return; }
@@ -282,7 +281,7 @@
     game.enemiesKilled++;
     if (MT.stats) { MT.stats.add('kills', 1); if (en.boss) MT.stats.add('bossKills', 1); }
     fxBurst(en.x, en.y, en.boss ? '#ffd24f' : '#b98cff', en.boss ? 24 : 7);
-    if (en.boss) banner('CHEFE DERROTADO! 👑', '+' + en.bounty + ' 🪙');
+    if (en.boss) banner('CHEFE DERROTADO! 👑', '+' + Math.max(1, Math.round(en.bounty * 0.5)) + ' 🪙');
     checkWaveEnd();
   }
   function leak(en) {
@@ -472,6 +471,6 @@
     newRun, update, buy, reroll, sell, pick, deselect, placeAt, selectBoard,
     startWave, recompute, resolveMap, distToPaths, placeValid, posAlong, addCoins,
     takeItem, takeRelic, equipItem, canEquip, maxSlots, getItemChoices, getRelicChoices,
-    cyclePriority, repositionCat, costOf,
+    cyclePriority, costOf,
   };
 })(window.MT);

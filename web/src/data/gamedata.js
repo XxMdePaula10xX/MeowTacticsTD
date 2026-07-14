@@ -78,7 +78,8 @@ MT.DATA = {
    "tags": [
     "Mystic",
     "Elemental",
-    "Adventurer"
+    "Adventurer",
+    "Star"
    ],
    "area": 1.5,
    "slow": 0,
@@ -99,7 +100,8 @@ MT.DATA = {
    "tags": [
     "Support",
     "Elemental",
-    "Adventurer"
+    "Adventurer",
+    "Forest"
    ],
    "area": 0,
    "slow": 0.2,
@@ -140,7 +142,8 @@ MT.DATA = {
    "crit": 8,
    "tags": [
     "Hunter",
-    "Technology"
+    "Technology",
+    "Sniper"
    ],
    "area": 1.6,
    "slow": 0,
@@ -182,7 +185,8 @@ MT.DATA = {
    "tags": [
     "Hunter",
     "Shadow",
-    "Assassin"
+    "Assassin",
+    "Ninja"
    ],
    "area": 0,
    "slow": 0,

@@ -18,7 +18,7 @@
   function buildWave(n) {
     if (n <= D.waves.length) {
       const w = D.waves[n - 1];
-      return { n, spawnInterval: w.spawnInterval, boss: false,
+      return { n, spawnInterval: w.spawnInterval, boss: !!w.boss, bonusReward: w.bonusReward || 0,
         groups: w.groups.map(g => ({ enemy: g.enemy, count: g.count, scale: g.scale })) };
     }
     // Procedural 11-50
@@ -28,16 +28,18 @@
     let interval = Math.max(0.35, 0.72 - 0.006 * (n - 11));
     let groups = [];
     switch (n % 5) {
-      case 0: groups = [g('swift', big + 6), g('ghostling', mid)]; break;
+      case 0: groups = [g('swift', big + 3), g('ghostling', mid)]; break; // menos swift (era +6)
       case 1: groups = [g('armored', big), g('bulwark', small), g('swift', mid)]; break;
       case 2: groups = [g('shadow', big), g('wraith', mid), g('swift', small)]; break;
       case 3: groups = [g('warden', mid), g('bulwark', small), g('wraith', mid)]; break;
       case 4: groups = [g('armored', mid), g('shadow', mid), g('swift', mid), g('warden', small)]; break;
     }
     let boss = false;
-    if (n % 10 === 0) groups.unshift(g('king', 1, 0.38 + 0.05 * Math.floor(n / 10)));
+    // chefe procedural monotônico (>= chefe da onda 10, cresce a cada 10 ondas)
+    if (n % 10 === 0) groups.unshift(g('king', 1, 0.52 + 0.08 * Math.floor(n / 10)));
     if (n === 50) { groups = [g('king', 1, 1.15), g('warden', 12), g('bulwark', 8), g('swift', 14)]; boss = true; interval = 0.486; }
-    return { n, spawnInterval: interval, boss, groups };
+    const bonusReward = (n % 10 === 0) ? 8 : 0; // marco: recompensa extra a cada 10 ondas
+    return { n, spawnInterval: interval, boss, bonusReward, groups };
   }
   function g(enemy, count, scale) { return { enemy, count, scale: scale == null ? 1 : scale }; }
 
@@ -60,7 +62,9 @@
   function enemyStats(enemyId, groupScale, w, run) {
     const e = ENEMY[enemyId];
     const hpScale = groupScale * (1 + 0.14 * w) * (run.hp || 1);
-    const defScale = groupScale * (w >= 3 ? 1 + 0.04 * (w - 2) : 1);
+    // armadura/resist com TETO (2x): evita que a onda 50 vire um muro só de dano
+    // verdadeiro (armadura chegava a ~187). Físico/mágico seguem viáveis no fim.
+    const defScale = groupScale * Math.min(2.0, (w >= 3 ? 1 + 0.04 * (w - 2) : 1));
     const spdScale = Math.min(1.3, 1 + 0.03 * w);
     return {
       data: e,
