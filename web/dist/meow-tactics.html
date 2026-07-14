@@ -861,6 +861,50 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
 .chip.items { color: var(--gold); cursor: pointer; }
 .chip.items.hide { display: none; }
 
+/* ============================================================
+   AUDITORIA ULTRACODE — correções de UI/UX (todas as telas)
+   ============================================================ */
+/* [HIGH] painel do gato acima do dock: Vender/Fechar tocáveis no telefone */
+.sel-panel { z-index: 7; }
+
+/* [MED] telas cheias opacas + roláveis (fim de jogo não corta; sem HUD fantasma) */
+.screen:not(.menu-art) { background: radial-gradient(80% 60% at 50% 40%, #14152c, #090914);
+  justify-content: safe center; overflow-y: auto; }
+@media (max-height: 480px) and (orientation: landscape) {
+  #endScreen { justify-content: flex-start; padding-top: calc(14px + env(safe-area-inset-top, 0)); gap: 8px; }
+  #endScreen .logo { font-size: 38px; }
+  #endScreen .big { font-size: var(--t-xl); }
+  #endScreen .end-stats { gap: 12px; }
+}
+
+/* [MED] equipar item: alvo maior */
+.inv-item { width: 40px; height: 40px; font-size: 18px; }
+.inv-list { gap: 6px; }
+
+/* [MED] CTAs do menu/fim com altura mínima em landscape curto */
+@media (max-height: 430px) {
+  .menu-btns .btn, .menu-row .btn, .menu-grid .btn, #endScreen .btn { min-height: 42px; padding: 10px 14px; }
+  .btn.reroll { min-height: 40px; }
+  .banner { top: 80px; }                 /* banner abaixo do HUD */
+}
+
+/* [LOW] JOGAR desabilitado claramente inerte (não parece clicável) */
+.btn.map-play:disabled { filter: grayscale(1); opacity: .32; }
+
+/* [LOW] pausa com hit-slop (alvo ~50px sem mudar o visual) */
+.chip.pause { position: relative; }
+.chip.pause::after { content: ""; position: absolute; inset: -8px -6px; }
+
+/* [LOW] X de fechar o painel maior */
+.sel-x { min-width: 40px; min-height: 40px; }
+
+/* [LOW] abas da Coleção maiores */
+.coll-tab { padding: 10px 14px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* [LOW] pílulas do HUD com altura uniforme */
+.chip { min-height: 40px; box-sizing: border-box; }
+.chip .ico-img { width: 16px; height: 16px; }
+
 </style>
 
   <div id="app">
@@ -896,7 +940,6 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
       <div class="toast" id="toast"></div>
       <aside class="synergy-panel" id="synPanel"></aside>
       <div class="relic-strip" id="relicStrip"></div>
-      <aside class="sel-panel hide" id="selPanel"></aside>
       <div class="zoom-ctl">
         <button id="zoomIn" aria-label="Aproximar">＋</button>
         <button id="zoomOut" aria-label="Afastar">－</button>
@@ -923,6 +966,9 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
         <button class="btn start" id="startBtn">⚔️ INICIAR ONDA</button>
       </div>
     </div>
+
+    <!-- painel de detalhes do gato: fora do board-wrap p/ ficar ACIMA do dock -->
+    <aside class="sel-panel hide" id="selPanel"></aside>
   </div>
 
   <!-- MENU -->
@@ -4179,7 +4225,11 @@ window.MT = window.MT || {};
     const m = $('menu');
     m.style.backgroundImage = 'url(' + asset('assets/ui/menu_bg.png') + ')';
     show('menu'); hide('mapSelect'); hide('endScreen');
-    const c = $('btnContinue'); c.style.display = MT.save.has() ? '' : 'none';
+    // com save: CONTINUAR vira o CTA dourado (topo) e NOVO JOGO recua p/ secundário
+    const c = $('btnContinue'), n = $('btnNormal'), hasSave = MT.save.has();
+    c.style.display = hasSave ? '' : 'none';
+    if (hasSave) { c.className = 'btn primary'; n.className = 'btn alt'; c.parentNode.insertBefore(c, n); }
+    else { c.className = 'btn continue'; n.className = 'btn primary'; n.parentNode.insertBefore(n, c); }
     // recordes no menu (pílula discreta): melhor resultado entre TODOS os mapas
     const rec = $('menuRecords');
     if (rec) {

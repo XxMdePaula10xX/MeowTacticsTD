@@ -104,7 +104,11 @@
     const m = $('menu');
     m.style.backgroundImage = 'url(' + asset('assets/ui/menu_bg.png') + ')';
     show('menu'); hide('mapSelect'); hide('endScreen');
-    const c = $('btnContinue'); c.style.display = MT.save.has() ? '' : 'none';
+    // com save: CONTINUAR vira o CTA dourado (topo) e NOVO JOGO recua p/ secundário
+    const c = $('btnContinue'), n = $('btnNormal'), hasSave = MT.save.has();
+    c.style.display = hasSave ? '' : 'none';
+    if (hasSave) { c.className = 'btn primary'; n.className = 'btn alt'; c.parentNode.insertBefore(c, n); }
+    else { c.className = 'btn continue'; n.className = 'btn primary'; n.parentNode.insertBefore(n, c); }
     // recordes no menu (pílula discreta): melhor resultado entre TODOS os mapas
     const rec = $('menuRecords');
     if (rec) {
