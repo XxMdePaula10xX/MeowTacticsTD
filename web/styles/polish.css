@@ -599,3 +599,43 @@
 .dmg-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; font-size: 12px;
   color: var(--ink-dim); font-weight: 700; margin: 2px 0 6px; max-width: min(700px, 92vw); }
 .dmg-legend b { font-weight: 900; }
+
+/* ============================================================
+   POLISH UI/UX — toque, escala, layout (tela de gameplay)
+   ============================================================ */
+
+/* [CRÍTICO toque] painéis flutuantes NÃO roubam o toque dos gatos no mapa.
+   Só o caret de recolher continua tocável (o resto é info, click-through). */
+.synergy-panel, .synergy-panel .syn-row, .synergy-panel .syn-title { pointer-events: none; }
+.synergy-panel .syn-caret { pointer-events: auto; cursor: pointer; padding: 6px 8px; margin: -6px -8px -6px 4px; }
+
+/* painel de sinergias: TERMINA acima do dock (reserva ~260px p/ a loja+banco).
+   Nunca sobrepõe o BANCO; se tiver muitas sinergias, rola internamente. */
+.synergy-panel { max-height: calc(100% - 152px); overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+  background: linear-gradient(180deg, rgba(26,24,50,.92), rgba(16,16,34,.92)); }
+.synergy-panel::-webkit-scrollbar { display: none; }
+
+/* [escala] retrato do banco maior (menos vazio no slot) */
+.bench-slot img { width: 40px; height: 40px; }
+@media (max-height: 560px) { .bench-slot img, .cat-card .cat-art img { } }
+@media (max-height: 560px) { .bench-slot img { width: 37px; height: 37px; } }
+@media (max-height: 430px) { .bench-slot img { width: 38px; height: 38px; } }
+@media (min-width: 768px) and (min-height: 600px) { .bench-slot img, .bench-slot .cat-art img { width: 54px; height: 54px; } }
+
+/* [escala] retrato da loja maior (menos vazio no card) */
+@media (max-height: 560px) {
+  .cat-art { height: 42px; }
+  .cat-art img, .cat-card .cat-art img { width: 42px; height: 42px; }
+}
+@media (max-height: 430px) {
+  .cat-art { height: 40px; }
+  .cat-art img, .cat-card .cat-art img { width: 40px; height: 40px; }
+}
+
+/* [HUD] ícones pintados (vida/moeda) com peso visual = aos emojis (onda/vel) */
+.chip .ico-img { width: 18px; height: 18px; }
+
+/* [pt19] "ONDA EM ANDAMENTO" = status bar, não CTA (sem brilho, sem hover) */
+.btn.start.running { box-shadow: none; cursor: default; filter: none;
+  background: linear-gradient(180deg, #5fae72, #3c8a52); color: #eafff0; }
+.btn.start.running::after { display: none; }

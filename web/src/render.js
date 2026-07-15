@@ -157,20 +157,19 @@
       ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
       ctx.strokeStyle = sel ? '#ffd24f' : dragging ? (dok ? '#4fc76e' : '#ee6b6e') : 'rgba(255,210,79,.40)';
       ctx.lineWidth = (sel || dragging) ? 3 : 2;
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.84, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, r * 1.0, 0, 7); ctx.stroke(); // anel ~112% do gato (era pequeno)
       // seta de direção — aponta pro alvo (nega o ângulo: mundo y-cima -> tela y-baixo)
       ctx.rotate(-cat.ang); ctx.fillStyle = '#ffd24f';
-      ctx.beginPath(); ctx.moveTo(0.50 * cam.U, 0); ctx.lineTo(0.34 * cam.U, -0.11 * cam.U); ctx.lineTo(0.34 * cam.U, 0.11 * cam.U); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0.54 * cam.U, 0); ctx.lineTo(0.38 * cam.U, -0.11 * cam.U); ctx.lineTo(0.38 * cam.U, 0.11 * cam.U); ctx.fill();
       ctx.restore();
       // sprite
       drawUnitSprite(cat.data.sprite, cat.x, cat.y - 0.05, 0.80 * sc, cat.data);
-      // símbolo de tipo (canto superior direito)
-      ctx.font = '900 ' + (0.28 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // glifos acima do gato (mesma linha): tipo sempre; prioridade só se != padrão
+      ctx.font = '900 ' + (0.24 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const nonDefaultPrio = cat.priority && cat.priority !== 'first';
       ctx.fillStyle = DMGCOL[cat.data.type];
-      ctx.fillText(SYM[cat.data.type], x + 0.35 * cam.U, y - 0.35 * cam.U);
-      // indicador de prioridade de alvo (canto superior esquerdo)
-      ctx.font = (0.22 * cam.U) + 'px serif';
-      ctx.globalAlpha = 0.9; ctx.fillText(PRIO_ICON[cat.priority || 'first'], x - 0.34 * cam.U, y - 0.34 * cam.U); ctx.globalAlpha = 1;
+      ctx.fillText(SYM[cat.data.type], x + (nonDefaultPrio ? 0.18 : 0) * cam.U, y - 0.42 * cam.U);
+      if (nonDefaultPrio) { ctx.font = (0.22 * cam.U) + 'px serif'; ctx.globalAlpha = 0.95; ctx.fillText(PRIO_ICON[cat.priority], x - 0.20 * cam.U, y - 0.42 * cam.U); ctx.globalAlpha = 1; }
     }
   }
 

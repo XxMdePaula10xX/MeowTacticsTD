@@ -48,7 +48,7 @@
     const dockToggle = $('dockToggle');
     if (dockToggle) dockToggle.addEventListener('click', () => {
       const dk = document.querySelector('.dock'); if (!dk) return;
-      dk.classList.toggle('collapsed'); dockManual = true; updateDockToggleLabel();
+      dk.classList.toggle('collapsed'); dockManual = true; updateDockToggleLabel(); updateSynVis();
     });
     refs.speed.addEventListener('click', () => { const g = MT.game; g.speed = g.speed === 1 ? 2 : g.speed === 2 ? 3 : 1; refs.speed.textContent = '⏩ ' + g.speed + '×'; });
 
@@ -208,14 +208,19 @@
     const ov = $('pauseOverlay'); if (ov) ov.classList.toggle('hide', !on);
   }
   function togglePause() { setPaused(!MT.game.paused); }
+  function updateSynVis() {
+    const dk = document.querySelector('.dock'); const running = MT.game.phase === 'wave';
+    const shopOpen = dk && !dk.classList.contains('collapsed');
+    if (refs.syn) refs.syn.style.display = (running || shopOpen || MT.game.phase !== 'prep') ? 'none' : '';
+  }
   function refresh() {
     const g = MT.game;
     if (g.phase === 'menu') return;
-    // auto-recolher na onda (loja fica travada mesmo) e reabrir na preparação.
-    // O toque manual manda até a próxima troca de fase.
+    // Loja é uma GAVETA fechada por padrão (mapa protagonista, sinergias com
+    // espaço, gatos tocáveis). Só fica aberta durante o tutorial. Abre na aba LOJA.
     if (g.phase !== lastPhase) {
       dockManual = false;
-      setDockCollapsed(g.phase === 'wave');
+      setDockCollapsed(!tutorial.active);
       lastPhase = g.phase;
     }
     if (g.freshRun) { lastCoins = null; lastLives = null; g.freshRun = false; } // run nova: sem delta falso
@@ -236,7 +241,7 @@
     refs.hint.classList.toggle('show', !!(g.selected && g.selected.kind === 'bench'));
     const dock = document.querySelector('.dock');
     if (dock) { dock.classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench')); dock.classList.toggle('wave-lock', running); }
-    if (refs.syn) refs.syn.style.display = running ? 'none' : ''; // sinergias ocultas durante a onda
+    updateSynVis(); // sinergias visíveis só na prep com a loja fechada (sem sobrepor loja/banco)
     if (refs.items) { const n = g.inventory.length; refs.items.classList.toggle('hide', n === 0); if (refs.itemCount) refs.itemCount.textContent = n; }
     const sh = $('shopHint'); if (sh) sh.textContent = '· trocar ' + B.rerollCost + '🪙';
 

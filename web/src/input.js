@@ -9,7 +9,8 @@
 
   function rectXY(cx, cy) { const r = canvasEl.getBoundingClientRect(); return { x: cx - r.left, y: cy - r.top }; }
   function toWorld(sx, sy) { return { wx: MT.cam.wx(sx), wy: MT.cam.wy(sy), sx, sy }; }
-  function pickCat(wx, wy) { let best = null, bd = 0.95; for (const c of MT.game.board) { const d = MT.util.dist(c.x, c.y, wx, wy); if (d < bd) { bd = d; best = c; } } return best; }
+  // hit-test alinhado ao CENTRO do sprite (desenhado em cat.y - 0.05) e generoso.
+  function pickCat(wx, wy) { let best = null, bd = 0.95; for (const c of MT.game.board) { const d = MT.util.dist(c.x, c.y - 0.05, wx, wy); if (d < bd) { bd = d; best = c; } } return best; }
   function overCanvas(cx, cy) { const r = canvasEl.getBoundingClientRect(); return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom; }
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 

@@ -913,6 +913,46 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
   color: var(--ink-dim); font-weight: 700; margin: 2px 0 6px; max-width: min(700px, 92vw); }
 .dmg-legend b { font-weight: 900; }
 
+/* ============================================================
+   POLISH UI/UX — toque, escala, layout (tela de gameplay)
+   ============================================================ */
+
+/* [CRÍTICO toque] painéis flutuantes NÃO roubam o toque dos gatos no mapa.
+   Só o caret de recolher continua tocável (o resto é info, click-through). */
+.synergy-panel, .synergy-panel .syn-row, .synergy-panel .syn-title { pointer-events: none; }
+.synergy-panel .syn-caret { pointer-events: auto; cursor: pointer; padding: 6px 8px; margin: -6px -8px -6px 4px; }
+
+/* painel de sinergias: TERMINA acima do dock (reserva ~260px p/ a loja+banco).
+   Nunca sobrepõe o BANCO; se tiver muitas sinergias, rola internamente. */
+.synergy-panel { max-height: calc(100% - 152px); overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+  background: linear-gradient(180deg, rgba(26,24,50,.92), rgba(16,16,34,.92)); }
+.synergy-panel::-webkit-scrollbar { display: none; }
+
+/* [escala] retrato do banco maior (menos vazio no slot) */
+.bench-slot img { width: 40px; height: 40px; }
+@media (max-height: 560px) { .bench-slot img, .cat-card .cat-art img { } }
+@media (max-height: 560px) { .bench-slot img { width: 37px; height: 37px; } }
+@media (max-height: 430px) { .bench-slot img { width: 38px; height: 38px; } }
+@media (min-width: 768px) and (min-height: 600px) { .bench-slot img, .bench-slot .cat-art img { width: 54px; height: 54px; } }
+
+/* [escala] retrato da loja maior (menos vazio no card) */
+@media (max-height: 560px) {
+  .cat-art { height: 42px; }
+  .cat-art img, .cat-card .cat-art img { width: 42px; height: 42px; }
+}
+@media (max-height: 430px) {
+  .cat-art { height: 40px; }
+  .cat-art img, .cat-card .cat-art img { width: 40px; height: 40px; }
+}
+
+/* [HUD] ícones pintados (vida/moeda) com peso visual = aos emojis (onda/vel) */
+.chip .ico-img { width: 18px; height: 18px; }
+
+/* [pt19] "ONDA EM ANDAMENTO" = status bar, não CTA (sem brilho, sem hover) */
+.btn.start.running { box-shadow: none; cursor: default; filter: none;
+  background: linear-gradient(180deg, #5fae72, #3c8a52); color: #eafff0; }
+.btn.start.running::after { display: none; }
+
 </style>
 
   <div id="app">
@@ -3921,20 +3961,19 @@ window.MT = window.MT || {};
       ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
       ctx.strokeStyle = sel ? '#ffd24f' : dragging ? (dok ? '#4fc76e' : '#ee6b6e') : 'rgba(255,210,79,.40)';
       ctx.lineWidth = (sel || dragging) ? 3 : 2;
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.84, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, r * 1.0, 0, 7); ctx.stroke(); // anel ~112% do gato (era pequeno)
       // seta de direção — aponta pro alvo (nega o ângulo: mundo y-cima -> tela y-baixo)
       ctx.rotate(-cat.ang); ctx.fillStyle = '#ffd24f';
-      ctx.beginPath(); ctx.moveTo(0.50 * cam.U, 0); ctx.lineTo(0.34 * cam.U, -0.11 * cam.U); ctx.lineTo(0.34 * cam.U, 0.11 * cam.U); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0.54 * cam.U, 0); ctx.lineTo(0.38 * cam.U, -0.11 * cam.U); ctx.lineTo(0.38 * cam.U, 0.11 * cam.U); ctx.fill();
       ctx.restore();
       // sprite
       drawUnitSprite(cat.data.sprite, cat.x, cat.y - 0.05, 0.80 * sc, cat.data);
-      // símbolo de tipo (canto superior direito)
-      ctx.font = '900 ' + (0.28 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // glifos acima do gato (mesma linha): tipo sempre; prioridade só se != padrão
+      ctx.font = '900 ' + (0.24 * cam.U) + 'px ' + bodyFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const nonDefaultPrio = cat.priority && cat.priority !== 'first';
       ctx.fillStyle = DMGCOL[cat.data.type];
-      ctx.fillText(SYM[cat.data.type], x + 0.35 * cam.U, y - 0.35 * cam.U);
-      // indicador de prioridade de alvo (canto superior esquerdo)
-      ctx.font = (0.22 * cam.U) + 'px serif';
-      ctx.globalAlpha = 0.9; ctx.fillText(PRIO_ICON[cat.priority || 'first'], x - 0.34 * cam.U, y - 0.34 * cam.U); ctx.globalAlpha = 1;
+      ctx.fillText(SYM[cat.data.type], x + (nonDefaultPrio ? 0.18 : 0) * cam.U, y - 0.42 * cam.U);
+      if (nonDefaultPrio) { ctx.font = (0.22 * cam.U) + 'px serif'; ctx.globalAlpha = 0.95; ctx.fillText(PRIO_ICON[cat.priority], x - 0.20 * cam.U, y - 0.42 * cam.U); ctx.globalAlpha = 1; }
     }
   }
 
@@ -4026,7 +4065,8 @@ window.MT = window.MT || {};
 
   function rectXY(cx, cy) { const r = canvasEl.getBoundingClientRect(); return { x: cx - r.left, y: cy - r.top }; }
   function toWorld(sx, sy) { return { wx: MT.cam.wx(sx), wy: MT.cam.wy(sy), sx, sy }; }
-  function pickCat(wx, wy) { let best = null, bd = 0.95; for (const c of MT.game.board) { const d = MT.util.dist(c.x, c.y, wx, wy); if (d < bd) { bd = d; best = c; } } return best; }
+  // hit-test alinhado ao CENTRO do sprite (desenhado em cat.y - 0.05) e generoso.
+  function pickCat(wx, wy) { let best = null, bd = 0.95; for (const c of MT.game.board) { const d = MT.util.dist(c.x, c.y - 0.05, wx, wy); if (d < bd) { bd = d; best = c; } } return best; }
   function overCanvas(cx, cy) { const r = canvasEl.getBoundingClientRect(); return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom; }
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
@@ -4198,7 +4238,7 @@ window.MT = window.MT || {};
     const dockToggle = $('dockToggle');
     if (dockToggle) dockToggle.addEventListener('click', () => {
       const dk = document.querySelector('.dock'); if (!dk) return;
-      dk.classList.toggle('collapsed'); dockManual = true; updateDockToggleLabel();
+      dk.classList.toggle('collapsed'); dockManual = true; updateDockToggleLabel(); updateSynVis();
     });
     refs.speed.addEventListener('click', () => { const g = MT.game; g.speed = g.speed === 1 ? 2 : g.speed === 2 ? 3 : 1; refs.speed.textContent = '⏩ ' + g.speed + '×'; });
 
@@ -4358,14 +4398,19 @@ window.MT = window.MT || {};
     const ov = $('pauseOverlay'); if (ov) ov.classList.toggle('hide', !on);
   }
   function togglePause() { setPaused(!MT.game.paused); }
+  function updateSynVis() {
+    const dk = document.querySelector('.dock'); const running = MT.game.phase === 'wave';
+    const shopOpen = dk && !dk.classList.contains('collapsed');
+    if (refs.syn) refs.syn.style.display = (running || shopOpen || MT.game.phase !== 'prep') ? 'none' : '';
+  }
   function refresh() {
     const g = MT.game;
     if (g.phase === 'menu') return;
-    // auto-recolher na onda (loja fica travada mesmo) e reabrir na preparação.
-    // O toque manual manda até a próxima troca de fase.
+    // Loja é uma GAVETA fechada por padrão (mapa protagonista, sinergias com
+    // espaço, gatos tocáveis). Só fica aberta durante o tutorial. Abre na aba LOJA.
     if (g.phase !== lastPhase) {
       dockManual = false;
-      setDockCollapsed(g.phase === 'wave');
+      setDockCollapsed(!tutorial.active);
       lastPhase = g.phase;
     }
     if (g.freshRun) { lastCoins = null; lastLives = null; g.freshRun = false; } // run nova: sem delta falso
@@ -4386,7 +4431,7 @@ window.MT = window.MT || {};
     refs.hint.classList.toggle('show', !!(g.selected && g.selected.kind === 'bench'));
     const dock = document.querySelector('.dock');
     if (dock) { dock.classList.toggle('placing', !!(g.selected && g.selected.kind === 'bench')); dock.classList.toggle('wave-lock', running); }
-    if (refs.syn) refs.syn.style.display = running ? 'none' : ''; // sinergias ocultas durante a onda
+    updateSynVis(); // sinergias visíveis só na prep com a loja fechada (sem sobrepor loja/banco)
     if (refs.items) { const n = g.inventory.length; refs.items.classList.toggle('hide', n === 0); if (refs.itemCount) refs.itemCount.textContent = n; }
     const sh = $('shopHint'); if (sh) sh.textContent = '· trocar ' + B.rerollCost + '🪙';
 
