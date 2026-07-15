@@ -4236,6 +4236,14 @@ window.MT = window.MT || {};
       items: $('itemsChip'), itemCount: $('itemCount'),
     };
     if (refs.items) refs.items.addEventListener('click', () => { MT.game.toast = 'Toque num gato posicionado para equipar itens 🎒'; MT.game.toastT = 2; });
+    // banco: pegar gato por COORDENADA (corrige o offset de hit-test do iOS)
+    if (refs.bench) refs.bench.addEventListener('pointerdown', (e) => {
+      if (MT.game.phase !== 'prep') return;
+      const slot = benchSlotAtPoint(e.clientX, e.clientY); if (!slot) return;
+      const cat = MT.game.bench[+slot.dataset.bi]; if (!cat) return;
+      e.preventDefault(); MT.input.beginBenchDrag(cat, e);
+    });
+    setupShopInput(); // loja por coordenada (mesmo fix de hit-test do iOS)
     refs.start.addEventListener('click', () => MT.api.startWave());
     refs.reroll.addEventListener('click', () => MT.api.reroll());
     // pausa (congela a onda) + menu de pausa
@@ -4519,23 +4527,39 @@ window.MT = window.MT || {};
         '<div class="cat-tags">' + tags + '</div>' +
         (hint ? '<div class="syn-hint' + (hint.activates ? '' : ' dim') + '">' + hint.text + '</div>' : '');
       if (hint && hint.activates) card.classList.add('syn-boost');
-      // toque longo (≈380ms) mostra os detalhes do gato; toque simples compra.
-      let lpTimer = null, lpFired = false, lpX = 0, lpY = 0;
-      card.addEventListener('pointerdown', (e) => {
-        lpFired = false; lpX = e.clientX; lpY = e.clientY;
-        clearTimeout(lpTimer);
-        lpTimer = setTimeout(() => { lpFired = true; pinTip(catTip(c.id), lpX, lpY); }, 380);
-      });
-      card.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - lpX, e.clientY - lpY) > 10) clearTimeout(lpTimer); });
-      card.addEventListener('pointerup', () => clearTimeout(lpTimer));
-      card.addEventListener('pointercancel', () => clearTimeout(lpTimer));
-      card.addEventListener('click', () => {
-        if (lpFired) { lpFired = false; return; }   // já mostrou detalhes: não compra
-        if (MT.game.phase !== 'prep') return;       // loja travada durante a onda
-        if (cost > g.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
-        card.classList.add('pop'); MT.api.buy(i);
-      });
+      card.dataset.si = i; // índice na loja (handler por coordenada)
       wrap.appendChild(card);
+    });
+  }
+  // Handler ÚNICO da loja por COORDENADA (mesmo motivo do banco: hit-test do
+  // iOS desloca em container rolável). Toque longo = detalhes; toque = compra.
+  function shopCardAtPoint(x, y) {
+    const cards = refs.shop ? refs.shop.querySelectorAll('.cat-card:not(.empty)') : [];
+    for (const c of cards) { const r = c.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return c; }
+    return null;
+  }
+  function setupShopInput() {
+    let lpTimer = null, lpFired = false, lpX = 0, lpY = 0, downCard = null;
+    const rail = refs.shop; if (!rail) return;
+    rail.addEventListener('pointerdown', (e) => {
+      downCard = shopCardAtPoint(e.clientX, e.clientY); if (!downCard) return;
+      lpFired = false; lpX = e.clientX; lpY = e.clientY; clearTimeout(lpTimer);
+      const id = MT.game.shop[+downCard.dataset.si];
+      lpTimer = setTimeout(() => { lpFired = true; if (id) pinTip(catTip(id), lpX, lpY); }, 380);
+    });
+    rail.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - lpX, e.clientY - lpY) > 10) clearTimeout(lpTimer); });
+    rail.addEventListener('pointercancel', () => { clearTimeout(lpTimer); downCard = null; });
+    rail.addEventListener('pointerup', (e) => {
+      clearTimeout(lpTimer);
+      const card = shopCardAtPoint(e.clientX, e.clientY);
+      if (lpFired) { lpFired = false; downCard = null; return; } // mostrou detalhes: não compra
+      if (!card || card !== downCard) { downCard = null; return; } // soltou fora do card que começou
+      downCard = null;
+      if (MT.game.phase !== 'prep') return;
+      const i = +card.dataset.si, id = MT.game.shop[i]; if (!id) return;
+      const cost = MT.api.costOf(R.CAT[id]);
+      if (cost > MT.game.coins) { shakeEl(card); MT.sfx && MT.sfx.play('error'); tipHide(); return; }
+      card.classList.add('pop'); MT.api.buy(i);
     });
   }
   function shakeEl(node) { node.classList.remove('shake'); void node.offsetWidth; node.classList.add('shake'); }
@@ -4565,12 +4589,20 @@ window.MT = window.MT || {};
       const slot = el('div', 'bench-slot filled');
       if (g.selected && g.selected.cat === cat) slot.classList.add('picked');
       if (grew && i === count - 1) slot.classList.add('lit');
+      slot.dataset.bi = i; // índice no banco (usado pelo handler por coordenada)
       slot.innerHTML = '<img src="' + asset(cat.data.sprite) + '" alt="" draggable="false">' +
         '<span class="mini-badge ' + cat.data.type + '">' + SYM[cat.data.type] + '</span>';
-      slot.addEventListener('pointerdown', (e) => { if (MT.game.phase !== 'prep') return; e.preventDefault(); MT.input.beginBenchDrag(cat, e); });
       wrap.appendChild(slot);
     }
     lastBench = count;
+  }
+  // Handler ÚNICO do banco por COORDENADA (não confia no alvo do evento — o
+  // WebKit do iOS desloca o hit-test em containers roláveis). Acha o slot cujo
+  // retângulo contém o toque e pega o gato certo.
+  function benchSlotAtPoint(x, y) {
+    const slots = refs.bench ? refs.bench.querySelectorAll('.bench-slot.filled') : [];
+    for (const s of slots) { const r = s.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return s; }
+    return null;
   }
 
   let lastSynKey = '', synCollapsed = false;
