@@ -85,6 +85,7 @@
     $('btnMaps').addEventListener('click', () => { hide('endScreen'); showMapSelect(MT.game.mode === 'daily' ? 'normal' : MT.game.mode); });
     $('coachSkip').addEventListener('click', () => tutorial.finish());
     updateSoundLabel();
+    setupInputDebug();
     // tooltips por HOVER só em dispositivos com mouse — no touch (iOS) o
     // mouseover sintético fazia o popup piscar ao tocar nos cards. No touch o
     // detalhe vem por toque fixado (pinTip) quando aplicável.
@@ -212,6 +213,34 @@
     const dk = document.querySelector('.dock'); const running = MT.game.phase === 'wave';
     const shopOpen = dk && !dk.classList.contains('collapsed');
     if (refs.syn) refs.syn.style.display = (running || shopOpen || MT.game.phase !== 'prep') ? 'none' : '';
+  }
+  // Debug visual de toque (pt.25): toque no 🐾 do título 4x pra ligar/desligar.
+  // Mostra um alvo vermelho EXATAMENTE onde a engine detectou o toque + o
+  // elemento/gato atingido. Se o alvo não cair no dedo, há offset real.
+  function setupInputDebug() {
+    let on = false, taps = 0, tapT = 0;
+    const mk = el('div', 'input-dbg');
+    mk.innerHTML = '<div class="idb-ring"></div><div class="idb-txt"></div>';
+    document.body.appendChild(mk);
+    const title = document.querySelector('.hud .title');
+    if (title) title.addEventListener('click', () => {
+      const now = performance.now(); if (now - tapT > 1500) taps = 0; tapT = now;
+      if (++taps >= 4) { taps = 0; on = !on; mk.classList.remove('show'); MT.game.toast = '🔧 Debug de toque ' + (on ? 'LIGADO' : 'desligado'); MT.game.toastT = 1.6; }
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if (!on) return;
+      const x = e.clientX, y = e.clientY;
+      mk.style.left = x + 'px'; mk.style.top = y + 'px'; mk.classList.add('show');
+      const el2 = document.elementFromPoint(x, y);
+      let info = el2 ? (el2.id || (el2.className && el2.className.toString().split(' ')[0]) || el2.tagName) : '?';
+      const cv = $('game');
+      if (el2 === cv) {
+        const r = cv.getBoundingClientRect(); const wx = MT.cam.wx(x - r.left), wy = MT.cam.wy(y - r.top);
+        let near = '-', bd = 99; for (const c of MT.game.board) { const dd = MT.util.dist(c.x, c.y - 0.05, wx, wy); if (dd < bd) { bd = dd; near = c.data.id; } }
+        info = 'mapa · gato+próx: ' + near + ' d=' + bd.toFixed(2);
+      }
+      mk.querySelector('.idb-txt').textContent = '(' + x + ',' + y + ') → ' + info;
+    }, true);
   }
   function refresh() {
     const g = MT.game;

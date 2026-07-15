@@ -639,3 +639,14 @@
 .btn.start.running { box-shadow: none; cursor: default; filter: none;
   background: linear-gradient(180deg, #5fae72, #3c8a52); color: #eafff0; }
 .btn.start.running::after { display: none; }
+
+/* ---------- Debug de toque (pt.25) — oculto até ativar (4x no 🐾) ---------- */
+.input-dbg { position: fixed; z-index: 9999; pointer-events: none; display: none; transform: translate(-50%, -50%); }
+.input-dbg.show { display: block; }
+.input-dbg .idb-ring { width: 24px; height: 24px; border: 2px solid #ff3b6b; border-radius: 50%;
+  box-shadow: 0 0 0 1px #fff, 0 0 8px rgba(255,59,107,.8); }
+.input-dbg .idb-ring::after { content: ""; position: absolute; left: 50%; top: 50%; width: 2px; height: 2px;
+  background: #fff; transform: translate(-50%,-50%); box-shadow: 0 0 0 1px #ff3b6b; }
+.input-dbg .idb-txt { position: absolute; top: 26px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.85); color: #fff; font: 700 11px ui-monospace, Menlo, monospace; padding: 2px 6px;
+  border-radius: 5px; white-space: nowrap; }
